@@ -9,7 +9,15 @@ import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 
 class SavedTrackRepository(private val dao: SavedTrackDao) {
-    fun allTracksFlow(): Flow<List<TrackDisplayData>> = dao.getAllSavedTracks().map { list -> list.map { it.toDisplayData() } }
+    /**
+     * P2.2: when [accountId] is `null` (the default), every trip is returned — unchanged
+     * behavior for existing call sites. When non-null, only trips started by that persona
+     * (`started_by_account_id`) are returned, so the Journeys/Expenses tabs can be re-scoped to
+     * the active account without breaking anywhere that still wants the unscoped list.
+     */
+    fun allTracksFlow(accountId: String? = null): Flow<List<TrackDisplayData>> =
+        (if (accountId == null) dao.getAllSavedTracks() else dao.getAllSavedTracksByAccount(accountId))
+            .map { list -> list.map { it.toDisplayData() } }
 
     fun completedTracksFlow(): Flow<List<TrackDisplayData>> = dao.getCompletedTracks().map { list -> list.map { it.toDisplayData() } }
 

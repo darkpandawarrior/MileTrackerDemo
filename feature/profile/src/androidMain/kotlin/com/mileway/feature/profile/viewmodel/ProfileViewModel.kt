@@ -104,7 +104,7 @@ class ProfileViewModel(
 
     override fun onAction(action: ProfileAction) {
         when (action) {
-            is ProfileAction.SwitchAccount -> setState { copy(selectedAccountId = action.id) }
+            is ProfileAction.SwitchAccount -> switchAccount(action.id)
             ProfileAction.OpenSessionsDialog -> setState { copy(showSessionsDialog = true) }
             ProfileAction.DismissSessionsDialog -> setState { copy(showSessionsDialog = false) }
             ProfileAction.TogglePushNotifications ->
@@ -117,6 +117,22 @@ class ProfileViewModel(
             is ProfileAction.RemoveDemoAccount -> removeDemoAccount(action.accountId)
             is ProfileAction.ViewAccountDetails -> viewAccountDetails(action.accountId)
             ProfileAction.DismissAccountDetails -> setState { copy(accountDetailsSheet = null) }
+        }
+    }
+
+    /**
+     * P2.2: a real switch, not a cosmetic UI-state flag. Updates local state immediately (so the
+     * switcher row reflects the tap without waiting on I/O), then persists the choice to
+     * [activeAccountSource] (survives process death, P2.1) and [ProfileRepository.setActiveAccount]
+     * (flips the DAO's exclusive `isActive` row, P1.1/P1.2) — both writes drive downstream
+     * re-queries: `ActiveAccountSource.activeAccountId` is what `SavedTracksViewModel` collects to
+     * re-scope Journeys/Expenses to the new persona.
+     */
+    private fun switchAccount(accountId: String) {
+        setState { copy(selectedAccountId = accountId) }
+        viewModelScope.launch {
+            activeAccountSource.setActiveAccountId(accountId)
+            repository.setActiveAccount(accountId)
         }
     }
 

@@ -38,6 +38,8 @@ class FakeProfileRepository(private val mockAccountRepository: MockAccountReposi
 
     override suspend fun removeAccount(accountId: String) = mockAccountRepository.remove(accountId)
 
+    override suspend fun setActiveAccount(accountId: String) = mockAccountRepository.setActive(accountId)
+
     override fun header(): ProfileHeader {
         val profile = DemoMockData.userConfig().profile
         return ProfileHeader(

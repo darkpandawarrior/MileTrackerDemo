@@ -25,7 +25,7 @@ class SavedTracksViewModelTest {
     private val dao = FakeSavedTrackDao()
     private val repo = SavedTrackRepository(dao)
 
-    private fun viewModel() = SavedTracksViewModel(repo)
+    private fun viewModel() = SavedTracksViewModel(repo, FakeActiveAccountSource())
 
     /** Creates a completed [SavedTrack] optionally marked as submitted to the server. */
     private fun makeTrack(

@@ -26,6 +26,9 @@ private class FakeSavedTrackDao(tracks: List<SavedTrack> = emptyList()) : SavedT
 
     override fun getAllSavedTracks(): Flow<List<SavedTrack>> = _flow
 
+    override fun getAllSavedTracksByAccount(accountId: String): Flow<List<SavedTrack>> =
+        MutableStateFlow(_flow.value.filter { it.startedByAccountId == accountId })
+
     override suspend fun insertSavedTrack(savedTrack: SavedTrack) = Unit
 
     override suspend fun updateSavedTrack(savedTrack: SavedTrack): Int = 0

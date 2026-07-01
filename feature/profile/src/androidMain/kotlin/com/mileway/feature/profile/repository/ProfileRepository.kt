@@ -43,4 +43,7 @@ interface ProfileRepository {
 
     /** P1.3: removes a persona outright; a no-op for static test doubles. */
     suspend fun removeAccount(accountId: String) {}
+
+    /** P2.2: marks [accountId] the sole active persona in the Room-backed store; a no-op for static test doubles. */
+    suspend fun setActiveAccount(accountId: String) {}
 }

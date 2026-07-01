@@ -34,7 +34,8 @@ class DatabaseSeeder(
                 selectedVehicleType = "fourWheelerPetrol", vehiclePricing = 10.0,
                 service = "Own Car", submissionTime = base + 2_500_000L,
                 submittedAmount = 87.0, submittedAmountCurrency = "INR",
-                transId = "DEMO-TXN-001", createdAt = base, startedAtTimestamp = base
+                transId = "DEMO-TXN-001", createdAt = base, startedAtTimestamp = base,
+                startedByAccountId = "ACC-001"
             ),
             SavedTrack(
                 routeId = "demo-track-2",
@@ -49,7 +50,8 @@ class DatabaseSeeder(
                 service = "Own Car", submissionTime = base + 86_400_000L + 2_800_000L,
                 submittedAmount = 198.4, submittedAmountCurrency = "INR",
                 transId = "DEMO-TXN-002", createdAt = base + 86_400_000L,
-                startedAtTimestamp = base + 86_400_000L
+                startedAtTimestamp = base + 86_400_000L,
+                startedByAccountId = "ACC-001"
             ),
             SavedTrack(
                 routeId = "demo-track-3",
@@ -62,7 +64,8 @@ class DatabaseSeeder(
                 isCompleted = true, serverUploaded = false, isDraft = true,
                 selectedVehicleType = "fourWheelerCng", vehiclePricing = 10.0,
                 service = "Company Car", createdAt = base + 2 * 86_400_000L,
-                startedAtTimestamp = base + 2 * 86_400_000L
+                startedAtTimestamp = base + 2 * 86_400_000L,
+                startedByAccountId = "ACC-001"
             ),
             SavedTrack(
                 routeId = "demo-track-4",
@@ -77,7 +80,8 @@ class DatabaseSeeder(
                 service = "Taxi / Cab", submissionTime = base + 3 * 86_400_000L + 1_900_000L,
                 submittedAmount = 0.0, submittedAmountCurrency = "INR",
                 transId = "DEMO-TXN-004", createdAt = base + 3 * 86_400_000L,
-                startedAtTimestamp = base + 3 * 86_400_000L
+                startedAtTimestamp = base + 3 * 86_400_000L,
+                startedByAccountId = "ACC-002"
             ),
             SavedTrack(
                 routeId = "demo-track-5",
@@ -92,7 +96,8 @@ class DatabaseSeeder(
                 service = "Own Car", submissionTime = base + 5 * 86_400_000L + 1_000_000L,
                 submittedAmount = 60.8, submittedAmountCurrency = "INR",
                 transId = "DEMO-TXN-005", createdAt = base + 5 * 86_400_000L,
-                startedAtTimestamp = base + 5 * 86_400_000L
+                startedAtTimestamp = base + 5 * 86_400_000L,
+                startedByAccountId = "ACC-003"
             )
         )
     }

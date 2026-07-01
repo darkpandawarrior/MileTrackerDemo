@@ -114,6 +114,8 @@ private class FakeShutdownDao : SavedTrackDao {
 
     override fun getAllSavedTracks(): Flow<List<SavedTrack>> = flowOf(emptyList())
 
+    override fun getAllSavedTracksByAccount(accountId: String): Flow<List<SavedTrack>> = flowOf(emptyList())
+
     override fun getCompletedTracks(): Flow<List<SavedTrack>> = flowOf(emptyList())
 
     override suspend fun count(): Long = 0

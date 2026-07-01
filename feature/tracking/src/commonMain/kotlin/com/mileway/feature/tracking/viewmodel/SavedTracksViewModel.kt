@@ -3,9 +3,12 @@ package com.mileway.feature.tracking.viewmodel
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.data.model.display.TrackDisplayData
+import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.feature.tracking.repository.SavedTrackRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -200,11 +203,17 @@ sealed interface SavedTracksAction {
 
 sealed interface SavedTracksEffect
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SavedTracksViewModel(
     private val repository: SavedTrackRepository,
+    private val activeAccountSource: ActiveAccountSource,
 ) : BaseViewModel<SavedTracksUiState, SavedTracksEffect, SavedTracksAction>(SavedTracksUiState()) {
     init {
-        repository.allTracksFlow()
+        // P2.2: re-scope Journeys/Expenses to the active persona — a switch (persisted by
+        // ProfileViewModel.SwitchAccount) re-emits here via flatMapLatest, cancelling the prior
+        // account's collection and starting a fresh one filtered to the new accountId.
+        activeAccountSource.activeAccountId
+            .flatMapLatest { accountId -> repository.allTracksFlow(accountId) }
             .onEach { tracks ->
                 setState {
                     val validIds = tracks.filter { it.isSubmitted }.map { it.token }.toSet()

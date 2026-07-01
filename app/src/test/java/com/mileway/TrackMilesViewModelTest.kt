@@ -341,6 +341,9 @@ class FakeSavedTrackDao(
     override fun getAllSavedTracks(): Flow<List<SavedTrack>> =
         tracks.map { it.values.toList() }
 
+    override fun getAllSavedTracksByAccount(accountId: String): Flow<List<SavedTrack>> =
+        tracks.map { it.values.filter { t -> t.startedByAccountId == accountId } }
+
     override suspend fun count(): Long = tracks.value.size.toLong()
 
     override suspend fun markClaimedByVoucher(

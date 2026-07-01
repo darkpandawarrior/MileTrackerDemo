@@ -32,6 +32,12 @@ interface SavedTrackDao {
     @Query("SELECT * FROM saved_tracks ORDER BY isCompleted ASC, createdAt DESC")
     fun getAllSavedTracks(): Flow<List<SavedTrack>>
 
+    // P2.2: same ordering as [getAllSavedTracks], scoped to one persona's `started_by_account_id`
+    // so Journeys/Expenses tabs re-query when the active account switches. Additive — the unscoped
+    // overload above is unchanged for existing call sites that don't filter by account.
+    @Query("SELECT * FROM saved_tracks WHERE started_by_account_id = :accountId ORDER BY isCompleted ASC, createdAt DESC")
+    fun getAllSavedTracksByAccount(accountId: String): Flow<List<SavedTrack>>
+
     @Query("SELECT * FROM saved_tracks WHERE isCompleted = 1 ORDER BY createdAt DESC")
     fun getCompletedTracks(): Flow<List<SavedTrack>>
 
