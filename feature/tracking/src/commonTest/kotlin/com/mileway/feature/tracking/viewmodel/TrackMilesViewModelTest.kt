@@ -1,9 +1,20 @@
 package com.mileway.feature.tracking.viewmodel
 
 import com.mileway.core.data.model.db.CurrentTrackData
+import com.mileway.core.data.model.db.MockAccountEntity
+import com.mileway.core.data.model.db.SavedTrack
+import com.mileway.core.data.session.DEFAULT_SESSION_TENANT
+import com.mileway.core.data.session.SessionKind
+import com.mileway.core.data.session.SessionState
 import com.mileway.feature.tracking.manager.TrackingController
 import com.mileway.feature.tracking.service.ReconciliationResultHolder
 import com.mileway.feature.tracking.service.SessionReconciliationPolicy
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -33,7 +44,18 @@ private class FakeTrackingController : TrackingController {
     }
 }
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class TrackMilesViewModelTest {
+    // Installs an eager (UnconfinedTestDispatcher) Main dispatcher so viewModelScope.launch blocks
+    // — e.g. restoreActiveTrack()'s P3.5 reconciliation check — run to completion synchronously
+    // before the harness's `build()` call returns, the same way real Android's Main.immediate
+    // scheduling behaves for callers who don't explicitly await anything.
+    @BeforeTest
+    fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+
+    @AfterTest
+    fun tearDown() = Dispatchers.resetMain()
+
     @Test
     fun `initial phase is IDLE`() {
         val vm = buildVm()
@@ -146,7 +168,144 @@ class TrackMilesViewModelTest {
         assertNull(vm.uiState.value.activeRecovery)
     }
 
+    // ── P3.5: cold-start reconciliation ──────────────────────────────────────
+
+    private fun activeTrack(
+        routeId: String = "route-restored",
+        employeeCode: String = "EMP-OTHER",
+        accountId: String? = "ACC-OTHER",
+        accountEmail: String = "other@mileway.app",
+    ) = SavedTrack(
+        routeId = routeId,
+        name = "Journey $routeId",
+        startLatitude = 0.0, startLongitude = 0.0,
+        endLatitude = 0.0, endLongitude = 0.0,
+        pausedLatitude = 0.0, pausedLongitude = 0.0,
+        startTime = 1_000L, endTime = -1L,
+        distance = 4_200.0, duration = 0L,
+        startedAtTimestamp = 1_000L,
+        startedByAccountId = accountId,
+        startedByEmployeeCode = employeeCode,
+        startedByAccountEmail = accountEmail,
+        startedByTenant = DEFAULT_SESSION_TENANT,
+    )
+
+    private val meIdentitySession =
+        SessionState(
+            kind = SessionKind.CREDENTIALS,
+            email = "me@mileway.app",
+            employeeCode = "EMP-ME",
+            tenant = DEFAULT_SESSION_TENANT,
+            signedInAtMillis = 500L,
+        )
+
+    @Test
+    fun `cold start with a mismatched ownership pointer shows the stranger-session dialog instead of restoring`() {
+        val vm =
+            TrackMilesViewModelTestHarness.build(
+                seedTracks = listOf(activeTrack()),
+                sessionSource = FakeSessionSource(meIdentitySession),
+                activeAccountSource = FakeActiveAccountSource(activeAccountId = "ACC-ME"),
+                mockAccounts = listOf(mockAccount("ACC-OTHER", "EMP-OTHER", "Other Persona")),
+            )
+
+        val state = vm.uiState.value
+        assertEquals(TrackSheet.STRANGER_SESSION, state.activeSheet)
+        assertEquals(TrackMilesPhase.IDLE, state.phase)
+        assertNull(state.currentRouteId)
+        assertEquals("Other Persona", state.activeStrangerSession?.ownerLabel)
+        assertEquals("route-restored", state.activeStrangerSession?.routeId)
+    }
+
+    @Test
+    fun `cold start with a matching ownership pointer restores silently as today`() {
+        val vm =
+            TrackMilesViewModelTestHarness.build(
+                seedTracks =
+                    listOf(
+                        activeTrack(employeeCode = "EMP-ME", accountId = "ACC-ME", accountEmail = "me@mileway.app"),
+                    ),
+                sessionSource = FakeSessionSource(meIdentitySession),
+                activeAccountSource = FakeActiveAccountSource(activeAccountId = "ACC-ME"),
+            )
+
+        val state = vm.uiState.value
+        assertEquals(TrackSheet.NONE, state.activeSheet)
+        assertEquals(TrackMilesPhase.TRACKING, state.phase)
+        assertEquals("route-restored", state.currentRouteId)
+        assertNull(state.activeStrangerSession)
+    }
+
+    @Test
+    fun `no active persona selected restores silently (unchanged pre-P3_1 behavior)`() {
+        val vm =
+            TrackMilesViewModelTestHarness.build(
+                seedTracks = listOf(activeTrack()),
+                // Default ActiveAccountSource/SessionSource — no active persona pointer set yet.
+            )
+
+        val state = vm.uiState.value
+        assertEquals(TrackSheet.NONE, state.activeSheet)
+        assertEquals(TrackMilesPhase.TRACKING, state.phase)
+        assertEquals("route-restored", state.currentRouteId)
+    }
+
+    @Test
+    fun `StrangerSessionResume restores the flagged trip and clears the dialog`() {
+        val vm =
+            TrackMilesViewModelTestHarness.build(
+                seedTracks = listOf(activeTrack()),
+                sessionSource = FakeSessionSource(meIdentitySession),
+                activeAccountSource = FakeActiveAccountSource(activeAccountId = "ACC-ME"),
+                mockAccounts = listOf(mockAccount("ACC-OTHER", "EMP-OTHER", "Other Persona")),
+            )
+        assertEquals(TrackSheet.STRANGER_SESSION, vm.uiState.value.activeSheet)
+
+        vm.handleStrangerSessionResume()
+
+        val state = vm.uiState.value
+        assertEquals(TrackSheet.NONE, state.activeSheet)
+        assertNull(state.activeStrangerSession)
+        assertEquals(TrackMilesPhase.TRACKING, state.phase)
+        assertEquals("route-restored", state.currentRouteId)
+    }
+
+    @Test
+    fun `StrangerSessionDismiss clears the dialog and leaves the trip un-displayed`() {
+        val vm =
+            TrackMilesViewModelTestHarness.build(
+                seedTracks = listOf(activeTrack()),
+                sessionSource = FakeSessionSource(meIdentitySession),
+                activeAccountSource = FakeActiveAccountSource(activeAccountId = "ACC-ME"),
+                mockAccounts = listOf(mockAccount("ACC-OTHER", "EMP-OTHER", "Other Persona")),
+            )
+        assertEquals(TrackSheet.STRANGER_SESSION, vm.uiState.value.activeSheet)
+
+        vm.handleStrangerSessionDismiss()
+
+        val state = vm.uiState.value
+        assertEquals(TrackSheet.NONE, state.activeSheet)
+        assertNull(state.activeStrangerSession)
+        assertEquals(TrackMilesPhase.IDLE, state.phase)
+        assertNull(state.currentRouteId)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private fun mockAccount(
+        accountId: String,
+        employeeCode: String,
+        displayName: String,
+    ) = MockAccountEntity(
+        accountId = accountId,
+        displayName = displayName,
+        employeeCode = employeeCode,
+        organization = "Org",
+        avatarSeed = accountId,
+        isActive = false,
+        lastLoginAtMs = 0L,
+        createdAtMs = 0L,
+    )
 
     private fun buildVm(controller: TrackingController = FakeTrackingController()): TrackMilesViewModel {
         return TrackMilesViewModelTestHarness.build(controller)

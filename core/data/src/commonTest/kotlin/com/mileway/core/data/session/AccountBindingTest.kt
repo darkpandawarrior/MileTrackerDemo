@@ -1,6 +1,8 @@
 package com.mileway.core.data.session
 
+import com.mileway.core.data.model.db.SavedTrack
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -78,5 +80,28 @@ class AccountBindingTest {
                 tenant = "DEMO-TENANT",
             )
         assertTrue(doesSessionBelongTo(matchingBinding, identity))
+    }
+
+    @Test
+    fun `TripOwnershipBinding from() reads a SavedTrack's started_by_* columns`() {
+        val track =
+            SavedTrack(
+                routeId = "route-1",
+                name = "Journey route-1",
+                startedByAccountId = "ACC-001",
+                startedByEmployeeCode = "EMP-1234",
+                startedByAccountEmail = "demo@mileway.app",
+                startedByTenant = "DEMO-TENANT",
+                startLatitude = 0.0, startLongitude = 0.0,
+                endLatitude = 0.0, endLongitude = 0.0,
+                pausedLatitude = 0.0, pausedLongitude = 0.0,
+                startTime = 0L, endTime = -1L,
+                distance = 0.0, duration = 0L,
+            )
+
+        val binding = TripOwnershipBinding.from(track)
+
+        assertEquals(matchingBinding, binding)
+        assertTrue(doesSessionBelongTo(binding, matchingIdentity))
     }
 }

@@ -395,6 +395,17 @@ fun TrackMilesScreen(
                 )
             }
 
+        // P3.5: cold-start ownership-mismatch dialog — shown instead of silently restoring
+        // another persona's in-progress trip.
+        TrackSheet.STRANGER_SESSION ->
+            uiState.activeStrangerSession?.let { stranger ->
+                com.mileway.feature.tracking.ui.sheets.StrangerSessionSheet(
+                    config = stranger,
+                    onResume = { viewModel.onAction(TrackMilesAction.StrangerSessionResume) },
+                    onDismiss = { viewModel.onAction(TrackMilesAction.StrangerSessionDismiss) },
+                )
+            }
+
         TrackSheet.NONE -> Unit
     }
 

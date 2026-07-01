@@ -1,9 +1,11 @@
 package com.mileway.feature.tracking.viewmodel
 
 import com.mileway.core.data.dao.LocationDao
+import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.model.db.CurrentTrackData
 import com.mileway.core.data.model.db.LocationData
+import com.mileway.core.data.model.db.MockAccountEntity
 import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.db.TrackMetrics
 import com.mileway.core.data.model.network.AllTaggedExpenseResponse
@@ -152,9 +154,9 @@ private object FakeNetworkApi : MilewayNetworkApi {
 
 // ── SavedTrackDao fake (minimal in-memory) ─────────────────────────────────────
 
-private class FakeSavedTrackDao : SavedTrackDao {
-    private val tracks = mutableListOf<SavedTrack>()
-    private val allFlow = MutableStateFlow<List<SavedTrack>>(emptyList())
+private class FakeSavedTrackDao(seed: List<SavedTrack> = emptyList()) : SavedTrackDao {
+    private val tracks = mutableListOf<SavedTrack>().apply { addAll(seed) }
+    private val allFlow = MutableStateFlow<List<SavedTrack>>(tracks.toList())
 
     private fun publish() {
         allFlow.value = tracks.toList()
@@ -439,21 +441,70 @@ private object FakeCurrentTrackDataSource : CurrentTrackDataSource {
     ) {}
 }
 
+// ── ActiveAccountSource / MockAccountDao / SessionSource fakes (P3.5) ─────────
+
+internal class FakeActiveAccountSource(activeAccountId: String? = null) : com.mileway.core.data.session.ActiveAccountSource {
+    override val activeAccountId: Flow<String?> = flowOf(activeAccountId)
+
+    override suspend fun setActiveAccountId(accountId: String) = Unit
+}
+
+internal class FakeSessionSource(sessionState: com.mileway.core.data.session.SessionState) : com.mileway.core.data.session.SessionSource {
+    override val sessionState: Flow<com.mileway.core.data.session.SessionState> = flowOf(sessionState)
+}
+
+private class FakeMockAccountDao(accounts: List<MockAccountEntity> = emptyList()) : MockAccountDao {
+    private val byId = accounts.associateBy { it.accountId }.toMutableMap()
+
+    override fun observeAll(): Flow<List<MockAccountEntity>> = flowOf(byId.values.toList())
+
+    override suspend fun count(): Int = byId.size
+
+    override suspend fun getById(accountId: String): MockAccountEntity? = byId[accountId]
+
+    override suspend fun upsert(account: MockAccountEntity) {
+        byId[account.accountId] = account
+    }
+
+    override suspend fun upsertAll(accounts: List<MockAccountEntity>) {
+        accounts.forEach { byId[it.accountId] = it }
+    }
+
+    override suspend fun delete(accountId: String) {
+        byId.remove(accountId)
+    }
+
+    override suspend fun clearActive() {
+        byId.keys.toList().forEach { key -> byId[key] = byId.getValue(key).copy(isActive = false) }
+    }
+
+    override suspend fun markActive(accountId: String) {
+        byId[accountId]?.let { byId[accountId] = it.copy(isActive = true) }
+    }
+}
+
 // ── Harness factory ───────────────────────────────────────────────────────────
 
 internal object TrackMilesViewModelTestHarness {
     fun build(
         controller: TrackingController = NoOpTrackingController,
         reconciliationHolder: com.mileway.feature.tracking.service.ReconciliationResultHolder? = null,
+        seedTracks: List<SavedTrack> = emptyList(),
+        sessionSource: com.mileway.core.data.session.SessionSource = NoSessionSource,
+        activeAccountSource: com.mileway.core.data.session.ActiveAccountSource = FakeActiveAccountSource(),
+        mockAccounts: List<MockAccountEntity> = emptyList(),
     ): TrackMilesViewModel =
         TrackMilesViewModel(
             configManager = TrackingConfigManager(FakeConfigProvider),
             vehicleRepo = VehiclePricingRepository(FakeNetworkApi),
-            trackRepo = SavedTrackRepository(FakeSavedTrackDao()),
+            trackRepo = SavedTrackRepository(FakeSavedTrackDao(seedTracks)),
             trackingController = controller,
             currentTrackRepo = CurrentTrackRepository(FakeCurrentTrackDataSource),
             locationRepo = LocationRepository(FakeLocationDao()),
             reconciliationHolder = reconciliationHolder,
+            sessionSource = sessionSource,
+            activeAccountSource = activeAccountSource,
+            mockAccountDao = FakeMockAccountDao(mockAccounts),
         )
 }
 

@@ -1,5 +1,7 @@
 package com.mileway.core.data.session
 
+import com.mileway.core.data.model.db.SavedTrack
+
 /**
  * The ownership pointer a persisted trip/session was stamped with at start time — mirrors
  * `SavedTrack`'s `started_by_*` columns (see [SavedTrack][com.mileway.core.data.model.db.SavedTrack])
@@ -12,7 +14,9 @@ data class TripOwnershipBinding(
     val employeeCode: String,
     val accountEmail: String,
     val tenant: String,
-)
+) {
+    companion object
+}
 
 /**
  * The currently-signed-in identity to compare a [TripOwnershipBinding] against — sourced from
@@ -56,3 +60,16 @@ fun isSessionFromDifferentAccount(
     binding: TripOwnershipBinding,
     currentIdentity: SignedInIdentity,
 ): Boolean = !doesSessionBelongTo(binding, currentIdentity)
+
+/**
+ * PLAN_V22 P3.5: reads a persisted [SavedTrack]'s `started_by_*` columns into a
+ * [TripOwnershipBinding], so cold-start reconciliation can validate a restored trip's ownership
+ * pointer the same way [MockAccountSessionCoordinator] validates a live in-memory session.
+ */
+fun TripOwnershipBinding.Companion.from(track: SavedTrack): TripOwnershipBinding =
+    TripOwnershipBinding(
+        accountId = track.startedByAccountId,
+        employeeCode = track.startedByEmployeeCode,
+        accountEmail = track.startedByAccountEmail,
+        tenant = track.startedByTenant,
+    )

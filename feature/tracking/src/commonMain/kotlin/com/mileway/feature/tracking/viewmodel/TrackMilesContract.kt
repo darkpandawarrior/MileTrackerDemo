@@ -64,6 +64,11 @@ sealed interface TrackMilesAction {
     data object RecoverySaveFinish : TrackMilesAction
 
     data object RecoveryDiscard : TrackMilesAction
+
+    // P3.5: cold-start ownership-mismatch dialog outcomes ("Resume session for {other persona}?").
+    data object StrangerSessionResume : TrackMilesAction
+
+    data object StrangerSessionDismiss : TrackMilesAction
 }
 
 sealed interface TrackMilesEffect {

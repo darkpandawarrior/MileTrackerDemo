@@ -2,12 +2,18 @@ package com.mileway.feature.tracking.viewmodel
 
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.viewModelScope
+import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.display.TrackingSystemFlags
 import com.mileway.core.data.model.network.ApprovedVehicle
 import com.mileway.core.data.model.state.TrackMilesPluginConfig
+import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.SessionSource
 import com.mileway.core.data.session.SessionState
+import com.mileway.core.data.session.SignedInIdentity
+import com.mileway.core.data.session.TripOwnershipBinding
+import com.mileway.core.data.session.doesSessionBelongTo
+import com.mileway.core.data.session.from
 import com.mileway.core.platform.LocationNameResolver
 import com.mileway.core.platform.OfflineLocationNameResolver
 import com.mileway.core.platform.PlaceName
@@ -48,7 +54,17 @@ enum class TrackSignal { GOOD, FAIR, POOR }
 enum class HeroGaugeMode { COMPASS, ACTIVITY }
 
 /** Which bottom sheet (if any) the tracking screen is currently presenting. */
-enum class TrackSheet { NONE, JOURNEY_GUIDE, VEHICLE_PICKER, VENDOR_PICKER, PAUSE, RESUME, CONSENT, SESSION_RESTORE }
+enum class TrackSheet {
+    NONE,
+    JOURNEY_GUIDE,
+    VEHICLE_PICKER,
+    VENDOR_PICKER,
+    PAUSE,
+    RESUME,
+    CONSENT,
+    SESSION_RESTORE,
+    STRANGER_SESSION,
+}
 
 /** P-C.5: data surfaced in the session-restore bottom sheet. */
 data class RecoverySheetConfig(
@@ -56,6 +72,17 @@ data class RecoverySheetConfig(
     val distanceKm: Double,
     val durationMs: Long,
     val interruptReason: String,
+)
+
+/**
+ * P3.5: cold-start reconciliation — a persisted trip whose `started_by_*` ownership pointer
+ * doesn't match the currently-active persona. [ownerLabel] is the other persona's display name
+ * (or employee code if the persona record can't be resolved), shown in the "Resume session for
+ * {other persona}?" dialog instead of silently restoring a stranger's trip.
+ */
+data class StrangerSessionConfig(
+    val routeId: String,
+    val ownerLabel: String,
 )
 
 @Stable
@@ -104,6 +131,7 @@ data class TrackMilesUiState(
     // ── Start-flow / sheet orchestration (single-source-of-truth in the VM) ──────
     val activeSheet: TrackSheet = TrackSheet.NONE,
     val activeRecovery: RecoverySheetConfig? = null,
+    val activeStrangerSession: StrangerSessionConfig? = null,
     val vehicleQuery: String = "",
     val vendorQuery: String = "",
     val startOdometer: Int? = null,
@@ -137,6 +165,13 @@ object NoSessionSource : SessionSource {
     override val sessionState = flowOf(SessionState())
 }
 
+/** P3.5: default [ActiveAccountSource] for JVM tests (and Koin graphs) that omit a real one — no active persona pointer. */
+object NoActiveAccountSource : ActiveAccountSource {
+    override val activeAccountId = flowOf<String?>(null)
+
+    override suspend fun setActiveAccountId(accountId: String) = Unit
+}
+
 class TrackMilesViewModel(
     private val configManager: TrackingConfigManager,
     private val vehicleRepo: VehiclePricingRepository,
@@ -158,6 +193,13 @@ class TrackMilesViewModel(
     // Defaulted to an always-signed-out source so JVM tests can omit it; Koin injects the real
     // SessionRepository (androidMain/iosMain) in production.
     private val sessionSource: SessionSource = NoSessionSource,
+    // P3.5: which persona is currently active, for cold-start ownership reconciliation. Defaulted
+    // so JVM tests can omit it; Koin injects the real ActiveAccountStore in production.
+    private val activeAccountSource: ActiveAccountSource = NoActiveAccountSource,
+    // P3.5: resolves the other persona's display name for the "Resume session for {other
+    // persona}?" dialog. Null in JVM tests/graphs that omit it — falls back to the raw employee
+    // code in that case.
+    private val mockAccountDao: MockAccountDao? = null,
 ) : BaseViewModel<TrackMilesUiState, TrackMilesEffect, TrackMilesAction>(TrackMilesUiState()) {
     /** Backwards-compatible alias; screens read [state]. */
     val uiState: StateFlow<TrackMilesUiState> = state
@@ -210,6 +252,9 @@ class TrackMilesViewModel(
             TrackMilesAction.RecoveryResume -> handleRecoveryResume()
             TrackMilesAction.RecoverySaveFinish -> handleRecoverySaveFinish()
             TrackMilesAction.RecoveryDiscard -> handleRecoveryDiscard()
+            // P3.5: cold-start ownership-mismatch dialog outcomes.
+            TrackMilesAction.StrangerSessionResume -> handleStrangerSessionResume()
+            TrackMilesAction.StrangerSessionDismiss -> handleStrangerSessionDismiss()
         }
     }
 
@@ -428,19 +473,81 @@ class TrackMilesViewModel(
     private fun restoreActiveTrack() {
         viewModelScope.launch {
             val active = trackRepo.getActiveTrack() ?: return@launch
-            setState {
-                copy(
-                    phase = TrackMilesPhase.TRACKING,
-                    currentRouteId = active.routeId,
-                    distanceKm = active.distance / 1000.0,
-                    startTime = active.startTime,
-                )
+
+            // P3.5: cold-start reconciliation — verify the restored trip's started_by_* ownership
+            // pointer belongs to the currently-active persona before silently displaying it. This
+            // is the local, offline half of the reference app's syncWithServerOngoingSession
+            // reconciliation; the multi-device server-reconciliation half is out of scope here
+            // (see PLAN_V22 §6 — irreducibly backend-shaped).
+            if (isStrangerSession(active)) {
+                val ownerLabel = resolveOwnerLabel(active.startedByEmployeeCode)
+                setState {
+                    copy(
+                        activeSheet = TrackSheet.STRANGER_SESSION,
+                        activeStrangerSession = StrangerSessionConfig(routeId = active.routeId, ownerLabel = ownerLabel),
+                    )
+                }
+                return@launch
             }
-            observeLive(active.routeId)
-            // A.2: also resume the bearing/location-label feed so a restored session immediately
-            // shows live coordinates instead of staying stuck on "Waiting for location…".
-            observeBearing(active.routeId)
+
+            restoreTrackIntoState(active.routeId, active.distance, active.startTime)
         }
+    }
+
+    /** True when [track]'s ownership pointer doesn't match the currently-active persona's identity. */
+    private suspend fun isStrangerSession(track: SavedTrack): Boolean {
+        val activeAccountId = activeAccountSource.activeAccountId.first() ?: return false
+        val session = sessionSource.sessionState.first()
+        val currentIdentity =
+            SignedInIdentity(
+                accountId = activeAccountId,
+                employeeCode = session.employeeCode,
+                accountEmail = session.email,
+                tenant = session.tenant,
+            )
+        val binding = TripOwnershipBinding.from(track)
+        return !doesSessionBelongTo(binding, currentIdentity)
+    }
+
+    /** Resolves the other persona's display name for the dialog, falling back to the raw employee code. */
+    private suspend fun resolveOwnerLabel(employeeCode: String): String {
+        if (employeeCode.isBlank()) return "another persona"
+        val owner = mockAccountDao?.observeAll()?.first()?.firstOrNull { it.employeeCode == employeeCode }
+        return owner?.displayName ?: employeeCode
+    }
+
+    private fun restoreTrackIntoState(
+        routeId: String,
+        distanceMeters: Double,
+        startTime: Long,
+    ) {
+        setState {
+            copy(
+                phase = TrackMilesPhase.TRACKING,
+                currentRouteId = routeId,
+                distanceKm = distanceMeters / 1000.0,
+                startTime = startTime,
+            )
+        }
+        observeLive(routeId)
+        // A.2: also resume the bearing/location-label feed so a restored session immediately
+        // shows live coordinates instead of staying stuck on "Waiting for location…".
+        observeBearing(routeId)
+    }
+
+    /** "Resume session for {other persona}?" confirmed — restores the trip as today. */
+    fun handleStrangerSessionResume() {
+        val config = currentState.activeStrangerSession ?: return
+        viewModelScope.launch {
+            val track = trackRepo.getByRouteId(config.routeId)
+            setState { copy(activeSheet = TrackSheet.NONE, activeStrangerSession = null) }
+            track?.let { restoreTrackIntoState(it.routeId, it.distance, it.startTime) }
+        }
+    }
+
+    /** Dialog dismissed — leaves the trip untouched (still persisted, just not displayed) and stays IDLE. */
+    fun handleStrangerSessionDismiss() {
+        setState { copy(activeSheet = TrackSheet.NONE, activeStrangerSession = null) }
     }
 
     fun selectVehicle(vehicle: ApprovedVehicle) {

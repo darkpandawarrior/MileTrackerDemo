@@ -86,6 +86,10 @@ val trackingModule =
                 // P3.3: bound by coreDataModule (SessionRepository -> SessionSource); omitted graphs
                 // (e.g. the screenshot Koin harness) fall back to the VM's own default.
                 sessionSource = getOrNull() ?: com.mileway.feature.tracking.viewmodel.NoSessionSource,
+                // P3.5: bound by coreDataModule (ActiveAccountStore -> ActiveAccountSource) and the
+                // MockAccountDao registered there; omitted graphs fall back to the VM's own defaults.
+                activeAccountSource = getOrNull() ?: com.mileway.feature.tracking.viewmodel.NoActiveAccountSource,
+                mockAccountDao = getOrNull(),
             )
         }
         viewModelOf(::MileageSubmissionViewModel)

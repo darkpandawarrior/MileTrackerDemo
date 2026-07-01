@@ -76,6 +76,10 @@ val trackingModule =
                 reconciliationHolder = get(),
                 // P3.3: bound by coreDataModule (SessionRepository -> SessionSource).
                 sessionSource = getOrNull() ?: com.mileway.feature.tracking.viewmodel.NoSessionSource,
+                // P3.5: bound by coreDataModule (ActiveAccountStore -> ActiveAccountSource) and the
+                // MockAccountDao registered there.
+                activeAccountSource = getOrNull() ?: com.mileway.feature.tracking.viewmodel.NoActiveAccountSource,
+                mockAccountDao = getOrNull(),
             )
         }
         viewModelOf(::MileageSubmissionViewModel)
