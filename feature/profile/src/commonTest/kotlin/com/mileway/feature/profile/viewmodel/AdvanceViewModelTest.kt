@@ -2,10 +2,12 @@ package com.mileway.feature.profile.viewmodel
 
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.core.ui.mvi.dataOrNull
+import com.mileway.feature.profile.model.AdvanceStatus
 import com.mileway.feature.profile.repository.AdvanceRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class AdvanceViewModelTest {
     private fun buildVm() = AdvanceViewModel(AdvanceRepository())
@@ -30,5 +32,15 @@ class AdvanceViewModelTest {
         val vm = buildVm()
         vm.onAction(AdvanceAction.LoadDetail("ADV-DOES-NOT-EXIST"))
         assertIs<ScreenState.Empty>(vm.state.value.detail)
+    }
+
+    @Test
+    fun `LoadDetail on a rejected advance exposes its decline reason and approver chain`() {
+        val vm = buildVm()
+        vm.onAction(AdvanceAction.LoadDetail("ADV-005"))
+        val record = vm.state.value.detail.dataOrNull
+        assertEquals(AdvanceStatus.REJECTED, record?.status)
+        assertTrue(!record?.declineReason.isNullOrBlank())
+        assertTrue(record!!.approverChain.isNotEmpty())
     }
 }

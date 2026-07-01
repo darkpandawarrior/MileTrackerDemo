@@ -127,6 +127,10 @@ private fun AdvanceRequestDetailsContent(record: AdvanceRecord) {
         verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.l),
     ) {
         item { HeroCard(record) }
+        val declineReason = record.declineReason
+        if (record.status == AdvanceStatus.REJECTED && !declineReason.isNullOrBlank()) {
+            item { DeclineReasonCard(declineReason) }
+        }
         if (record.approverChain.isNotEmpty()) {
             item { ApproverChainCard(record.approverChain) }
         }
@@ -184,6 +188,27 @@ private fun HeroCard(record: AdvanceRecord) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+private fun DeclineReasonCard(reason: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = DesignTokens.Shape.roundedMd,
+        colors = CardDefaults.cardColors(containerColor = StatusColors.error.copy(alpha = 0.08f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = DesignTokens.Elevation.card),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(DesignTokens.Spacing.l)) {
+            Text(
+                "Decline Reason",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = StatusColors.error,
+            )
+            Spacer(Modifier.height(DesignTokens.Spacing.s))
+            Text(reason, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

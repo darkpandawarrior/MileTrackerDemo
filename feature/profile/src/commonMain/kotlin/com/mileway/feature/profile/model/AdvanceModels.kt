@@ -16,6 +16,7 @@ data class AdvanceRecord(
     val requiredByDate: String,
     val approverChain: List<ApproverStep> = emptyList(),
     val timeline: List<TimelineEntry> = emptyList(),
+    val declineReason: String? = null,
 )
 
 enum class ApproverStepStatus { PENDING, APPROVED, REJECTED }

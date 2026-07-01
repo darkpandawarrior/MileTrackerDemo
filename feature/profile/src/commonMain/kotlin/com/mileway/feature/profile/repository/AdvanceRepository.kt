@@ -85,6 +85,26 @@ class AdvanceRepository {
                         TimelineEntry("Requested", baseMs - 1 * dayMs),
                     ),
             ),
+            AdvanceRecord(
+                id = "ADV-005",
+                amountRupees = 12000.0,
+                purpose = "Vendor site visit – Aurangabad",
+                type = AdvanceType.FIELD_VISIT,
+                status = AdvanceStatus.REJECTED,
+                requestedDateMs = baseMs - 20 * dayMs,
+                requiredByDate = "2023-12-20",
+                approverChain =
+                    listOf(
+                        ApproverStep("Rohan Mehta", "Manager Approval", ApproverStepStatus.REJECTED),
+                        ApproverStep("Finance Desk", "Disbursement", ApproverStepStatus.PENDING),
+                    ),
+                timeline =
+                    listOf(
+                        TimelineEntry("Requested", baseMs - 20 * dayMs),
+                        TimelineEntry("Rejected", baseMs - 18 * dayMs),
+                    ),
+                declineReason = "Duplicate request – an active advance already covers this trip.",
+            ),
         )
 
     val cards =

@@ -14,8 +14,8 @@ class AdvanceTest {
     private val repo = AdvanceRepository()
 
     @Test
-    fun `advanceRecords has 4 entries`() {
-        assertEquals(4, repo.advanceRecords.size)
+    fun `advanceRecords has 5 entries`() {
+        assertEquals(5, repo.advanceRecords.size)
     }
 
     @Test
