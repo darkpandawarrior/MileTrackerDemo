@@ -2,10 +2,12 @@ package com.mileway.core.data.session
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
 
 private val Context.sessionDataStore by preferencesDataStore(name = "user_session")
 
@@ -20,6 +22,9 @@ private val Context.sessionDataStore by preferencesDataStore(name = "user_sessio
 class SessionRepository(private val context: Context) {
     private val kindKey = stringPreferencesKey("session_kind")
     private val emailKey = stringPreferencesKey("session_email")
+    private val employeeCodeKey = stringPreferencesKey("session_employee_code")
+    private val tenantKey = stringPreferencesKey("session_tenant")
+    private val signedInAtKey = longPreferencesKey("session_signed_in_at")
 
     val sessionState: Flow<SessionState> =
         context.sessionDataStore.data.map { prefs ->
@@ -27,7 +32,13 @@ class SessionRepository(private val context: Context) {
                 prefs[kindKey]?.let { stored ->
                     SessionKind.entries.firstOrNull { it.name == stored }
                 } ?: SessionKind.NONE
-            SessionState(kind = kind, email = prefs[emailKey])
+            SessionState(
+                kind = kind,
+                email = prefs[emailKey],
+                employeeCode = prefs[employeeCodeKey],
+                tenant = prefs[tenantKey] ?: DEFAULT_SESSION_TENANT,
+                signedInAtMillis = prefs[signedInAtKey],
+            )
         }
 
     /** Persist a credentials sign-in (the demo accepts any non-empty email). */
@@ -35,6 +46,9 @@ class SessionRepository(private val context: Context) {
         context.sessionDataStore.edit { prefs ->
             prefs[kindKey] = SessionKind.CREDENTIALS.name
             prefs[emailKey] = email
+            prefs[employeeCodeKey] = deriveEmployeeCode(email)
+            prefs[tenantKey] = DEFAULT_SESSION_TENANT
+            prefs[signedInAtKey] = Clock.System.now().toEpochMilliseconds()
         }
     }
 
@@ -43,6 +57,9 @@ class SessionRepository(private val context: Context) {
         context.sessionDataStore.edit { prefs ->
             prefs[kindKey] = SessionKind.GUEST.name
             prefs.remove(emailKey)
+            prefs[employeeCodeKey] = deriveEmployeeCode("guest")
+            prefs[tenantKey] = DEFAULT_SESSION_TENANT
+            prefs[signedInAtKey] = Clock.System.now().toEpochMilliseconds()
         }
     }
 
