@@ -1,0 +1,34 @@
+language: en-US
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/build/**"
+    - "!gradle/wrapper/**"
+    - "!**/*.png"
+    - "!**/*.webp"
+  path_instructions:
+    - path: "**/*.kt"
+      instructions: >
+        Kotlin/Compose offline-first mileage tracker. Flag Room DAO/entity changes
+        without an accompanying Migration object (never fallbackToDestructiveMigration),
+        composables taking unstable List<T> instead of ImmutableList, and any use of
+        LiveData instead of StateFlow.
+    - path: "shared/**"
+      instructions: "Kotlin Multiplatform commonMain code — flag any androidMain-only API leaking into shared code."
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: auto
