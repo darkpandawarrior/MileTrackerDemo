@@ -14,10 +14,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +52,7 @@ import com.mileway.feature.profile.model.ApproverStep
 import com.mileway.feature.profile.model.ApproverStepStatus
 import com.mileway.feature.profile.model.TimelineEntry
 import com.mileway.feature.profile.viewmodel.AdvanceAction
+import com.mileway.feature.profile.viewmodel.AdvanceEffect
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -72,6 +76,7 @@ private fun formatDate(ms: Long): String =
 fun AdvanceRequestDetailsScreen(
     advanceId: String,
     onBack: () -> Unit,
+    onStartTrip: (advanceId: String, tripId: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: AdvanceViewModel = koinViewModel(),
 ) {
@@ -79,6 +84,15 @@ fun AdvanceRequestDetailsScreen(
 
     LaunchedEffect(advanceId) {
         viewModel.onAction(AdvanceAction.LoadDetail(advanceId))
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is AdvanceEffect.NavigateToTripStart -> onStartTrip(effect.advanceId, effect.tripId)
+                is AdvanceEffect.ShowToast -> Unit
+            }
+        }
     }
 
     Scaffold(
@@ -110,13 +124,19 @@ fun AdvanceRequestDetailsScreen(
                 )
             },
         ) { record ->
-            AdvanceRequestDetailsContent(record = record)
+            AdvanceRequestDetailsContent(
+                record = record,
+                onStartTripClick = { viewModel.onAction(AdvanceAction.StartTripAgainstAdvance(record.id)) },
+            )
         }
     }
 }
 
 @Composable
-private fun AdvanceRequestDetailsContent(record: AdvanceRecord) {
+private fun AdvanceRequestDetailsContent(
+    record: AdvanceRecord,
+    onStartTripClick: () -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
@@ -131,6 +151,9 @@ private fun AdvanceRequestDetailsContent(record: AdvanceRecord) {
         if (record.status == AdvanceStatus.REJECTED && !declineReason.isNullOrBlank()) {
             item { DeclineReasonCard(declineReason) }
         }
+        if (record.status != AdvanceStatus.REJECTED) {
+            item { StartTripCta(onClick = onStartTripClick) }
+        }
         if (record.approverChain.isNotEmpty()) {
             item { ApproverChainCard(record.approverChain) }
         }
@@ -138,6 +161,19 @@ private fun AdvanceRequestDetailsContent(record: AdvanceRecord) {
             item { TimelineCard(record.timeline) }
         }
         item { Spacer(Modifier.height(DesignTokens.Spacing.l)) }
+    }
+}
+
+@Composable
+private fun StartTripCta(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = DesignTokens.Shape.roundedMd,
+    ) {
+        Icon(Icons.Filled.DirectionsCar, contentDescription = null, modifier = Modifier.size(DesignTokens.IconSize.inline))
+        Spacer(Modifier.width(DesignTokens.Spacing.s))
+        Text("Start Trip Against This Advance")
     }
 }
 

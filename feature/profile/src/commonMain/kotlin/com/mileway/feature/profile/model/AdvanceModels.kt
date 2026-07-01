@@ -17,6 +17,8 @@ data class AdvanceRecord(
     val approverChain: List<ApproverStep> = emptyList(),
     val timeline: List<TimelineEntry> = emptyList(),
     val declineReason: String? = null,
+    /** Trip (Mileway's own tracking-flow route id) started against this advance, if any. */
+    val linkedTripId: String? = null,
 )
 
 enum class ApproverStepStatus { PENDING, APPROVED, REJECTED }

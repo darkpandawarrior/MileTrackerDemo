@@ -10,6 +10,8 @@ import com.mileway.feature.profile.model.AdvanceType
 import com.mileway.feature.profile.model.CardStatus
 import com.mileway.feature.profile.model.CorporateCard
 import com.mileway.feature.profile.repository.AdvanceRepository
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 enum class AdvanceTabFilter { ALL, PENDING, SETTLED }
 
@@ -67,10 +69,20 @@ sealed interface AdvanceAction {
     data object ResetForm : AdvanceAction
 
     data class ToggleCardBlock(val cardId: String) : AdvanceAction
+
+    /** "Start Trip Against This Advance" CTA on [com.mileway.feature.profile.ui.screens.AdvanceRequestDetailsScreen]. */
+    data class StartTripAgainstAdvance(val advanceId: String) : AdvanceAction
 }
 
 sealed interface AdvanceEffect {
     data class ShowToast(val message: UiText) : AdvanceEffect
+
+    /**
+     * Navigate into `feature/tracking`'s trip-start flow, carrying the advance id so the new
+     * trip can be linked back to it. [tripId] is the fresh route id the trip-start flow should
+     * use, mirroring how `SavedTracksScreen.onStartNew` mints a new route id at the nav call site.
+     */
+    data class NavigateToTripStart(val advanceId: String, val tripId: String) : AdvanceEffect
 }
 
 class AdvanceViewModel(
@@ -112,6 +124,7 @@ class AdvanceViewModel(
             AdvanceAction.ResetForm ->
                 setState { copy(form = AdvanceFormState(), submitted = false, lastSubmittedId = "", lastAutoApproved = false) }
             is AdvanceAction.ToggleCardBlock -> toggleCardBlock(action.cardId)
+            is AdvanceAction.StartTripAgainstAdvance -> startTripAgainstAdvance(action.advanceId)
         }
     }
 
@@ -181,4 +194,10 @@ class AdvanceViewModel(
     fun getCardById(id: String) = repository.getCardById(id)
 
     fun getTransactionsForCard(cardId: String) = repository.getTransactionsForCard(cardId)
+
+    @OptIn(ExperimentalUuidApi::class)
+    private fun startTripAgainstAdvance(advanceId: String) {
+        val tripId = Uuid.random().toString()
+        emitEffect(AdvanceEffect.NavigateToTripStart(advanceId = advanceId, tripId = tripId))
+    }
 }

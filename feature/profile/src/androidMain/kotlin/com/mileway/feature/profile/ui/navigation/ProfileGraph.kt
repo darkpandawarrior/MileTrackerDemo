@@ -51,13 +51,14 @@ object ProfileRoutes {
  * ([ProfileDetailsScreen], [PreferencesScreen]) and the existing Settings/Help routes.
  * Notifications and About & Support reuse the Help route in this demo.
  *
- * [onOpenDebugMenu] is a callback supplied by the app shell so the profile
- * module itself does not need to depend on :feature:tracking.
+ * [onOpenDebugMenu] and [onStartTripForAdvance] are callbacks supplied by the app shell so the
+ * profile module itself does not need to depend on :feature:tracking.
  */
 fun NavGraphBuilder.profileGraph(
     navController: NavHostController,
     onOpenDebugMenu: () -> Unit = {},
     onOpenCards: () -> Unit = {},
+    onStartTripForAdvance: (advanceId: String, tripId: String) -> Unit = { _, _ -> },
 ) {
     composable(ProfileRoutes.HOME) {
         ProfileScreen(
@@ -121,6 +122,7 @@ fun NavGraphBuilder.profileGraph(
         AdvanceRequestDetailsScreen(
             advanceId = advanceId,
             onBack = { navController.popBackStack() },
+            onStartTrip = onStartTripForAdvance,
         )
     }
     composable(ProfileRoutes.ANALYTICS_HOME) {

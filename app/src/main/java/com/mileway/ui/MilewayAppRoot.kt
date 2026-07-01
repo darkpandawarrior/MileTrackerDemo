@@ -288,6 +288,11 @@ fun MilewayAppRoot(
                             navController = navController,
                             onOpenDebugMenu = { navController.navigate(AppRoutes.DEBUG_MENU) },
                             onOpenCards = { navController.navigate(AppGraph.CARDS) },
+                            onStartTripForAdvance = { _, tripId ->
+                                navController.navigate(TrackingRoutes.liveTrack(tripId)) {
+                                    popUpTo(AppGraph.TRACK)
+                                }
+                            },
                         )
                     }
                     // Corporate cards feature module (replaces the old profile card screens).

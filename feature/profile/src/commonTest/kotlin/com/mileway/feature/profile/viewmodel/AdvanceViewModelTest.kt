@@ -4,9 +4,12 @@ import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.core.ui.mvi.dataOrNull
 import com.mileway.feature.profile.model.AdvanceStatus
 import com.mileway.feature.profile.repository.AdvanceRepository
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class AdvanceViewModelTest {
@@ -43,4 +46,30 @@ class AdvanceViewModelTest {
         assertTrue(!record?.declineReason.isNullOrBlank())
         assertTrue(record!!.approverChain.isNotEmpty())
     }
+
+    // P4.5: StartTripAgainstAdvance must emit a NavigateToTripStart effect carrying the
+    // advance id, plus a freshly-minted trip id for feature/tracking's trip-start flow to use.
+    @Test
+    fun `StartTripAgainstAdvance emits NavigateToTripStart carrying the advance id`() =
+        runTest {
+            val vm = buildVm()
+            vm.onAction(AdvanceAction.StartTripAgainstAdvance("ADV-001"))
+            val effect = vm.effect.first()
+            assertIs<AdvanceEffect.NavigateToTripStart>(effect)
+            assertEquals("ADV-001", effect.advanceId)
+            assertTrue(effect.tripId.isNotBlank())
+        }
+
+    @Test
+    fun `StartTripAgainstAdvance mints a distinct trip id per invocation`() =
+        runTest {
+            val vm = buildVm()
+            vm.onAction(AdvanceAction.StartTripAgainstAdvance("ADV-002"))
+            val firstTripId = (vm.effect.first() as AdvanceEffect.NavigateToTripStart).tripId
+
+            vm.onAction(AdvanceAction.StartTripAgainstAdvance("ADV-002"))
+            val secondTripId = (vm.effect.first() as AdvanceEffect.NavigateToTripStart).tripId
+
+            assertNotEquals(firstTripId, secondTripId)
+        }
 }
