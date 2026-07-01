@@ -204,6 +204,11 @@ fun NavGraphBuilder.loggingGraph(navController: NavHostController) {
         ExpenseDetailScreen(
             expenseId = id,
             onBack = { navController.popBackStack() },
+            // P1.8: OpenEdit is dispatched on this route's own ExpenseViewModel instance, so the
+            // edit destination shares that same instance (looked up below by this exact route,
+            // the same pattern rememberExpenseEntry uses for EXPENSE_ENTRY) to see the
+            // pre-filled form, instead of getting a fresh one from EXPENSE_ENTRY's store.
+            onEdit = { navController.navigate(LoggingRoutes.EXPENSE_DETAILS) },
         )
     }
 }
@@ -220,10 +225,14 @@ private fun rememberLogMilesEntry(navController: NavHostController) =
 
 /**
  * Resolves the [LoggingRoutes.EXPENSE_ENTRY] back-stack entry so the details and success
- * screens share the same ExpenseViewModel as the entry screen.
+ * screens share the same ExpenseViewModel as the entry screen. P1.8: when the details screen was
+ * reached via the edit/resubmit path instead (no [LoggingRoutes.EXPENSE_ENTRY] on the stack),
+ * falls back to the [LoggingRoutes.EXPENSE_DETAIL] entry that dispatched `OpenEdit`, so the
+ * pre-filled form is visible here rather than a fresh ViewModel instance.
  */
 @androidx.compose.runtime.Composable
 private fun rememberExpenseEntry(navController: NavHostController) =
     androidx.compose.runtime.remember(navController.currentBackStackEntry) {
         runCatching { navController.getBackStackEntry(LoggingRoutes.EXPENSE_ENTRY) }.getOrNull()
+            ?: runCatching { navController.getBackStackEntry(LoggingRoutes.EXPENSE_DETAIL) }.getOrNull()
     } ?: navController.currentBackStackEntry!!

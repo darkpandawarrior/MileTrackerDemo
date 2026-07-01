@@ -436,6 +436,74 @@ class ExpenseViewModelTest {
         assertTrue(vm.state.value.lastSubmissionViolations.isEmpty())
     }
 
+    // ── P1.8: edit-after-submit / resubmit flow ────────────────────────────────
+
+    @Test
+    fun `OpenEdit pre-fills the form from an existing record and marks it as editing`() {
+        val repository = ExpenseRepository()
+        val vm = ExpenseViewModel(repository)
+        val rejected = repository.getById("EXP-007")
+        assertNotNull(rejected)
+
+        vm.onAction(ExpenseAction.OpenEdit("EXP-007"))
+
+        val form = vm.state.value.form
+        assertTrue(form.isEditing)
+        assertEquals("EXP-007", form.editingId)
+        assertEquals(rejected.category, form.category)
+        assertEquals(rejected.merchantName, form.merchantName)
+        assertEquals(rejected.note, form.note)
+        assertEquals(2, form.step)
+    }
+
+    @Test
+    fun `OpenEdit with an unknown id is a no-op`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.OpenEdit("does-not-exist"))
+        assertEquals(false, vm.state.value.form.isEditing)
+        assertEquals(null, vm.state.value.form.editingId)
+    }
+
+    @Test
+    fun `SubmitExpense after OpenEdit updates the same record id instead of minting a new one`() =
+        runTest {
+            val repository = ExpenseRepository()
+            val vm = ExpenseViewModel(repository)
+            val before = repository.getAll().size
+
+            vm.onAction(ExpenseAction.OpenEdit("EXP-007"))
+            vm.onAction(ExpenseAction.SetAmount("5200.0"))
+            vm.onAction(ExpenseAction.SetNote("Resubmitted with updated receipt"))
+            vm.effect.test {
+                vm.onAction(ExpenseAction.SubmitExpense)
+                val effect = awaitItem()
+                assertTrue(effect is ExpenseEffect.NavigateToSuccess)
+                assertEquals("EXP-007", (effect as ExpenseEffect.NavigateToSuccess).id)
+            }
+
+            assertEquals(before, repository.getAll().size)
+            val updated = repository.getById("EXP-007")
+            assertNotNull(updated)
+            assertEquals(5200.0, updated.amountRupees)
+            assertEquals("Resubmitted with updated receipt", updated.note)
+            assertEquals(ExpenseStatus.PENDING, updated.status)
+        }
+
+    @Test
+    fun `SubmitExpense without OpenEdit still mints a new EXP-NEW id (create path unaffected)`() =
+        runTest {
+            val repository = ExpenseRepository()
+            val vm = ExpenseViewModel(repository)
+            vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+            vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
+            vm.onAction(ExpenseAction.SetAmount("249.50"))
+            vm.effect.test {
+                vm.onAction(ExpenseAction.SubmitExpense)
+                awaitItem()
+            }
+            assertTrue(vm.state.value.lastSubmittedId.startsWith("EXP-NEW-"))
+        }
+
     @Test
     fun `SubmitExpense clears the persisted draft on success`() =
         runTest {

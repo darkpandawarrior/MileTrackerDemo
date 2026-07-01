@@ -39,6 +39,14 @@ data class ExpenseFormState(
     val receiptImagePath: String? = null,
     /** P1.7: selected project/cost-center office code, only meaningful for `requiresCostCenter` categories. */
     val officeCode: String? = null,
+    /**
+     * P1.8: true when this form was opened via [ExpenseAction.OpenEdit] to edit/resubmit an
+     * existing record, rather than a fresh Add Expense flow. Drives [submitExpense] to update the
+     * existing record ([editingId]) instead of minting a new one.
+     */
+    val isEditing: Boolean = false,
+    /** P1.8: id of the record being edited when [isEditing] is true; null in the create flow. */
+    val editingId: String? = null,
     val errors: Map<String, UiText> = emptyMap(),
 )
 
@@ -84,6 +92,12 @@ sealed interface ExpenseAction {
     data object ResetForm : ExpenseAction
 
     data class OpenDetail(val id: String) : ExpenseAction
+
+    /**
+     * P1.8: loads the existing record [id] into the form for editing (e.g. resubmitting a
+     * REJECTED expense). A no-op if [id] doesn't resolve to a known record.
+     */
+    data class OpenEdit(val id: String) : ExpenseAction
 
     /** P1.5: persists the current form as a draft (Room-backed, survives kill/relaunch). */
     data object SaveDraft : ExpenseAction
@@ -167,6 +181,7 @@ class ExpenseViewModel(
                     )
                 }
             is ExpenseAction.OpenDetail -> openDetail(action.id)
+            is ExpenseAction.OpenEdit -> openEdit(action.id)
             ExpenseAction.SaveDraft -> saveDraft()
             ExpenseAction.ResumeDraft -> resumeDraft()
             ExpenseAction.DismissResumeDraft -> setState { copy(resumableDraft = null) }
@@ -212,7 +227,8 @@ class ExpenseViewModel(
         }
         val amount = form.amountText.toDoubleOrNull() ?: 0.0
         val category = form.category ?: ExpenseCategory.OTHER
-        val id = "EXP-NEW-${(form.merchantName.hashCode() and 0x7FFF_FFFF) % 9000 + 1000}"
+        // P1.8: editing an existing record keeps its id (resubmit), instead of minting a new one.
+        val id = form.editingId ?: "EXP-NEW-${(form.merchantName.hashCode() and 0x7FFF_FFFF) % 9000 + 1000}"
         val record =
             ExpenseRecord(
                 id = id,
@@ -229,7 +245,7 @@ class ExpenseViewModel(
         val submissionStatus = PolicyMockData.outcomeForExpenseAmount(amount, category.name)
         val violations = PolicyMockData.violationsForExpenseAmount(amount, category.name)
         viewModelScope.launch {
-            repository.insert(record)
+            if (form.isEditing) repository.update(record) else repository.insert(record)
             // A submitted expense is no longer "in-flight" — clear the draft it was saved from
             // (if any), so relaunching the app doesn't re-offer a resume for an already-submitted form.
             repository.clearDraft()
@@ -249,6 +265,27 @@ class ExpenseViewModel(
     private fun openDetail(id: String) {
         val record = repository.getById(id)
         setState { copy(detailState = record?.let { ScreenState.Content(it) } ?: ScreenState.Empty) }
+    }
+
+    /** P1.8: loads [id] into the form pre-filled for editing/resubmission; a no-op if unknown. */
+    private fun openEdit(id: String) {
+        val record = repository.getById(id) ?: return
+        setState {
+            copy(
+                form =
+                    ExpenseFormState(
+                        step = 2,
+                        category = record.category,
+                        amountText = record.amountRupees.let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() },
+                        merchantName = record.merchantName,
+                        note = record.note,
+                        receiptImagePath = record.receiptImagePath,
+                        officeCode = record.officeCode,
+                        isEditing = true,
+                        editingId = record.id,
+                    ),
+            )
+        }
     }
 
     private fun saveDraft() {

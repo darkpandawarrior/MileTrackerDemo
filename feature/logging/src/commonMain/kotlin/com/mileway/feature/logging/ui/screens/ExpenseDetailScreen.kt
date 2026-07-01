@@ -68,6 +68,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ExpenseDetailScreen(
     expenseId: String,
     onBack: () -> Unit,
+    /** P1.8: navigates to the edit/resubmit flow after [ExpenseAction.OpenEdit] loads the form. */
+    onEdit: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ExpenseViewModel = koinViewModel(),
 ) {
@@ -136,13 +138,18 @@ fun ExpenseDetailScreen(
                     }
                 }
 
+                // P1.8: edit/resubmit entry point — loads this record into the form, then
+                // navigates into the same details-input flow used for a fresh expense.
                 OutlinedButton(
-                    onClick = {},
+                    onClick = {
+                        viewModel.onAction(ExpenseAction.OpenEdit(expense.id))
+                        onEdit(expense.id)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(DesignTokens.Spacing.s))
-                    Text("Seek Clarification")
+                    Text("Edit Expense")
                 }
 
                 Spacer(Modifier.height(DesignTokens.Spacing.l))
