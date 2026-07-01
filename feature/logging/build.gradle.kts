@@ -1,5 +1,6 @@
 plugins {
     id("mileway.cmp.feature")
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -13,6 +14,8 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            // P5.1: JSON-encodes the LocationStop list into LogMilesDraftEntity.locationsJson.
+            implementation(libs.kotlinx.serialization.json)
             implementation(project(":core:common"))
             implementation(project(":core:data"))
             implementation(project(":core:network"))
@@ -25,6 +28,8 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+            // P5.1: runTest for the draft-repository mapper round-trip test.
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

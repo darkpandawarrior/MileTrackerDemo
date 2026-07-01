@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.mileway.core.common.formatDecimal
 import com.mileway.core.data.model.network.ExpenseSubmissionResponse
+import com.mileway.core.data.model.network.SubmissionStatus
 import com.mileway.core.ui.components.sheet.AppActionSheet
 import com.mileway.core.ui.theme.DesignTokens
 
@@ -178,14 +180,29 @@ fun TaggedEmployeesDialog(
 }
 
 /**
- * Policy-violation dialog shown after submit when the response carries violations.
- * Lists the violation messages; the user acknowledges to continue to the success
- * route. Resolves messages from whichever violation shape the response populated.
+ * Policy-violation resolution dialog shown after submit when the response carries a non-clean
+ * [SubmissionStatus] (P5.4). Branches on `response.submissionStatus` instead of showing a flat
+ * message list with a single "Acknowledge" button, since [SubmissionStatus]/[com.mileway.core
+ * .data.model.network.PolicyViolation]/[com.mileway.core.data.model.network.ViolationSeverity]
+ * already model three distinct severity tiers:
+ * - `REIMBURSABLE_ADJUSTED`: informational only — shows the claimed-vs-reimbursable amount and
+ *   an "Accept & Resubmit" button that resubmits with no remarks required.
+ * - `POLICY_VIOLATION`: lists the violations and requires a non-blank remarks note before
+ *   "Resubmit with Remarks" is enabled.
+ * - `HARD_STOP`: terminal — lists the violations with no resubmit path, only "Close".
+ *
+ * One composable, one `when` — deliberately not a separate bottom-sheet-per-severity.
+ *
+ * @param response      the submission response driving the branch
+ * @param onResubmit    invoked with the (possibly blank, for REIMBURSABLE_ADJUSTED) remarks text
+ *                       when the user chooses to resubmit; not invoked for HARD_STOP
+ * @param onDismiss     invoked when the dialog is dismissed without resubmitting
  */
 @Composable
 fun ViolationDialog(
     response: ExpenseSubmissionResponse,
-    onAcknowledge: () -> Unit,
+    onResubmit: (remarks: String) -> Unit,
+    onDismiss: () -> Unit,
 ) {
     val messages: List<String> =
         buildList {
@@ -193,9 +210,30 @@ fun ViolationDialog(
             response.policyViolations.orEmpty().forEach { it.error?.let(::add) }
         }.filter { it.isNotBlank() }.ifEmpty { listOf("This submission has policy violations.") }
 
+    when (response.submissionStatus) {
+        SubmissionStatus.REIMBURSABLE_ADJUSTED ->
+            ReimbursableAdjustedContent(response = response, onAccept = { onResubmit("") }, onDismiss = onDismiss)
+        SubmissionStatus.HARD_STOP ->
+            HardStopContent(messages = messages, onDismiss = onDismiss)
+        // POLICY_VIOLATION and any other non-clean status fall back to the remarks-gated path.
+        else ->
+            PolicyViolationContent(messages = messages, onResubmit = onResubmit, onDismiss = onDismiss)
+    }
+}
+
+/** REIMBURSABLE_ADJUSTED: amount comparison, no remarks required to resubmit. */
+@Composable
+private fun ReimbursableAdjustedContent(
+    response: ExpenseSubmissionResponse,
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val reimbursable = response.reimbursableAmount ?: response.amount ?: 0.0
+    val claimed = response.amount ?: reimbursable
+
     AppActionSheet(
-        onDismiss = onAcknowledge,
-        title = "Policy Violations",
+        onDismiss = onDismiss,
+        title = "Amount Adjusted",
     ) {
         Icon(
             Icons.Filled.WarningAmber,
@@ -203,7 +241,57 @@ fun ViolationDialog(
             tint = DesignTokens.StatusColors.warning,
         )
         Text(
-            "Your submission was recorded with ${messages.size} violation${if (messages.size == 1) "" else "s"}:",
+            "Your claimed distance exceeds the daily reimbursable limit. The amount below has " +
+                "been adjusted to what's payable under policy.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Surface(
+            shape = DesignTokens.Shape.roundedMd,
+            color = DesignTokens.StatusColors.warning.copy(alpha = 0.12f),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(DesignTokens.Spacing.l),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                LabeledValue("Claimed", claimed.formatDecimal(2))
+                LabeledValue("Reimbursable", reimbursable.formatDecimal(2), alignEnd = true)
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
+        ) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
+            Button(onClick = onAccept, modifier = Modifier.weight(1f)) { Text("Accept & Resubmit") }
+        }
+    }
+}
+
+/** POLICY_VIOLATION: violation list plus a required remarks field gating resubmit. */
+@Composable
+private fun PolicyViolationContent(
+    messages: List<String>,
+    onResubmit: (remarks: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var remarks by remember { mutableStateOf("") }
+
+    AppActionSheet(
+        onDismiss = onDismiss,
+        title = "Policy Violations",
+    ) {
+        Icon(
+            Icons.Filled.WarningAmber,
+            contentDescription = null,
+            tint = DesignTokens.StatusColors.error,
+        )
+        Text(
+            "Your submission has ${messages.size} violation${if (messages.size == 1) "" else "s"}:",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -213,6 +301,52 @@ fun ViolationDialog(
                 Text(msg, style = MaterialTheme.typography.bodyMedium)
             }
         }
-        Button(onClick = onAcknowledge, modifier = Modifier.fillMaxWidth()) { Text("Acknowledge") }
+        OutlinedTextField(
+            value = remarks,
+            onValueChange = { remarks = it },
+            label = { Text("Remarks (required to resubmit)") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
+        ) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
+            Button(
+                onClick = { onResubmit(remarks) },
+                enabled = remarks.isNotBlank(),
+                modifier = Modifier.weight(1f),
+            ) { Text("Resubmit with Remarks") }
+        }
+    }
+}
+
+/** HARD_STOP: terminal — violation list, no resubmit path. */
+@Composable
+private fun HardStopContent(
+    messages: List<String>,
+    onDismiss: () -> Unit,
+) {
+    AppActionSheet(
+        onDismiss = onDismiss,
+        title = "Submission Blocked",
+    ) {
+        Icon(
+            Icons.Filled.Block,
+            contentDescription = null,
+            tint = DesignTokens.StatusColors.error,
+        )
+        Text(
+            "This submission cannot proceed:",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        messages.forEach { msg ->
+            Row(verticalAlignment = Alignment.Top) {
+                Text("•  ", style = MaterialTheme.typography.bodyMedium)
+                Text(msg, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Close") }
     }
 }

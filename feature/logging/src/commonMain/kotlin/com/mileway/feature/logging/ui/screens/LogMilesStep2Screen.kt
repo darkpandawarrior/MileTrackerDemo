@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mileway.core.data.model.network.LogMilesService
 import com.mileway.core.data.util.DateUtils
 import com.mileway.core.ui.components.pickers.WheelDatePickerDialog
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
@@ -91,7 +92,6 @@ fun LogMilesStep2Screen(
     var showEmployeesDialog by remember { mutableStateOf(false) }
     var additionalExpanded by remember { mutableStateOf(true) }
     var selectedStep2Tab by remember { mutableStateOf("Stops") }
-    var selectedService by remember { mutableStateOf("Client Visit") }
     var purposeText by remember { mutableStateOf("") }
     var costCenter by remember { mutableStateOf("") }
 
@@ -221,8 +221,9 @@ fun LogMilesStep2Screen(
             // ── Expense Details tab ───────────────────────────────────────────────
             if (selectedStep2Tab == "Expense Details") {
                 ExpenseDetailsSection(
-                    selectedService = selectedService,
-                    onServiceSelect = { selectedService = it },
+                    services = uiState.services,
+                    selectedService = uiState.selectedService,
+                    onServiceSelect = { viewModel.onAction(LogMilesAction.SelectService(it)) },
                     purposeText = purposeText,
                     onPurposeChange = { purposeText = it },
                     costCenter = costCenter,
@@ -286,28 +287,23 @@ fun LogMilesStep2Screen(
         uiState.submissionResult?.let { result ->
             ViolationDialog(
                 response = result,
-                onAcknowledge = {
+                onResubmit = { remarks ->
                     viewModel.onAction(LogMilesAction.DismissViolationDialog)
-                    onSubmitted()
+                    viewModel.onAction(LogMilesAction.ResubmitInPolicy(remarks))
+                },
+                onDismiss = {
+                    viewModel.onAction(LogMilesAction.DismissViolationDialog)
                 },
             )
         }
     }
 }
 
-private val SERVICE_OPTIONS =
-    listOf(
-        "Client Visit",
-        "Office Travel",
-        "Training",
-        "Medical",
-        "Other",
-    )
-
 @Composable
 private fun ExpenseDetailsSection(
-    selectedService: String,
-    onServiceSelect: (String) -> Unit,
+    services: List<LogMilesService>,
+    selectedService: LogMilesService?,
+    onServiceSelect: (LogMilesService) -> Unit,
     purposeText: String,
     onPurposeChange: (String) -> Unit,
     costCenter: String,
@@ -353,10 +349,15 @@ private fun ExpenseDetailsSection(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            selectedService,
+                            selectedService?.getDisplayString() ?: "Select a service",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color =
+                                if (selectedService == null) {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
                         )
                     }
                     Icon(
@@ -374,11 +375,11 @@ private fun ExpenseDetailsSection(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 ) {
                     Column {
-                        SERVICE_OPTIONS.forEach { svc ->
+                        services.forEach { svc ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 color =
-                                    if (svc == selectedService) {
+                                    if (svc.id == selectedService?.id) {
                                         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                                     } else {
                                         androidx.compose.ui.graphics.Color.Transparent
@@ -389,7 +390,7 @@ private fun ExpenseDetailsSection(
                                 },
                             ) {
                                 Text(
-                                    svc,
+                                    svc.getDisplayString(),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.padding(DesignTokens.Spacing.m),

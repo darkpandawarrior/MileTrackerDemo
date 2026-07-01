@@ -21,6 +21,10 @@ data class DemoSettings(
     // G7: last completed trip's end-odometer reading; -1 = none recorded yet. Seeds the next
     // trip's start capture so readings roll over instead of resetting to a constant.
     val lastOdometerEndReading: Int = LAST_ODOMETER_NONE,
+    // P5.3: local per-tenant-persona gate for Log Miles' start/end odometer capture — analogous to
+    // the reference app's server-driven `logMilesOdometerCapture` config, but sourced locally (this demo is
+    // offline-first/stub-backed everywhere, not a server fetch).
+    val logMilesOdometerCaptureEnabled: Boolean = false,
 )
 
 /** Sentinel for "no prior odometer reading" so the start capture falls back to its own default. */
@@ -34,6 +38,7 @@ class DemoSettingsRepository(private val context: Context) {
     private val autoDiscardKey = booleanPreferencesKey("demo_auto_discard")
     private val enableKalmanKey = booleanPreferencesKey("track_enable_kalman")
     private val lastOdometerEndKey = intPreferencesKey("track_last_odometer_end")
+    private val logMilesOdometerCaptureKey = booleanPreferencesKey("log_miles_odometer_capture")
 
     val settings: Flow<DemoSettings> =
         context.demoSettingsDataStore.data.map { prefs ->
@@ -45,6 +50,7 @@ class DemoSettingsRepository(private val context: Context) {
                 autoDiscardEnabled = prefs[autoDiscardKey] ?: false,
                 enableKalman = prefs[enableKalmanKey] ?: false,
                 lastOdometerEndReading = prefs[lastOdometerEndKey] ?: LAST_ODOMETER_NONE,
+                logMilesOdometerCaptureEnabled = prefs[logMilesOdometerCaptureKey] ?: false,
             )
         }
 
@@ -66,6 +72,11 @@ class DemoSettingsRepository(private val context: Context) {
     /** G7: record the latest completed trip's end-odometer reading for the next trip's start. */
     suspend fun setLastOdometerEndReading(reading: Int) {
         context.demoSettingsDataStore.edit { prefs -> prefs[lastOdometerEndKey] = reading }
+    }
+
+    /** P5.3: explicit set (a persona/tenant toggle, not a user-facing switch — set from debug/demo config). */
+    suspend fun setLogMilesOdometerCaptureEnabled(enabled: Boolean) {
+        context.demoSettingsDataStore.edit { prefs -> prefs[logMilesOdometerCaptureKey] = enabled }
     }
 
     private suspend fun toggle(key: androidx.datastore.preferences.core.Preferences.Key<Boolean>) {

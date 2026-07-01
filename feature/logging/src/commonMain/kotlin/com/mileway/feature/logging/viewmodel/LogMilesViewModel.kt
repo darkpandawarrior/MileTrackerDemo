@@ -2,6 +2,8 @@ package com.mileway.feature.logging.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.common.UiText
+import com.mileway.core.data.model.display.OdometerCaptureResult
+import com.mileway.core.data.model.display.OdometerPurpose
 import com.mileway.core.data.model.network.ApprovedVehicle
 import com.mileway.core.data.model.network.CoordsV2
 import com.mileway.core.data.model.network.ExpenseSubmissionResponse
@@ -10,6 +12,7 @@ import com.mileway.core.data.model.network.LogMilesSubmitRequestV2
 import com.mileway.core.data.model.network.SubmissionStatus
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.feature.logging.repository.LogMilesDraftRepository
+import com.mileway.feature.logging.repository.LogMilesDraftRepository.Companion.toDraftEntity
 import com.mileway.feature.logging.repository.LogMilesServiceRepository
 import com.mileway.feature.logging.ui.model.LocationEntry
 import com.mileway.feature.logging.ui.model.LocationStop
@@ -18,12 +21,13 @@ import com.mileway.feature.logging.ui.model.SubmittedVoucherSamples
 import com.mileway.feature.logging.ui.model.totalRouteKm
 import com.mileway.feature.logging.usecase.LogMilesSubmitUseCase
 import com.mileway.feature.tracking.repository.VehiclePricingRepository
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
- * A draft the user saved at the end of Step 1 (or that came back from the draft
- * repository). Held in memory so the History → Drafts tab works even when no Room
- * draft DAO is wired. Mirrors the minimum a draft needs to be re-opened.
+ * A draft the user saved at the end of Step 1, backed by [LogMilesDraftRepository]'s Room store
+ * (P5.1). Mirrors the minimum a draft needs to be shown in the History → Drafts tab; the full
+ * form state is rehydrated on demand via [LogMilesAction.LoadDraft].
  */
 data class LogMilesDraftUi(
     val id: String,
@@ -60,6 +64,14 @@ data class LogMilesUiState(
     val journeyTimeMinutes: Int? = null,
     val saveAsDraft: Boolean = false,
     val recentLocations: List<LocationEntry> = emptyList(),
+    /**
+     * Step 1: odometer capture (P5.3). Gates [canProceedToStep2] on odometer capture, sourced from
+     * [com.mileway.core.data.settings.DemoSettingsRepository] — a local per-tenant-persona flag,
+     * not a server fetch (this demo is offline-first/stub-backed everywhere).
+     */
+    val odometerCaptureEnabled: Boolean = false,
+    val odometerStart: OdometerCaptureResult? = null,
+    val odometerEnd: OdometerCaptureResult? = null,
     // ── Step 2: expense details ───────────────────────────────────────────────
     val invoiceDateMillis: Long? = null,
     val logMilesNote: String = "",
@@ -74,8 +86,34 @@ data class LogMilesUiState(
     val submitted: List<SubmittedVoucher> =
         SubmittedVoucherSamples.sample(kotlin.time.Clock.System.now().toEpochMilliseconds()),
 ) {
-    /** Step 1 → Step 2 gate: at least two stops and a chosen vehicle. */
-    val canProceedToStep2: Boolean get() = stops.size >= 2 && selectedVehicle != null
+    /**
+     * Validation error for the current odometer capture, or null when capture is disabled,
+     * incomplete-but-not-yet-invalid, or complete and valid. Non-null only once both readings
+     * are present and the end reading doesn't exceed the start (P5.3 acceptance case).
+     */
+    val odometerValidationError: String?
+        get() {
+            val start = odometerStart ?: return null
+            val end = odometerEnd ?: return null
+            return if (end.reading <= start.reading) "End odometer reading must be greater than start" else null
+        }
+
+    /** True once both start and end readings are captured with no validation error. */
+    private val odometerCaptureComplete: Boolean
+        get() = odometerStart != null && odometerEnd != null && odometerValidationError == null
+
+    /**
+     * Step 1 → Step 2 gate: at least two stops and a chosen vehicle, plus a complete, valid
+     * odometer capture whenever [odometerCaptureEnabled] is on (P5.3), plus an explicit service
+     * selection whenever more than one service is available (P5.5) — with a single service (or
+     * none loaded yet) there's nothing to choose between, so the gate stays unaffected. Behavior
+     * is unchanged when neither condition applies.
+     */
+    val canProceedToStep2: Boolean
+        get() =
+            stops.size >= 2 && selectedVehicle != null &&
+                (!odometerCaptureEnabled || odometerCaptureComplete) &&
+                (services.size <= 1 || selectedService != null)
 
     /** Per-km rate of the selected vehicle (0 when none chosen). */
     val pricePerKm: Double get() = selectedVehicle?.vehiclePricing ?: 0.0
@@ -84,6 +122,46 @@ data class LogMilesUiState(
     val step2Remaining: Int
         get() = listOf(invoiceDateMillis != null, logMilesNote.isNotBlank()).count { !it }
 }
+
+/**
+ * Builds the network payload from the current form state (P5.2). Extracted as a pure mapper
+ * (mirrors [LogMilesDraftRepository.toDraftEntity]) so the submit request shape is unit-testable
+ * without standing up the whole ViewModel.
+ *
+ * @param force            set on a resubmit after the user resolved a policy violation (P5.4)
+ * @param violationRemarks the resolution note carried alongside a forced resubmit (P5.4)
+ */
+fun LogMilesUiState.toSubmitRequest(
+    force: Boolean = false,
+    violationRemarks: String? = null,
+): LogMilesSubmitRequestV2 =
+    LogMilesSubmitRequestV2(
+        vehicleType = selectedVehicle?.vehicleKey,
+        distance = distanceKm,
+        roundTrip = isRoundTrip,
+        date = journeyDateMillis,
+        origin = stops.firstOrNull()?.entry?.let { CoordsV2(it.lat, it.lng, it.name) },
+        destination = stops.lastOrNull()?.entry?.let { CoordsV2(it.lat, it.lng, it.name) },
+        employees = taggedEmployees,
+        notes = logMilesNote.ifBlank { null },
+        serviceId = selectedService?.id,
+        invoiceDate = invoiceDateMillis,
+        odometerDistance = odometerEnd?.reading?.let { end -> odometerStart?.reading?.let { start -> end - start } },
+        force = force.takeIf { it },
+        violationRemarks = violationRemarks?.ifBlank { null },
+    )
+
+/**
+ * Whether [response] needs the severity-branched [com.mileway.feature.logging.ui.dialog
+ * .ViolationDialog] (P5.4) rather than a clean pass-through to the success route. Extracted as a
+ * pure function so the three-tier branch is unit-testable without standing up the ViewModel.
+ */
+fun ExpenseSubmissionResponse.needsViolationDialog(): Boolean =
+    submissionStatus == SubmissionStatus.POLICY_VIOLATION ||
+        submissionStatus == SubmissionStatus.REIMBURSABLE_ADJUSTED ||
+        submissionStatus == SubmissionStatus.HARD_STOP ||
+        violations.isNotEmpty() ||
+        !policyViolations.isNullOrEmpty()
 
 sealed interface LogMilesAction {
     data object Refresh : LogMilesAction
@@ -116,6 +194,13 @@ sealed interface LogMilesAction {
 
     data class OverrideDistance(val km: Double) : LogMilesAction
 
+    /** Reflects the persisted `DemoSettingsRepository` flag into state (P5.3); read by the screen. */
+    data class SetOdometerCaptureEnabled(val enabled: Boolean) : LogMilesAction
+
+    /** Records a start or end odometer reading captured via [com.mileway.feature.logging.ui.sheets
+     * .OdometerCaptureSheet] (P5.3). */
+    data class CaptureOdometerReading(val result: OdometerCaptureResult) : LogMilesAction
+
     data class SetInvoiceDate(val millis: Long?) : LogMilesAction
 
     data class SetLogMilesNote(val text: String) : LogMilesAction
@@ -128,9 +213,19 @@ sealed interface LogMilesAction {
 
     data class DeleteDraft(val draftId: String) : LogMilesAction
 
+    /** Rehydrates [LogMilesUiState] from a previously saved draft (P5.1). */
+    data class LoadDraft(val draftId: String) : LogMilesAction
+
     data object Submit : LogMilesAction
 
     data object DismissViolationDialog : LogMilesAction
+
+    /**
+     * Resubmits after the user resolved a policy violation from [com.mileway.feature.logging.ui
+     * .dialog.ViolationDialog] (P5.4). [notes] is blank for a `REIMBURSABLE_ADJUSTED` accept and
+     * required (validated by the dialog) for a `POLICY_VIOLATION` resubmit.
+     */
+    data class ResubmitInPolicy(val notes: String) : LogMilesAction
 
     data object ResetSubmission : LogMilesAction
 }
@@ -159,9 +254,40 @@ class LogMilesViewModel(
     /** Monotonic id source for stops added during this session. */
     private var stopIdCounter = 0L
 
+    /** The draft id currently loaded into [LogMilesUiState], if the form was opened from a draft. */
+    private var activeDraftId: String? = null
+
+    /** [LogMilesDraftEntity.createdAt] per draft id, so re-saving preserves the original creation time. */
+    private val draftCreatedAt = mutableMapOf<String, Long>()
+
     init {
         loadVehicles()
         loadServices()
+        observeDrafts()
+    }
+
+    /** Keeps [LogMilesUiState.drafts] in sync with the Room-backed [draftRepo] (P5.1). */
+    private fun observeDrafts() {
+        viewModelScope.launch {
+            draftRepo.allDrafts().collectLatest { entities ->
+                entities.forEach { draftCreatedAt[it.draftId] = it.createdAt }
+                val drafts =
+                    entities.map { e ->
+                        LogMilesDraftUi(
+                            id = e.draftId,
+                            title =
+                                LogMilesDraftRepository.decodeStops(e.locationsJson)
+                                    .firstOrNull()?.entry?.name?.substringBefore(",")
+                                    ?: "Log Miles draft",
+                            stopCount = LogMilesDraftRepository.decodeStops(e.locationsJson).size,
+                            distanceKm = e.totalDistance,
+                            vehicleName = e.selectedVehicleDisplayName,
+                            updatedAtMillis = e.updatedAt,
+                        )
+                    }
+                setState { copy(drafts = drafts) }
+            }
+        }
     }
 
     override fun onAction(action: LogMilesAction) {
@@ -194,14 +320,19 @@ class LogMilesViewModel(
                 setState { copy(distanceKm = action.km, isDistanceOverridden = true) }
                 recomputePricing()
             }
+            is LogMilesAction.SetOdometerCaptureEnabled ->
+                setState { copy(odometerCaptureEnabled = action.enabled) }
+            is LogMilesAction.CaptureOdometerReading -> captureOdometerReading(action.result)
             is LogMilesAction.SetInvoiceDate -> setState { copy(invoiceDateMillis = action.millis) }
             is LogMilesAction.SetLogMilesNote -> setState { copy(logMilesNote = action.text) }
             is LogMilesAction.SetTaggedEmployees -> setState { copy(taggedEmployees = action.names) }
             LogMilesAction.AddAttachment -> setState { copy(attachmentCount = attachmentCount + 1) }
             LogMilesAction.SaveDraft -> saveDraft()
             is LogMilesAction.DeleteDraft -> deleteDraft(action.draftId)
+            is LogMilesAction.LoadDraft -> loadDraft(action.draftId)
             LogMilesAction.Submit -> submit()
             LogMilesAction.DismissViolationDialog -> setState { copy(showViolationDialog = false) }
+            is LogMilesAction.ResubmitInPolicy -> submit(force = true, violationRemarks = action.notes)
             LogMilesAction.ResetSubmission -> resetSubmission()
         }
     }
@@ -296,53 +427,91 @@ class LogMilesViewModel(
         setState { copy(reimbursableAmount = distanceKm * pricePerKm) }
     }
 
+    /** Stores a captured odometer reading (P5.3) into the slot matching its [OdometerPurpose]. */
+    private fun captureOdometerReading(result: OdometerCaptureResult) {
+        setState {
+            when (result.purpose) {
+                OdometerPurpose.START -> copy(odometerStart = result)
+                OdometerPurpose.END -> copy(odometerEnd = result)
+            }
+        }
+    }
+
+    /**
+     * P5.1: persists the current form state via [draftRepo] instead of just appending an
+     * in-memory summary. Re-saves onto [activeDraftId] when the form was opened from an existing
+     * draft (so "save draft" from a reopened draft updates it, not create a duplicate row).
+     */
     private fun saveDraft() {
         val s = currentState
         if (s.stops.isEmpty()) return
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
-        val draft =
-            LogMilesDraftUi(
-                id = "draft-$now",
-                title = s.stops.firstOrNull()?.entry?.name?.substringBefore(",") ?: "Log Miles draft",
-                stopCount = s.stops.size,
-                distanceKm = s.distanceKm,
-                vehicleName = s.selectedVehicle?.vehicleName,
-                updatedAtMillis = now,
-            )
-        setState { copy(drafts = listOf(draft) + drafts) }
+        val draftId = activeDraftId ?: "draft-$now"
+        activeDraftId = draftId
+        val createdAt = draftCreatedAt.getOrPut(draftId) { now }
+        viewModelScope.launch {
+            runCatching { draftRepo.save(s.toDraftEntity(draftId = draftId, createdAtMillis = createdAt, nowMillis = now)) }
+        }
     }
 
     private fun deleteDraft(draftId: String) {
-        setState { copy(drafts = drafts.filterNot { d -> d.id == draftId }) }
+        if (activeDraftId == draftId) activeDraftId = null
+        draftCreatedAt.remove(draftId)
         viewModelScope.launch { runCatching { draftRepo.delete(draftId) } }
     }
 
     /**
-     * Submit the journey via [LogMilesSubmitUseCase]. On success with policy
-     * violations we surface a violation dialog; failures emit a [LogMilesEffect.ShowError].
+     * P5.1: rehydrates [LogMilesUiState] from a saved draft — locations JSON back into
+     * [LocationStop]s, distance recomputed via [recomputeDistance]/[totalRouteKm] rather than
+     * trusting the stored value blindly, vehicle re-resolved from the currently loaded
+     * [LogMilesUiState.vehicles] by key (the draft persists only the key/display name, not the
+     * live [com.mileway.core.data.model.network.ApprovedVehicle] with current pricing).
      */
-    private fun submit() {
+    private fun loadDraft(draftId: String) {
+        viewModelScope.launch {
+            val loaded = runCatching { draftRepo.loadDraft(draftId) }.getOrNull() ?: return@launch
+            val draft = loaded.uiState
+            activeDraftId = draftId
+            // Reseed the stop id counter so subsequently-added stops don't collide with restored ids.
+            stopIdCounter = (draft.stops.maxOfOrNull { it.id } ?: -1L) + 1
+            setState {
+                copy(
+                    stops = draft.stops,
+                    isRoundTrip = draft.isRoundTrip,
+                    journeyDateMillis = draft.journeyDateMillis,
+                    invoiceDateMillis = draft.invoiceDateMillis,
+                    logMilesNote = draft.logMilesNote,
+                    taggedEmployees = draft.taggedEmployees,
+                    selectedVehicle = vehicles.firstOrNull { it.vehicleKey == loaded.vehicleKey } ?: selectedVehicle,
+                )
+            }
+            recomputeDistance()
+        }
+    }
+
+    /**
+     * Submit the journey via [LogMilesSubmitUseCase]. On success with policy violations we
+     * surface the severity-branched [com.mileway.feature.logging.ui.dialog.ViolationDialog]
+     * (P5.4); failures emit a [LogMilesEffect.ShowError].
+     *
+     * @param force            resubmit after resolving a violation (P5.4); see [LogMilesAction
+     *                         .ResubmitInPolicy]
+     * @param violationRemarks resolution note carried alongside a forced resubmit
+     */
+    private fun submit(
+        force: Boolean = false,
+        violationRemarks: String? = null,
+    ) {
         val s = currentState
-        val vehicle = s.selectedVehicle ?: return
+        if (s.selectedVehicle == null) return
         if (s.stops.size < 2) return
         setState { copy(isSubmitting = true) }
         viewModelScope.launch {
             submitUseCase(
-                LogMilesSubmitRequestV2(
-                    vehicleType = vehicle.vehicleKey,
-                    distance = s.distanceKm,
-                    roundTrip = s.isRoundTrip,
-                    date = s.journeyDateMillis,
-                    origin = s.stops.first().entry.let { CoordsV2(it.lat, it.lng, it.name) },
-                    destination = s.stops.last().entry.let { CoordsV2(it.lat, it.lng, it.name) },
-                ),
+                s.toSubmitRequest(force = force, violationRemarks = violationRemarks),
             ).onSuccess { resp ->
-                val hasViolations =
-                    resp.submissionStatus == SubmissionStatus.POLICY_VIOLATION ||
-                        resp.violations.isNotEmpty() ||
-                        !resp.policyViolations.isNullOrEmpty()
                 setState {
-                    copy(isSubmitting = false, submissionResult = resp, showViolationDialog = hasViolations)
+                    copy(isSubmitting = false, submissionResult = resp, showViolationDialog = resp.needsViolationDialog())
                 }
             }.onFailure { e ->
                 setState { copy(isSubmitting = false) }
@@ -353,6 +522,7 @@ class LogMilesViewModel(
 
     private fun resetSubmission() {
         stopIdCounter = 0L
+        activeDraftId = null
         setState {
             LogMilesUiState(
                 vehicles = vehicles,
@@ -363,6 +533,8 @@ class LogMilesViewModel(
                 drafts = drafts,
                 submitted = submitted,
                 recentLocations = recentLocations,
+                // The capture flag mirrors a persisted setting, not per-submission form state.
+                odometerCaptureEnabled = odometerCaptureEnabled,
             )
         }
     }

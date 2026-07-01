@@ -1,5 +1,6 @@
 package com.mileway.feature.logging.ui.model
 
+import kotlinx.serialization.Serializable
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -7,6 +8,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** Category for a POI, drives the icon shown in the search result row. */
+@Serializable
 enum class PoiCategory { OFFICE, CLIENT, RESTAURANT, HOME, TRANSIT, LANDMARK, OTHER }
 
 /**
@@ -16,7 +18,11 @@ enum class PoiCategory { OFFICE, CLIENT, RESTAURANT, HOME, TRANSIT, LANDMARK, OT
  * [CityCatalog]) so that location search works with no network and no map
  * provider. Each entry carries real-ish coordinates so the great-circle
  * distance between two stops is plausible.
+ *
+ * `@Serializable` so a [LocationStop] list can round-trip through
+ * [LogMilesDraftRepository]'s JSON-encoded `locationsJson` draft column (P5.1).
  */
+@Serializable
 data class LocationEntry(
     val name: String,
     val subtitle: String,
@@ -30,6 +36,7 @@ data class LocationEntry(
  * user sees; [entry] is the underlying place. Stops are kept in a list inside the
  * UI state so reordering, insertion and removal are simple list operations.
  */
+@Serializable
 data class LocationStop(
     val id: Long,
     val entry: LocationEntry,

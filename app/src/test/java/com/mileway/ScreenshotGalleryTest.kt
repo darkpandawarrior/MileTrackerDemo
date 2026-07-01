@@ -244,7 +244,10 @@ class ScreenshotGalleryTest {
             single<SavedTrackDao> { seededDao }
             single<LocationDao> { mockk(relaxed = true) }
             single<HardwareEventDao> { mockk(relaxed = true) }
-            single<LogMilesDraftDao> { mockk(relaxed = true) }
+            // P5.1: LogMilesViewModel.init now collectLatest's getAllDrafts(); a relaxed mockk
+            // returns a null-backed Flow that crashes that collector (memory: screenshot Koin
+            // needs deterministic fakes, same reason FakeVoucherDao exists below).
+            single<LogMilesDraftDao> { FakeLogMilesDraftDao() }
             single<LogMilesFrequentRouteDao> { mockk(relaxed = true) }
             single<TripAttachmentDao> { mockk(relaxed = true) }
             single<DraftExpenseDao> { mockk(relaxed = true) }

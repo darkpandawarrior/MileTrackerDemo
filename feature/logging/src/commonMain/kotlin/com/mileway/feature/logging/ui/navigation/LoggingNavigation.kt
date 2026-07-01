@@ -132,7 +132,11 @@ fun NavGraphBuilder.loggingGraph(navController: NavHostController) {
         LogMilesHistoryScreen(
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
-            onOpenDraft = {
+            onOpenDraft = { draftId ->
+                // P5.1: rehydrate the shared LogMilesViewModel from the persisted draft before
+                // returning to Step 1, so the fields the user saved are actually restored, not just
+                // a no-op back-navigation onto whatever the form happened to hold.
+                viewModel.onAction(com.mileway.feature.logging.viewmodel.LogMilesAction.LoadDraft(draftId))
                 navController.popBackStack(LoggingRoutes.LOG_MILES, inclusive = false)
             },
         )

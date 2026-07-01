@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,6 +44,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mileway.core.common.pad2
+import com.mileway.core.data.model.display.OdometerPurpose
+import com.mileway.core.data.settings.DemoSettings
+import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.data.util.DateUtils
 import com.mileway.core.ui.components.pickers.WheelDatePickerDialog
 import com.mileway.core.ui.components.pickers.WheelTimePickerDialog
@@ -57,10 +61,12 @@ import com.mileway.feature.logging.ui.components.TravelledLocationsCard
 import com.mileway.feature.logging.ui.dialog.VerifyDistanceDialog
 import com.mileway.feature.logging.ui.model.LocationEntry
 import com.mileway.feature.logging.ui.sheets.LocationSearchSheet
+import com.mileway.feature.logging.ui.sheets.OdometerCaptureSheet
 import com.mileway.feature.logging.ui.sheets.VehiclePickerSheet
 import com.mileway.feature.logging.viewmodel.LogMilesAction
 import com.mileway.feature.logging.viewmodel.LogMilesViewModel
 import com.mileway.feature.tracking.ui.components.StaticPolylineThumbnail
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 /** Bottom padding so Step 1 content floats above the ~100dp bubble bottom bar. */
@@ -97,10 +103,20 @@ private sealed interface LocationTarget {
 @Composable
 fun LogMilesScreen(
     viewModel: LogMilesViewModel = koinViewModel(),
+    demoSettings: DemoSettingsRepository = koinInject(),
     onNext: () -> Unit = {},
     onOpenHistory: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // P5.3: mirrors the persisted local per-tenant flag into LogMilesUiState, same
+    // collectAsState-at-the-screen pattern TrackingNavigation.kt uses for demoSettings.settings
+    // (a ViewModel-init collect against a relaxed-mockk-backed repo crashes the screenshot Koin
+    // graph — see memory "screenshot Koin needs deterministic fakes").
+    val demoSettingsState by demoSettings.settings.collectAsState(initial = DemoSettings())
+    LaunchedEffect(demoSettingsState.logMilesOdometerCaptureEnabled) {
+        viewModel.onAction(LogMilesAction.SetOdometerCaptureEnabled(demoSettingsState.logMilesOdometerCaptureEnabled))
+    }
 
     // Local UI-only state for overlays.
     var locationTarget by remember { mutableStateOf<LocationTarget?>(null) }
@@ -108,6 +124,7 @@ fun LogMilesScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showVerifyDistance by remember { mutableStateOf(false) }
+    var odometerSheetPurpose by remember { mutableStateOf<OdometerPurpose?>(null) }
     // VIII.1: entrance visibility
     var contentVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { contentVisible = true }
@@ -197,6 +214,31 @@ fun LogMilesScreen(
                     onClick = { showVehicleSheet = true },
                 )
 
+                // P5.3: odometer capture, gated behind the local per-tenant flag.
+                if (uiState.odometerCaptureEnabled) {
+                    TapFieldRow(
+                        label = "Start Odometer Reading",
+                        value = uiState.odometerStart?.let { "${it.reading} km" } ?: "Capture start reading",
+                        isPlaceholder = uiState.odometerStart == null,
+                        leadingIcon = Icons.Filled.Speed,
+                        onClick = { odometerSheetPurpose = OdometerPurpose.START },
+                    )
+                    TapFieldRow(
+                        label = "End Odometer Reading",
+                        value = uiState.odometerEnd?.let { "${it.reading} km" } ?: "Capture end reading",
+                        isPlaceholder = uiState.odometerEnd == null,
+                        leadingIcon = Icons.Filled.Speed,
+                        onClick = { odometerSheetPurpose = OdometerPurpose.END },
+                    )
+                    uiState.odometerValidationError?.let { error ->
+                        Text(
+                            error,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+
                 TravelledLocationsCard(
                     stops = uiState.stops,
                     totalDistanceKm = uiState.distanceKm,
@@ -252,7 +294,13 @@ fun LogMilesScreen(
                 }
 
                 Text(
-                    "You can save a draft after Step 1. Odometer details can be completed later.",
+                    text =
+                        if (uiState.odometerCaptureEnabled) {
+                            "You can save a draft after Step 1. Start and end odometer readings are required " +
+                                "before continuing to Step 2."
+                        } else {
+                            "You can save a draft after Step 1. Odometer details can be completed later."
+                        },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -340,6 +388,18 @@ fun LogMilesScreen(
                 showVerifyDistance = false
             },
             onDismiss = { showVerifyDistance = false },
+        )
+    }
+
+    odometerSheetPurpose?.let { purpose ->
+        OdometerCaptureSheet(
+            purpose = purpose,
+            existing = if (purpose == OdometerPurpose.START) uiState.odometerStart else uiState.odometerEnd,
+            onCaptured = {
+                viewModel.onAction(LogMilesAction.CaptureOdometerReading(it))
+                odometerSheetPurpose = null
+            },
+            onDismiss = { odometerSheetPurpose = null },
         )
     }
 }

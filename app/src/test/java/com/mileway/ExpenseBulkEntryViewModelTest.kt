@@ -238,6 +238,46 @@ class ExpenseBulkEntryViewModelTest {
         assertEquals(DraftStatus.PENDING, vm.state.value.rows.first().status)
     }
 
+    // ── P2.5: per-row receipt attachment via the existing on-device document scanner ─────────
+
+    @Test
+    fun `scanning a receipt for one row attaches it to that row only`() {
+        val vm = viewModel()
+        val firstId = vm.state.value.rows.first().id
+        vm.onAction(ExpenseAction.AddDraftRow)
+        val secondId = vm.state.value.rows[1].id
+
+        vm.onAction(ExpenseAction.UpdateDraftRow(secondId) { it.copy(receiptImagePath = "content://media/scanned/row2") })
+
+        val rows = vm.state.value.rows
+        assertNull(rows.first { it.id == firstId }.receiptImagePath)
+        assertEquals("content://media/scanned/row2", rows.first { it.id == secondId }.receiptImagePath)
+    }
+
+    @Test
+    fun `SubmitAllDrafts carries each row's receiptImagePath through to its resulting record`() = runTest {
+        val repository = ExpenseRepository()
+        val vm = ExpenseViewModel(repository)
+        val firstId = vm.state.value.rows.first().id
+        vm.onAction(
+            ExpenseAction.UpdateDraftRow(firstId) {
+                it.copy(category = ExpenseCategory.FOOD, merchantName = "Cafe A", amountText = "100", receiptImagePath = "content://media/scanned/row1")
+            },
+        )
+        vm.onAction(ExpenseAction.AddDraftRow)
+        val secondId = vm.state.value.rows[1].id
+        // Second row has no receipt attached — should persist as null, not leak the first row's path.
+        vm.onAction(ExpenseAction.UpdateDraftRow(secondId) { it.copy(category = ExpenseCategory.FOOD, merchantName = "Cafe B", amountText = "200") })
+
+        vm.onAction(ExpenseAction.SubmitAllDrafts)
+        advanceUntilIdle()
+
+        val insertedForCafeA = repository.getAll().first { it.merchantName == "Cafe A" }
+        val insertedForCafeB = repository.getAll().first { it.merchantName == "Cafe B" }
+        assertEquals("content://media/scanned/row1", insertedForCafeA.receiptImagePath)
+        assertNull(insertedForCafeB.receiptImagePath)
+    }
+
     // ── P2.4: local CSV/TSV bulk-import parser (no backend) ─────────────────────
 
     @Test

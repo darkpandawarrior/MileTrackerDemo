@@ -25,8 +25,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -154,6 +156,10 @@ fun ExpenseEntryScreen(
                     onCategoryChange = { id, category ->
                         viewModel.onAction(ExpenseAction.UpdateDraftRow(id) { it.copy(category = category) })
                     },
+                    // P2.5: per-row receipt attachment — scans into that row's own receiptImagePath only.
+                    onReceiptScanned = { id, path ->
+                        viewModel.onAction(ExpenseAction.UpdateDraftRow(id) { it.copy(receiptImagePath = path) })
+                    },
                 )
             } else {
                 LazyVerticalGrid(
@@ -191,6 +197,7 @@ private fun BulkDraftGrid(
     onMerchantChange: (String, String) -> Unit,
     onAmountChange: (String, String) -> Unit,
     onCategoryChange: (String, ExpenseCategory) -> Unit,
+    onReceiptScanned: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -207,6 +214,7 @@ private fun BulkDraftGrid(
                 onMerchantChange = { value -> onMerchantChange(row.id, value) },
                 onAmountChange = { value -> onAmountChange(row.id, value) },
                 onCategoryChange = { category -> onCategoryChange(row.id, category) },
+                onReceiptScanned = { path -> onReceiptScanned(row.id, path) },
             )
         }
         item {
@@ -227,8 +235,13 @@ private fun DraftRowCard(
     onMerchantChange: (String) -> Unit,
     onAmountChange: (String) -> Unit,
     onCategoryChange: (ExpenseCategory) -> Unit,
+    onReceiptScanned: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // P2.5: same per-row-scoped scanner launcher the single-entry form uses (P1.4) — this call
+    // attaches whatever is scanned to this specific row's receiptImagePath only.
+    val launchReceiptScan = rememberReceiptAttachmentLauncher(onPicked = onReceiptScanned)
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = DesignTokens.Shape.roundedMd,
@@ -247,6 +260,18 @@ private fun DraftRowCard(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Row {
+                    IconButton(onClick = launchReceiptScan) {
+                        Icon(
+                            imageVector = if (row.receiptImagePath != null) Icons.Filled.Receipt else Icons.Filled.AddAPhoto,
+                            contentDescription = if (row.receiptImagePath != null) "Receipt attached" else "Attach receipt",
+                            tint =
+                                if (row.receiptImagePath != null) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                        )
+                    }
                     IconButton(onClick = onDuplicate) {
                         Icon(Icons.Filled.ContentCopy, contentDescription = "Duplicate row")
                     }
