@@ -2,10 +2,13 @@ package com.mileway.feature.profile.repository
 
 import com.mileway.feature.profile.model.AdvanceRecord
 import com.mileway.feature.profile.model.AdvanceStatus
+import com.mileway.feature.profile.model.ApproverStep
+import com.mileway.feature.profile.model.ApproverStepStatus
 import com.mileway.feature.profile.model.CardStatus
 import com.mileway.feature.profile.model.CardTransaction
 import com.mileway.feature.profile.model.CardType
 import com.mileway.feature.profile.model.CorporateCard
+import com.mileway.feature.profile.model.TimelineEntry
 
 class AdvanceRepository {
     private val baseMs = 1_700_000_000_000L
@@ -20,6 +23,17 @@ class AdvanceRepository {
                 status = AdvanceStatus.DISBURSED,
                 requestedDateMs = baseMs - 30 * dayMs,
                 requiredByDate = "2024-01-05",
+                approverChain =
+                    listOf(
+                        ApproverStep("Rohan Mehta", "Manager Approval", ApproverStepStatus.APPROVED),
+                        ApproverStep("Finance Desk", "Disbursement", ApproverStepStatus.APPROVED),
+                    ),
+                timeline =
+                    listOf(
+                        TimelineEntry("Requested", baseMs - 30 * dayMs),
+                        TimelineEntry("Approved", baseMs - 28 * dayMs),
+                        TimelineEntry("Disbursed", baseMs - 27 * dayMs),
+                    ),
             ),
             AdvanceRecord(
                 id = "ADV-002",
@@ -28,6 +42,16 @@ class AdvanceRepository {
                 status = AdvanceStatus.APPROVED,
                 requestedDateMs = baseMs - 10 * dayMs,
                 requiredByDate = "2024-01-25",
+                approverChain =
+                    listOf(
+                        ApproverStep("Rohan Mehta", "Manager Approval", ApproverStepStatus.APPROVED),
+                        ApproverStep("Finance Desk", "Disbursement", ApproverStepStatus.PENDING),
+                    ),
+                timeline =
+                    listOf(
+                        TimelineEntry("Requested", baseMs - 10 * dayMs),
+                        TimelineEntry("Approved", baseMs - 8 * dayMs),
+                    ),
             ),
             AdvanceRecord(
                 id = "ADV-003",
@@ -36,6 +60,14 @@ class AdvanceRepository {
                 status = AdvanceStatus.UNDER_REVIEW,
                 requestedDateMs = baseMs - 3 * dayMs,
                 requiredByDate = "2024-02-01",
+                approverChain =
+                    listOf(
+                        ApproverStep("Rohan Mehta", "Manager Approval", ApproverStepStatus.PENDING),
+                    ),
+                timeline =
+                    listOf(
+                        TimelineEntry("Requested", baseMs - 3 * dayMs),
+                    ),
             ),
             AdvanceRecord(
                 id = "ADV-004",
@@ -44,6 +76,10 @@ class AdvanceRepository {
                 status = AdvanceStatus.PENDING,
                 requestedDateMs = baseMs - 1 * dayMs,
                 requiredByDate = "2024-02-10",
+                timeline =
+                    listOf(
+                        TimelineEntry("Requested", baseMs - 1 * dayMs),
+                    ),
             ),
         )
 

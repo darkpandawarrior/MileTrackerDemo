@@ -34,12 +34,15 @@ data class AdvanceUiState(
     val submitted: Boolean = false,
     val lastSubmittedId: String = "",
     val lastAutoApproved: Boolean = false,
+    val detail: ScreenState<AdvanceRecord> = ScreenState.Loading,
 )
 
 sealed interface AdvanceAction {
     data object Refresh : AdvanceAction
 
     data class SetTab(val tab: AdvanceTabFilter) : AdvanceAction
+
+    data class LoadDetail(val advanceId: String) : AdvanceAction
 
     data class SetMode(val mode: AdvanceMode) : AdvanceAction
 
@@ -92,6 +95,7 @@ class AdvanceViewModel(
                     )
                 }
             is AdvanceAction.SetTab -> setTab(action.tab)
+            is AdvanceAction.LoadDetail -> loadDetail(action.advanceId)
             is AdvanceAction.SetMode -> setMode(action.mode)
             is AdvanceAction.SelectCard -> setState { copy(form = form.copy(selectedCardId = action.cardId)) }
             is AdvanceAction.SetAmount -> setState { copy(form = form.copy(amountText = action.text)) }
@@ -122,6 +126,13 @@ class AdvanceViewModel(
         val recordsState: ScreenState<List<AdvanceRecord>> =
             if (filtered.isEmpty()) ScreenState.Empty else ScreenState.Content(filtered)
         setState { copy(list = AdvanceListData(recordsState, tab)) }
+    }
+
+    private fun loadDetail(advanceId: String) {
+        val record = repository.advanceRecords.find { it.id == advanceId }
+        val detailState: ScreenState<AdvanceRecord> =
+            if (record != null) ScreenState.Content(record) else ScreenState.Empty
+        setState { copy(detail = detailState) }
     }
 
     private fun setMode(mode: AdvanceMode) {

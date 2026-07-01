@@ -64,6 +64,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AdvanceHistoryScreen(
     onBack: () -> Unit,
     onRequestAdvance: () -> Unit,
+    onOpenDetail: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: AdvanceViewModel = koinViewModel(),
 ) {
@@ -157,7 +158,7 @@ fun AdvanceHistoryScreen(
                     verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.s),
                 ) {
                     items(records, key = { it.id }) { record ->
-                        AdvanceCard(record = record)
+                        AdvanceCard(record = record, onClick = { onOpenDetail(record.id) })
                     }
                     item { Spacer(Modifier.height(80.dp)) }
                 }
@@ -167,7 +168,10 @@ fun AdvanceHistoryScreen(
 }
 
 @Composable
-private fun AdvanceCard(record: AdvanceRecord) {
+private fun AdvanceCard(
+    record: AdvanceRecord,
+    onClick: () -> Unit,
+) {
     val (statusLabel, statusColor) =
         when (record.status) {
             AdvanceStatus.PENDING -> "Pending" to StatusColors.warning
@@ -179,6 +183,7 @@ private fun AdvanceCard(record: AdvanceRecord) {
     val MONTHS = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = DesignTokens.Shape.roundedMd,
         elevation = CardDefaults.cardElevation(defaultElevation = DesignTokens.Elevation.card),

@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.mileway.feature.profile.ui.screens.AdvanceHistoryScreen
+import com.mileway.feature.profile.ui.screens.AdvanceRequestDetailsScreen
 import com.mileway.feature.profile.ui.screens.AnalyticsDetailScreen
 import com.mileway.feature.profile.ui.screens.AnalyticsHomeScreen
 import com.mileway.feature.profile.ui.screens.AskAdvanceFormScreen
@@ -29,6 +30,7 @@ object ProfileRoutes {
     const val NOTIFICATIONS = "profile/notifications"
     const val ADVANCE_HISTORY = "profile/advance"
     const val ASK_ADVANCE = "profile/advance/new"
+    const val ADVANCE_DETAILS = "profile/advance/{advanceId}"
     const val ANALYTICS_HOME = "profile/analytics"
     const val ANALYTICS_DETAIL = "profile/analytics/{category}"
     const val DELEGATION = "profile/delegation"
@@ -38,6 +40,8 @@ object ProfileRoutes {
     const val ROOT_GUARD_DETECTED = "profile/root_guard_detected"
 
     fun analyticsDetailRoute(category: String) = "profile/analytics/$category"
+
+    fun advanceDetailsRoute(advanceId: String) = "profile/advance/$advanceId"
 }
 
 /**
@@ -100,12 +104,23 @@ fun NavGraphBuilder.profileGraph(
         AdvanceHistoryScreen(
             onBack = { navController.popBackStack() },
             onRequestAdvance = { navController.navigate(ProfileRoutes.ASK_ADVANCE) },
+            onOpenDetail = { advanceId -> navController.navigate(ProfileRoutes.advanceDetailsRoute(advanceId)) },
         )
     }
     composable(ProfileRoutes.ASK_ADVANCE) {
         AskAdvanceFormScreen(
             onBack = { navController.popBackStack() },
             onSubmitted = { navController.popBackStack() },
+        )
+    }
+    composable(
+        route = ProfileRoutes.ADVANCE_DETAILS,
+        arguments = listOf(navArgument("advanceId") { type = NavType.StringType }),
+    ) { backStackEntry ->
+        val advanceId = backStackEntry.arguments?.getString("advanceId") ?: return@composable
+        AdvanceRequestDetailsScreen(
+            advanceId = advanceId,
+            onBack = { navController.popBackStack() },
         )
     }
     composable(ProfileRoutes.ANALYTICS_HOME) {

@@ -11,6 +11,21 @@ data class AdvanceRecord(
     val status: AdvanceStatus,
     val requestedDateMs: Long,
     val requiredByDate: String,
+    val approverChain: List<ApproverStep> = emptyList(),
+    val timeline: List<TimelineEntry> = emptyList(),
+)
+
+enum class ApproverStepStatus { PENDING, APPROVED, REJECTED }
+
+data class ApproverStep(
+    val name: String,
+    val stageLabel: String,
+    val status: ApproverStepStatus,
+)
+
+data class TimelineEntry(
+    val label: String,
+    val dateMs: Long,
 )
 
 enum class CardType { VISA, MASTERCARD }
