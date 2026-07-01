@@ -8,7 +8,9 @@ import com.mileway.core.network.model.SubmissionStatus
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.catalog.ExpenseCategoryCatalog
+import com.mileway.feature.logging.model.DraftStatus
 import com.mileway.feature.logging.model.ExpenseCategory
+import com.mileway.feature.logging.model.ExpenseDraftRow
 import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
 import com.mileway.feature.logging.repository.ExpenseRepository
@@ -62,6 +64,8 @@ data class ExpenseUiState(
     val lastSubmissionStatus: SubmissionStatus = SubmissionStatus.SUCCESS,
     /** P1.6: violations attached to the last submission, mirroring the mileage submission shape. */
     val lastSubmissionViolations: List<PolicyViolation> = emptyList(),
+    /** P2.1: rows of the multi-item bulk expense entry grid. Always at least one row. */
+    val rows: List<ExpenseDraftRow> = listOf(ExpenseDraftRow(id = "row-1")),
 )
 
 sealed interface ExpenseAction {
@@ -110,6 +114,20 @@ sealed interface ExpenseAction {
 
     /** P1.5: discards the persisted draft entirely (both Room and the resumable-draft offer). */
     data object DiscardDraft : ExpenseAction
+
+    // ── P2.1: multi-row draft grid for bulk expense entry ──────────────────────
+
+    /** Appends a new blank row to the bulk-entry grid. */
+    data object AddDraftRow : ExpenseAction
+
+    /** Appends a copy of row [id] (same field values, fresh row id, status reset to PENDING). */
+    data class DuplicateDraftRow(val id: String) : ExpenseAction
+
+    /** Removes row [id] from the grid; a no-op when it's the grid's last remaining row. */
+    data class RemoveDraftRow(val id: String) : ExpenseAction
+
+    /** Applies [transform] to row [id] only, leaving every other row untouched. */
+    data class UpdateDraftRow(val id: String, val transform: (ExpenseDraftRow) -> ExpenseDraftRow) : ExpenseAction
 }
 
 sealed interface ExpenseEffect {
@@ -186,6 +204,10 @@ class ExpenseViewModel(
             ExpenseAction.ResumeDraft -> resumeDraft()
             ExpenseAction.DismissResumeDraft -> setState { copy(resumableDraft = null) }
             ExpenseAction.DiscardDraft -> discardDraft()
+            ExpenseAction.AddDraftRow -> addDraftRow()
+            is ExpenseAction.DuplicateDraftRow -> duplicateDraftRow(action.id)
+            is ExpenseAction.RemoveDraftRow -> removeDraftRow(action.id)
+            is ExpenseAction.UpdateDraftRow -> updateDraftRow(action.id, action.transform)
         }
     }
 
@@ -307,5 +329,41 @@ class ExpenseViewModel(
             repository.clearDraft()
             setState { copy(resumableDraft = null) }
         }
+    }
+
+    // ── P2.1: multi-row draft grid for bulk expense entry ──────────────────────
+
+    private var nextRowSeq = currentState.rows.size + 1
+
+    private fun newRowId(): String {
+        val id = "row-$nextRowSeq"
+        nextRowSeq++
+        return id
+    }
+
+    private fun addDraftRow() {
+        setState { copy(rows = rows + ExpenseDraftRow(id = newRowId())) }
+    }
+
+    private fun duplicateDraftRow(id: String) {
+        val source = currentState.rows.find { it.id == id } ?: return
+        val copy = source.copy(id = newRowId(), status = DraftStatus.PENDING)
+        setState {
+            val index = rows.indexOfFirst { it.id == id }
+            copy(rows = rows.toMutableList().apply { add(index + 1, copy) })
+        }
+    }
+
+    /** Removing the last remaining row is a no-op — the grid always keeps at least one row. */
+    private fun removeDraftRow(id: String) {
+        if (currentState.rows.size <= 1) return
+        setState { copy(rows = rows.filterNot { it.id == id }) }
+    }
+
+    private fun updateDraftRow(
+        id: String,
+        transform: (ExpenseDraftRow) -> ExpenseDraftRow,
+    ) {
+        setState { copy(rows = rows.map { if (it.id == id) transform(it) else it }) }
     }
 }

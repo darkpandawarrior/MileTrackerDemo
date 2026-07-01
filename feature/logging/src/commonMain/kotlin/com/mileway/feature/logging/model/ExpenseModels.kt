@@ -34,6 +34,24 @@ data class ExpenseCategoryDef(
     val requiresGst: Boolean = false,
 )
 
+/** P2.1: lifecycle of a single row inside the bulk-entry grid ([ExpenseDraftRow]). */
+enum class DraftStatus { PENDING, SUBMITTING, SUCCESS, ERROR }
+
+/**
+ * P2.1: one row of the multi-item bulk expense entry grid — the local, offline equivalent of the
+ * reference app's concurrent batch-submit rows. Deliberately mirrors the single-entry
+ * [ExpenseFormState] field set (category, amount, merchant, note) plus a per-row [status] so a
+ * batch submit (P2.3) can report a mixed outcome across rows instead of an all-or-nothing result.
+ */
+data class ExpenseDraftRow(
+    val id: String,
+    val category: ExpenseCategory? = null,
+    val amountText: String = "",
+    val merchantName: String = "",
+    val note: String = "",
+    val status: DraftStatus = DraftStatus.PENDING,
+)
+
 data class ExpenseRecord(
     val id: String,
     val category: ExpenseCategory,

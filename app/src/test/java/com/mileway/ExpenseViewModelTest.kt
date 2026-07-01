@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.mileway.core.data.model.db.DraftExpenseEntity
 import com.mileway.core.network.model.SubmissionStatus
 import com.mileway.core.ui.mvi.ScreenState
+import com.mileway.feature.logging.model.DraftStatus
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
@@ -553,5 +554,78 @@ class ExpenseViewModelTest {
         assertNotNull(approved)
         assertEquals(ExpenseStatus.APPROVED, approved.status)
         assertNull(approved.rejectionReason)
+    }
+
+    // ── P2.1: multi-row draft grid for bulk expense entry ──────────────────────
+
+    @Test
+    fun `the grid starts with exactly one PENDING row`() {
+        val vm = viewModel()
+        assertEquals(1, vm.state.value.rows.size)
+        assertEquals(DraftStatus.PENDING, vm.state.value.rows.first().status)
+    }
+
+    @Test
+    fun `AddDraftRow appends a new PENDING row with a distinct id`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.AddDraftRow)
+        assertEquals(2, vm.state.value.rows.size)
+        val ids = vm.state.value.rows.map { it.id }
+        assertEquals(ids.size, ids.toSet().size)
+        assertTrue(vm.state.value.rows.all { it.status == DraftStatus.PENDING })
+    }
+
+    @Test
+    fun `DuplicateDraftRow copies field values into a new row next to the source`() {
+        val vm = viewModel()
+        val sourceId = vm.state.value.rows.first().id
+        vm.onAction(ExpenseAction.UpdateDraftRow(sourceId) { it.copy(category = ExpenseCategory.FOOD, merchantName = "Cafe", amountText = "100") })
+
+        vm.onAction(ExpenseAction.DuplicateDraftRow(sourceId))
+
+        val rows = vm.state.value.rows
+        assertEquals(2, rows.size)
+        val duplicate = rows[1]
+        assertEquals(ExpenseCategory.FOOD, duplicate.category)
+        assertEquals("Cafe", duplicate.merchantName)
+        assertEquals("100", duplicate.amountText)
+        assertEquals(DraftStatus.PENDING, duplicate.status)
+        assertTrue(duplicate.id != sourceId)
+    }
+
+    @Test
+    fun `RemoveDraftRow removes a row when more than one remains`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.AddDraftRow)
+        val secondId = vm.state.value.rows[1].id
+
+        vm.onAction(ExpenseAction.RemoveDraftRow(secondId))
+
+        assertEquals(1, vm.state.value.rows.size)
+        assertTrue(vm.state.value.rows.none { it.id == secondId })
+    }
+
+    @Test
+    fun `RemoveDraftRow on the last remaining row is a no-op`() {
+        val vm = viewModel()
+        val onlyId = vm.state.value.rows.first().id
+
+        vm.onAction(ExpenseAction.RemoveDraftRow(onlyId))
+
+        assertEquals(1, vm.state.value.rows.size)
+        assertEquals(onlyId, vm.state.value.rows.first().id)
+    }
+
+    @Test
+    fun `UpdateDraftRow transforms only the targeted row`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.AddDraftRow)
+        val firstId = vm.state.value.rows[0].id
+        val secondId = vm.state.value.rows[1].id
+
+        vm.onAction(ExpenseAction.UpdateDraftRow(secondId) { it.copy(merchantName = "Uber") })
+
+        assertEquals("", vm.state.value.rows.first { it.id == firstId }.merchantName)
+        assertEquals("Uber", vm.state.value.rows.first { it.id == secondId }.merchantName)
     }
 }
