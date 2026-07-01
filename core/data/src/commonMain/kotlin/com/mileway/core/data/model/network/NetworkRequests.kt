@@ -253,6 +253,10 @@ data class LogMilesSubmitRequestV2(
     @SerialName("files") val files: List<String>? = emptyList(),
     @SerialName("forms") val forms: Map<Long, String> = emptyMap(),
     @SerialName("roundTrip") val roundTrip: Boolean = false,
+    @SerialName("employees") val employees: List<String> = emptyList(),
+    @SerialName("notes") val notes: String? = null,
+    @SerialName("serviceId") val serviceId: Long? = null,
+    @SerialName("invoiceDate") val invoiceDate: Long? = null,
 )
 
 @Serializable

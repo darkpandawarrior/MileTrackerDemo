@@ -87,6 +87,25 @@ data class LogMilesUiState(
         get() = listOf(invoiceDateMillis != null, logMilesNote.isNotBlank()).count { !it }
 }
 
+/**
+ * Builds the network payload from the current form state (P5.2). Extracted as a pure mapper
+ * (mirrors [LogMilesDraftRepository.toDraftEntity]) so the submit request shape is unit-testable
+ * without standing up the whole ViewModel.
+ */
+fun LogMilesUiState.toSubmitRequest(): LogMilesSubmitRequestV2 =
+    LogMilesSubmitRequestV2(
+        vehicleType = selectedVehicle?.vehicleKey,
+        distance = distanceKm,
+        roundTrip = isRoundTrip,
+        date = journeyDateMillis,
+        origin = stops.firstOrNull()?.entry?.let { CoordsV2(it.lat, it.lng, it.name) },
+        destination = stops.lastOrNull()?.entry?.let { CoordsV2(it.lat, it.lng, it.name) },
+        employees = taggedEmployees,
+        notes = logMilesNote.ifBlank { null },
+        serviceId = selectedService?.id,
+        invoiceDate = invoiceDateMillis,
+    )
+
 sealed interface LogMilesAction {
     data object Refresh : LogMilesAction
 
@@ -391,19 +410,12 @@ class LogMilesViewModel(
      */
     private fun submit() {
         val s = currentState
-        val vehicle = s.selectedVehicle ?: return
+        if (s.selectedVehicle == null) return
         if (s.stops.size < 2) return
         setState { copy(isSubmitting = true) }
         viewModelScope.launch {
             submitUseCase(
-                LogMilesSubmitRequestV2(
-                    vehicleType = vehicle.vehicleKey,
-                    distance = s.distanceKm,
-                    roundTrip = s.isRoundTrip,
-                    date = s.journeyDateMillis,
-                    origin = s.stops.first().entry.let { CoordsV2(it.lat, it.lng, it.name) },
-                    destination = s.stops.last().entry.let { CoordsV2(it.lat, it.lng, it.name) },
-                ),
+                s.toSubmitRequest(),
             ).onSuccess { resp ->
                 val hasViolations =
                     resp.submissionStatus == SubmissionStatus.POLICY_VIOLATION ||
