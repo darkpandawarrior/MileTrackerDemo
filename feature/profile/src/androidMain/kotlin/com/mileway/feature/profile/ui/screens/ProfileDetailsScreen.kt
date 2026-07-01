@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -37,6 +38,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,7 +62,10 @@ import com.mileway.core.ui.components.ProfileSectionHeader
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
+import com.mileway.feature.profile.model.ProfileFieldCompletion
+import com.mileway.feature.profile.model.ProfileRoute
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -83,6 +91,48 @@ fun ProfileDetailsScreen(
     val profile = state.profile
     val completion = state.completion
 
+    // P6.1: real per-field completion, derived from actual blank/non-blank field presence
+    // (`ProfileFieldCompletion.derive`) rather than the static category-level `done/total` pair.
+    val fieldCompletion = remember(profile) { ProfileFieldCompletion.derive(profile) }
+    val missingFieldIds = remember(fieldCompletion) { fieldCompletion.missingFields.map { it.fieldId }.toSet() }
+    val missingItems =
+        fieldCompletion.missingFields.map {
+            MissingItemDisplay(
+                id = it.fieldId,
+                title = it.label,
+                isRequired = it.fieldId in REQUIRED_FIELD_IDS,
+            )
+        }
+    val categoryDisplays = completion.categories.map { it.toDisplay() }
+    val gridState = rememberLazyGridState()
+    val scope = rememberCoroutineScope()
+    // P6.1: tapping a missing-field banner item (or a tile itself) scrolls to and highlights the
+    // tile that owns it — every field today lives on this same screen (ProfileRoute.ProfileDetails),
+    // so "navigating" to the field means bringing its tile into view rather than pushing a new
+    // destination.
+    var highlightedFieldId by remember { mutableStateOf<String?>(null) }
+
+    val fieldOrder = remember { DETAIL_FIELD_ORDER }
+
+    fun scrollToField(fieldId: String) {
+        val targetIndex = fieldOrder.indexOf(fieldId)
+        if (targetIndex >= 0) {
+            highlightedFieldId = fieldId
+            // Header + contact card + completion banner rows precede the first tile; offset the
+            // flat index so the scroll target lands on-screen.
+            scope.launch { gridState.animateScrollToItem((targetIndex + HEADER_ITEM_COUNT).coerceAtLeast(0)) }
+        }
+    }
+
+    val detailItems = buildDetailItems(profile, missingFieldIds, onTileClick = ::scrollToField)
+    val grouped = detailItems.groupBy { it.category }
+
+    fun onMissingFieldClick(route: ProfileRoute) {
+        when (route) {
+            is ProfileRoute.ProfileDetails -> scrollToField(route.fieldId)
+        }
+    }
+
     Scaffold(
         topBar = {
             DepthAwareTopBar(
@@ -97,21 +147,8 @@ fun ProfileDetailsScreen(
             )
         },
     ) { innerPadding ->
-        val missingItems =
-            completion.categories
-                .filter { it.done < it.total }
-                .map {
-                    MissingItemDisplay(
-                        id = it.name,
-                        title = it.name,
-                        isRequired = it.name in REQUIRED_CATEGORIES,
-                    )
-                }
-        val categoryDisplays = completion.categories.map { it.toDisplay() }
-        val detailItems = buildDetailItems(profile)
-        val grouped = detailItems.groupBy { it.category }
-
         LazyVerticalGrid(
+            state = gridState,
             columns = GridCells.Fixed(2),
             modifier =
                 Modifier
@@ -139,11 +176,14 @@ fun ProfileDetailsScreen(
 
             item(span = { GridItemSpan(2) }) {
                 ProfileCompletionBanner(
-                    completionPercentage = completion.percent,
-                    completedCount = completion.categories.sumOf { it.done },
-                    totalCount = completion.categories.sumOf { it.total },
+                    completionPercentage = fieldCompletion.percent,
+                    completedCount = fieldCompletion.completedCount,
+                    totalCount = fieldCompletion.totalCount,
                     missingItems = missingItems,
                     categories = categoryDisplays,
+                    onMissingItemClick = { fieldId ->
+                        fieldCompletion.missingFields.find { it.fieldId == fieldId }?.let { onMissingFieldClick(it.route) }
+                    },
                 )
             }
 
@@ -156,7 +196,7 @@ fun ProfileDetailsScreen(
                     )
                 }
                 items(entries, key = { it.item.id }) { detail ->
-                    GridProfileTile(item = detail.item)
+                    GridProfileTile(item = detail.item.copy(animatePulse = detail.item.id == highlightedFieldId))
                 }
             }
 
@@ -168,8 +208,17 @@ fun ProfileDetailsScreen(
     }
 }
 
-/** Required categories drive the "X required items remaining" copy in the completion banner. */
+/** Number of full-width rows rendered before the first per-field tile (identity, contact, banner). */
+private const val HEADER_ITEM_COUNT = 3
+
+/** Flat tile order [buildDetailItems] renders in — kept in sync with its own `entry(...)` calls so [scrollToField] can index into it. */
+private val DETAIL_FIELD_ORDER = listOf("d_name", "d_gender", "d_home", "d_org", "d_manager", "d_role", "d_phone", "d_code")
+
+/** Required categories drive the "X required items remaining" copy in the category pills. */
 private val REQUIRED_CATEGORIES = setOf("Personal Info", "Organization", "Policy & Compliance")
+
+/** P6.1: required *fields* (a finer grain than [REQUIRED_CATEGORIES]) drive the checklist's Required/Optional split. */
+private val REQUIRED_FIELD_IDS = setOf("d_name", "d_org", "d_manager", "d_role")
 
 private fun CompletionCategory.toDisplay(): CategoryCompletionDisplay =
     CategoryCompletionDisplay(
@@ -271,9 +320,15 @@ private data class DetailEntry(
 
 /**
  * Builds the per-category detail tiles from the [profile]. Values present on the profile render
- * as COMPLETE; absent values render as INCOMPLETE so the grid mirrors the completion state.
+ * as COMPLETE; absent values (also listed in [missingFieldIds], from [ProfileFieldCompletion.derive])
+ * render as INCOMPLETE. [onTileClick] fires on every tap — used to re-highlight/re-scroll to the
+ * tapped tile itself (P6.1: no tile is a no-op anymore).
  */
-private fun buildDetailItems(profile: EmployeeProfile): List<DetailEntry> {
+private fun buildDetailItems(
+    profile: EmployeeProfile,
+    missingFieldIds: Set<String>,
+    onTileClick: (String) -> Unit,
+): List<DetailEntry> {
     fun entry(
         category: String,
         sectionIcon: ImageVector,
@@ -292,8 +347,8 @@ private fun buildDetailItems(profile: EmployeeProfile): List<DetailEntry> {
                     subtitle = value.ifBlank { "Not set" },
                     icon = tileIcon,
                     category = category,
-                    status = if (value.isNotBlank()) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
-                    action = {},
+                    status = if (id !in missingFieldIds) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
+                    action = { onTileClick(id) },
                 ),
         )
 
