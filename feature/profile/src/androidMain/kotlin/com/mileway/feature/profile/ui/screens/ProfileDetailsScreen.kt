@@ -21,8 +21,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CardTravel
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Home
@@ -62,11 +64,17 @@ import com.mileway.core.ui.components.ProfileSectionHeader
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
+import com.mileway.feature.profile.model.PassportDetails
 import com.mileway.feature.profile.model.ProfileFieldCompletion
 import com.mileway.feature.profile.model.ProfileRoute
+import com.mileway.feature.profile.model.VehicleDetails
+import com.mileway.feature.profile.viewmodel.PersonalDetailsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
+
+/** Sheets [ProfileDetailsScreen] can push over itself — at most one at a time. */
+private enum class ProfileDetailSheet { VEHICLE, PASSPORT }
 
 /**
  * Profile Details, a full-detail editor surface pushed from the Account hub.
@@ -85,11 +93,15 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ProfileDetailsScreen(
     onBack: () -> Unit,
+    onOpenOrgChart: () -> Unit = {},
     viewModel: ProfileViewModel = koinViewModel(),
+    personalDetailsViewModel: PersonalDetailsViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val personalDetailsState by personalDetailsViewModel.state.collectAsStateWithLifecycle()
     val profile = state.profile
     val completion = state.completion
+    var activeSheet by remember { mutableStateOf<ProfileDetailSheet?>(null) }
 
     // P6.1: real per-field completion, derived from actual blank/non-blank field presence
     // (`ProfileFieldCompletion.derive`) rather than the static category-level `done/total` pair.
@@ -114,17 +126,32 @@ fun ProfileDetailsScreen(
 
     val fieldOrder = remember { DETAIL_FIELD_ORDER }
 
+    // P6.2: the Custom Fields card only renders (as its own full-width row) when the profile
+    // actually carries custom fields, so the header-row offset scrollToField uses must account
+    // for that conditionally-present row.
+    val headerItemCount = HEADER_ITEM_COUNT + if (profile.customFields.isNotEmpty()) 1 else 0
+
     fun scrollToField(fieldId: String) {
         val targetIndex = fieldOrder.indexOf(fieldId)
         if (targetIndex >= 0) {
             highlightedFieldId = fieldId
             // Header + contact card + completion banner rows precede the first tile; offset the
             // flat index so the scroll target lands on-screen.
-            scope.launch { gridState.animateScrollToItem((targetIndex + HEADER_ITEM_COUNT).coerceAtLeast(0)) }
+            scope.launch { gridState.animateScrollToItem((targetIndex + headerItemCount).coerceAtLeast(0)) }
         }
     }
 
-    val detailItems = buildDetailItems(profile, missingFieldIds, onTileClick = ::scrollToField)
+    val detailItems =
+        buildDetailItems(
+            profile = profile,
+            vehicle = personalDetailsState.vehicle,
+            passport = personalDetailsState.passport,
+            missingFieldIds = missingFieldIds,
+            onTileClick = ::scrollToField,
+            onOpenOrgChart = onOpenOrgChart,
+            onOpenVehicleSheet = { activeSheet = ProfileDetailSheet.VEHICLE },
+            onOpenPassportSheet = { activeSheet = ProfileDetailSheet.PASSPORT },
+        )
     val grouped = detailItems.groupBy { it.category }
 
     fun onMissingFieldClick(route: ProfileRoute) {
@@ -174,6 +201,20 @@ fun ProfileDetailsScreen(
                 }
             }
 
+            // P6.2: custom fields render on the Personal Info tile group as their own card,
+            // only when the profile actually carries any (tenant-defined key/value pairs).
+            if (profile.customFields.isNotEmpty()) {
+                item(span = { GridItemSpan(2) }) {
+                    CollapsibleSectionCard(
+                        title = "Custom Fields",
+                        initiallyExpanded = true,
+                        leadingIcon = Icons.Default.Apps,
+                    ) {
+                        profile.customFields.forEach { (label, value) -> ContactRow(icon = Icons.Default.Badge, value = "$label: $value") }
+                    }
+                }
+            }
+
             item(span = { GridItemSpan(2) }) {
                 ProfileCompletionBanner(
                     completionPercentage = fieldCompletion.percent,
@@ -206,13 +247,30 @@ fun ProfileDetailsScreen(
             }
         }
     }
+
+    when (activeSheet) {
+        ProfileDetailSheet.VEHICLE ->
+            VehicleDetailsSheet(
+                initial = personalDetailsState.vehicle,
+                onSave = personalDetailsViewModel::saveVehicle,
+                onDismiss = { activeSheet = null },
+            )
+        ProfileDetailSheet.PASSPORT ->
+            PassportDetailsSheet(
+                initial = personalDetailsState.passport,
+                onSave = personalDetailsViewModel::savePassport,
+                onDismiss = { activeSheet = null },
+            )
+        null -> Unit
+    }
 }
 
 /** Number of full-width rows rendered before the first per-field tile (identity, contact, banner). */
 private const val HEADER_ITEM_COUNT = 3
 
 /** Flat tile order [buildDetailItems] renders in — kept in sync with its own `entry(...)` calls so [scrollToField] can index into it. */
-private val DETAIL_FIELD_ORDER = listOf("d_name", "d_gender", "d_home", "d_org", "d_manager", "d_role", "d_phone", "d_code")
+private val DETAIL_FIELD_ORDER =
+    listOf("d_name", "d_gender", "d_home", "d_org", "d_manager", "d_role", "d_phone", "d_code", "d_vehicle", "d_passport")
 
 /** Required categories drive the "X required items remaining" copy in the category pills. */
 private val REQUIRED_CATEGORIES = setOf("Personal Info", "Organization", "Policy & Compliance")
@@ -319,15 +377,23 @@ private data class DetailEntry(
 )
 
 /**
- * Builds the per-category detail tiles from the [profile]. Values present on the profile render
- * as COMPLETE; absent values (also listed in [missingFieldIds], from [ProfileFieldCompletion.derive])
- * render as INCOMPLETE. [onTileClick] fires on every tap — used to re-highlight/re-scroll to the
- * tapped tile itself (P6.1: no tile is a no-op anymore).
+ * Builds the per-category detail tiles from the [profile] plus [vehicle]/[passport] (P6.2's new
+ * linked-record tiles). Values present on the profile render as COMPLETE; absent values (also
+ * listed in [missingFieldIds], from [ProfileFieldCompletion.derive]) render as INCOMPLETE.
+ * [onTileClick] fires on a plain field tap — used to re-highlight/re-scroll to the tapped tile
+ * itself (P6.1: no tile is a no-op anymore); [onOpenOrgChart]/[onOpenVehicleSheet]/
+ * [onOpenPassportSheet] override that default for the three tiles that now open a real
+ * destination instead.
  */
 private fun buildDetailItems(
     profile: EmployeeProfile,
+    vehicle: VehicleDetails?,
+    passport: PassportDetails?,
     missingFieldIds: Set<String>,
     onTileClick: (String) -> Unit,
+    onOpenOrgChart: () -> Unit,
+    onOpenVehicleSheet: () -> Unit,
+    onOpenPassportSheet: () -> Unit,
 ): List<DetailEntry> {
     fun entry(
         category: String,
@@ -336,6 +402,8 @@ private fun buildDetailItems(
         title: String,
         value: String,
         tileIcon: ImageVector,
+        isComplete: Boolean = id !in missingFieldIds,
+        action: () -> Unit = { onTileClick(id) },
     ): DetailEntry =
         DetailEntry(
             category = category,
@@ -347,8 +415,8 @@ private fun buildDetailItems(
                     subtitle = value.ifBlank { "Not set" },
                     icon = tileIcon,
                     category = category,
-                    status = if (id !in missingFieldIds) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
-                    action = { onTileClick(id) },
+                    status = if (isComplete) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
+                    action = action,
                 ),
         )
 
@@ -357,9 +425,37 @@ private fun buildDetailItems(
         entry("Personal Info", Icons.Default.Person, "d_gender", "Gender", profile.gender, Icons.Default.Badge),
         entry("Location & Assets", Icons.Default.Home, "d_home", "Home Location", profile.homeLocation, Icons.Default.Home),
         entry("Organization", Icons.Default.Business, "d_org", "Organization", profile.organization, Icons.Default.Business),
-        entry("Organization", Icons.Default.Business, "d_manager", "Reporting Manager", profile.manager, Icons.Default.SupervisorAccount),
+        entry(
+            category = "Organization",
+            sectionIcon = Icons.Default.Business,
+            id = "d_manager",
+            title = "Reporting Manager",
+            value = profile.manager?.name.orEmpty(),
+            tileIcon = Icons.Default.SupervisorAccount,
+            action = onOpenOrgChart,
+        ),
         entry("Policy & Compliance", Icons.Default.Gavel, "d_role", "Role", profile.role, Icons.Default.Gavel),
         entry("Travel", Icons.Default.CardTravel, "d_phone", "Phone", profile.phone, Icons.Default.Phone),
         entry("Apps & Activity", Icons.Default.Apps, "d_code", "Employee Code", profile.employeeCode, Icons.Default.Apps),
+        entry(
+            category = "Location & Assets",
+            sectionIcon = Icons.Default.Home,
+            id = "d_vehicle",
+            title = "Vehicle",
+            value = if (vehicle?.isComplete == true) "${vehicle.make} ${vehicle.model}".trim() else "",
+            tileIcon = Icons.Default.DirectionsCar,
+            isComplete = vehicle?.isComplete == true,
+            action = onOpenVehicleSheet,
+        ),
+        entry(
+            category = "Travel",
+            sectionIcon = Icons.Default.CardTravel,
+            id = "d_passport",
+            title = "Passport",
+            value = if (passport?.isComplete == true) passport.passportNumber else "",
+            tileIcon = Icons.Default.Book,
+            isComplete = passport?.isComplete == true,
+            action = onOpenPassportSheet,
+        ),
     )
 }

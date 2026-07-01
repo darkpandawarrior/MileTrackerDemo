@@ -147,7 +147,7 @@ data class ProfileFieldCompletion(
                 FieldDef("d_gender", "Gender", required = false) { it.gender },
                 FieldDef("d_home", "Home Location", required = false) { it.homeLocation },
                 FieldDef("d_org", "Organization", required = true) { it.organization },
-                FieldDef("d_manager", "Reporting Manager", required = true) { it.manager },
+                FieldDef("d_manager", "Reporting Manager", required = true) { it.manager?.name.orEmpty() },
                 FieldDef("d_role", "Role", required = true) { it.role },
                 FieldDef("d_phone", "Phone", required = false) { it.phone },
                 FieldDef("d_code", "Employee Code", required = false) { it.employeeCode },

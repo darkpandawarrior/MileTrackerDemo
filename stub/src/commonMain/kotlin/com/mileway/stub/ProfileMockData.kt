@@ -3,6 +3,7 @@ package com.mileway.stub
 import com.mileway.core.network.model.CompletionCategory
 import com.mileway.core.network.model.DemoAccount
 import com.mileway.core.network.model.EmployeeProfile
+import com.mileway.core.network.model.EmployeeSummary
 import com.mileway.core.network.model.ProfileCompletion
 import com.mileway.core.network.model.UserSession
 
@@ -24,8 +25,13 @@ object ProfileMockData {
             gender = "Male",
             role = "Field Sales Executive",
             organization = "Demo Logistics Pvt Ltd",
-            manager = "Asha Verma",
+            manager = EmployeeSummary(id = "ACC-002", name = "Asha Verma", code = "EMP001-SBX"),
             homeLocation = "Baner, Pune",
+            customFields =
+                mapOf(
+                    "Cost Center" to "CC-4021",
+                    "Blood Group" to "O+",
+                ),
         )
 
     /**

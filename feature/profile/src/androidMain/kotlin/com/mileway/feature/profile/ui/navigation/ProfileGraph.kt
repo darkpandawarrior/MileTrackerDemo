@@ -14,6 +14,7 @@ import com.mileway.feature.profile.ui.screens.DelegationScreen
 import com.mileway.feature.profile.ui.screens.DemoSettingsScreen
 import com.mileway.feature.profile.ui.screens.HelpScreen
 import com.mileway.feature.profile.ui.screens.NotificationCentreScreen
+import com.mileway.feature.profile.ui.screens.OrgChartScreen
 import com.mileway.feature.profile.ui.screens.PreferencesScreen
 import com.mileway.feature.profile.ui.screens.ProfileDetailsScreen
 import com.mileway.feature.profile.ui.screens.ProfileScreen
@@ -38,6 +39,7 @@ object ProfileRoutes {
     const val DEMO_SETTINGS = "profile/demo_settings"
     const val ROOT_GUARD = "profile/root_guard"
     const val ROOT_GUARD_DETECTED = "profile/root_guard_detected"
+    const val ORG_CHART = "profile/org_chart"
 
     fun analyticsDetailRoute(category: String) = "profile/analytics/$category"
 
@@ -80,6 +82,12 @@ fun NavGraphBuilder.profileGraph(
     }
     composable(ProfileRoutes.DETAILS) {
         ProfileDetailsScreen(
+            onBack = { navController.popBackStack() },
+            onOpenOrgChart = { navController.navigate(ProfileRoutes.ORG_CHART) },
+        )
+    }
+    composable(ProfileRoutes.ORG_CHART) {
+        OrgChartScreen(
             onBack = { navController.popBackStack() },
         )
     }

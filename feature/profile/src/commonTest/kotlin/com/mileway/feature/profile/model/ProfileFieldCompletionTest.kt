@@ -1,6 +1,7 @@
 package com.mileway.feature.profile.model
 
 import com.mileway.core.network.model.EmployeeProfile
+import com.mileway.core.network.model.EmployeeSummary
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -21,7 +22,7 @@ class ProfileFieldCompletionTest {
             gender = "Male",
             role = "Field Sales Executive",
             organization = "Demo Logistics Pvt Ltd",
-            manager = "Asha Verma",
+            manager = EmployeeSummary(id = "ACC-002", name = "Asha Verma"),
             homeLocation = "Baner, Pune",
         )
 
@@ -47,7 +48,7 @@ class ProfileFieldCompletionTest {
 
     @Test
     fun `a blank required field surfaces as a missing field with a ProfileDetails route`() {
-        val missingManager = completeProfile.copy(manager = "")
+        val missingManager = completeProfile.copy(manager = null)
 
         val result = ProfileFieldCompletion.derive(missingManager)
 
@@ -61,7 +62,7 @@ class ProfileFieldCompletionTest {
     fun `required fields sort ahead of optional fields in the missing list`() {
         // gender (optional) declared before organization/manager (required) in field order,
         // but required fields must still come first in the derived, sorted list.
-        val profile = completeProfile.copy(gender = "", organization = "", manager = "")
+        val profile = completeProfile.copy(gender = "", organization = "", manager = null)
 
         val result = ProfileFieldCompletion.derive(profile)
 

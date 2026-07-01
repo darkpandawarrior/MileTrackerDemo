@@ -3,9 +3,12 @@ package com.mileway.feature.profile.di
 import com.mileway.feature.profile.repository.AdvanceRepository
 import com.mileway.feature.profile.repository.FakeProfileRepository
 import com.mileway.feature.profile.repository.MockAccountRepository
+import com.mileway.feature.profile.repository.PassportDetailsRepository
 import com.mileway.feature.profile.repository.ProfileRepository
+import com.mileway.feature.profile.repository.VehicleDetailsRepository
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
 import com.mileway.feature.profile.viewmodel.DemoSettingsViewModel
+import com.mileway.feature.profile.viewmodel.PersonalDetailsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import com.mileway.feature.profile.viewmodel.SwitchAccountViewModel
 import org.koin.core.module.dsl.viewModel
@@ -17,8 +20,12 @@ val profileModule =
         single { MockAccountRepository(get()) }
         single<ProfileRepository> { FakeProfileRepository(get()) }
         single { AdvanceRepository() }
+        // P6.2: Vehicle/Passport tiles' Room-backed repositories.
+        single { VehicleDetailsRepository(get()) }
+        single { PassportDetailsRepository(get()) }
         viewModelOf(::ProfileViewModel)
         viewModel { AdvanceViewModel(get()) }
         viewModelOf(::DemoSettingsViewModel)
         viewModelOf(::SwitchAccountViewModel)
+        viewModelOf(::PersonalDetailsViewModel)
     }

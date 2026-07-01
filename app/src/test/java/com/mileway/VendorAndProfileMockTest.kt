@@ -101,7 +101,7 @@ class VendorAndProfileMockTest {
         assertEquals(configProfile?.code, profile.employeeCode)
         assertTrue(profile.role.isNotBlank(), "role must not be blank")
         assertTrue(profile.organization.isNotBlank(), "organization must not be blank")
-        assertTrue(profile.manager.isNotBlank(), "manager must not be blank")
+        assertTrue(profile.manager?.name?.isNotBlank() == true, "manager must not be blank")
     }
 
     // ── Sessions & accounts ───────────────────────────────────────────────────

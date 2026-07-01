@@ -5,6 +5,42 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 11 → 12 (PLAN_V22 P6.2): additive `vehicle_details` + `passport_details` singleton
+ * tables backing the Profile Details screen's new Vehicle/Passport tiles. Both are single-row
+ * tables (fixed primary key, same pattern as `draft_expenses`) — one vehicle and one passport per
+ * demo profile.
+ */
+val MIGRATION_11_12 =
+    object : Migration(11, 12) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `vehicle_details` (
+                    `id`                 TEXT    NOT NULL PRIMARY KEY,
+                    `make`               TEXT    NOT NULL,
+                    `model`              TEXT    NOT NULL,
+                    `registrationNumber` TEXT    NOT NULL,
+                    `fuelType`           TEXT    NOT NULL,
+                    `seatingCapacity`    INTEGER NOT NULL,
+                    `updatedAtMs`        INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `passport_details` (
+                    `id`                TEXT    NOT NULL PRIMARY KEY,
+                    `passportNumber`    TEXT    NOT NULL,
+                    `issuingCountry`    TEXT    NOT NULL,
+                    `expiryDateMillis`  INTEGER NOT NULL,
+                    `updatedAtMs`       INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 10 → 11 (PLAN_V22 P1.1): additive `mock_accounts` table — a real, persisted,
  * seedable multi-persona account store, replacing `stub.ProfileMockData.accounts()`'s bare
  * in-memory list as the source of truth for account switching. See

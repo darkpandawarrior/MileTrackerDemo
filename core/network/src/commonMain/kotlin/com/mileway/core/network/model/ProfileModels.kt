@@ -6,8 +6,24 @@ import kotlinx.serialization.Serializable
 // ── Rich employee profile ─────────────────────────────────────────────────────
 
 /**
+ * Lightweight reference to another employee — used for [EmployeeProfile.manager] so the profile
+ * can link to a real org-chart node (P6.2) instead of only carrying a free-text name.
+ */
+@Serializable
+data class EmployeeSummary(
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("code") val code: String = "",
+)
+
+/**
  * Full employee profile shown on the profile detail screen.
  * Superset of the lightweight header identity (name / email / code).
+ *
+ * P6.2: [manager] becomes a linked [EmployeeSummary] (was a bare `String`) so "Reporting Manager"
+ * can push a real org-chart node instead of only rendering a name; [customFields] is a small
+ * ordered map of tenant-defined key/value pairs (mirrors the reference app's custom-field concept)
+ * rendered on the Personal Info tile.
  */
 @Serializable
 data class EmployeeProfile(
@@ -18,8 +34,9 @@ data class EmployeeProfile(
     @SerialName("gender") val gender: String = "",
     @SerialName("role") val role: String = "",
     @SerialName("organization") val organization: String = "",
-    @SerialName("manager") val manager: String = "",
+    @SerialName("manager") val manager: EmployeeSummary? = null,
     @SerialName("homeLocation") val homeLocation: String = "",
+    @SerialName("customFields") val customFields: Map<String, String> = emptyMap(),
 )
 
 // ── Profile completion ────────────────────────────────────────────────────────

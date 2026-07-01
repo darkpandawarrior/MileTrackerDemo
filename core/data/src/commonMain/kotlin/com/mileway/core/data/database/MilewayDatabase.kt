@@ -11,9 +11,11 @@ import com.mileway.core.data.dao.LocationDao
 import com.mileway.core.data.dao.LogMilesDraftDao
 import com.mileway.core.data.dao.LogMilesFrequentRouteDao
 import com.mileway.core.data.dao.MockAccountDao
+import com.mileway.core.data.dao.PassportDetailsDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.SubmitDraftDao
 import com.mileway.core.data.dao.TripAttachmentDao
+import com.mileway.core.data.dao.VehicleDetailsDao
 import com.mileway.core.data.dao.VoucherDao
 import com.mileway.core.data.library.MediaLibraryDao
 import com.mileway.core.data.library.MediaLibraryEntry
@@ -25,9 +27,11 @@ import com.mileway.core.data.model.db.LocationData
 import com.mileway.core.data.model.db.LogMilesDraftEntity
 import com.mileway.core.data.model.db.LogMilesFrequentRouteEntity
 import com.mileway.core.data.model.db.MockAccountEntity
+import com.mileway.core.data.model.db.PassportDetailsEntity
 import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.db.SubmitDraftEntity
 import com.mileway.core.data.model.db.TripAttachmentEntity
+import com.mileway.core.data.model.db.VehicleDetailsEntity
 import com.mileway.core.data.model.db.VoucherEntity
 
 @Database(
@@ -45,8 +49,10 @@ import com.mileway.core.data.model.db.VoucherEntity
         DraftExpenseEntity::class,
         VoucherEntity::class,
         MockAccountEntity::class,
+        VehicleDetailsEntity::class,
+        PassportDetailsEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = false,
 )
 @ConstructedBy(MilewayDatabaseConstructor::class)
@@ -74,6 +80,10 @@ abstract class MilewayDatabase : RoomDatabase() {
     abstract fun voucherDao(): VoucherDao
 
     abstract fun mockAccountDao(): MockAccountDao
+
+    abstract fun vehicleDetailsDao(): VehicleDetailsDao
+
+    abstract fun passportDetailsDao(): PassportDetailsDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

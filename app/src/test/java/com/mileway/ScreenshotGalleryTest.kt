@@ -22,8 +22,10 @@ import com.mileway.core.data.dao.LocationDao
 import com.mileway.core.data.dao.LogMilesDraftDao
 import com.mileway.core.data.dao.LogMilesFrequentRouteDao
 import com.mileway.core.data.dao.MockAccountDao
+import com.mileway.core.data.dao.PassportDetailsDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.TripAttachmentDao
+import com.mileway.core.data.dao.VehicleDetailsDao
 import com.mileway.core.data.dao.VoucherDao
 import com.mileway.core.data.library.MediaLibraryDao
 import com.mileway.core.data.library.MediaLibraryEntry
@@ -260,6 +262,11 @@ class ScreenshotGalleryTest {
             single<MediaLibraryDao> { mediaLibraryDao }
             single<AgentDao> { FakeAgentDao() }
             single<MockAccountDao> { FakeMockAccountDao() }
+            // P6.2: PersonalDetailsViewModel collects both of these in init(); a relaxed mockk
+            // would return a null-backed Flow and crash the collector (memory: screenshot Koin
+            // needs deterministic fakes, same reason FakeVoucherDao exists above).
+            single<VehicleDetailsDao> { FakeVehicleDetailsDao() }
+            single<PassportDetailsDao> { FakePassportDetailsDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }
             single<AssistantEngine> { FakeAssistantEngine() }
             single<SpeechToText> { FakeSpeechToText() }
