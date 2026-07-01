@@ -1,5 +1,6 @@
 package com.mileway
 
+import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.display.OdometerCaptureResult
 import com.mileway.core.data.model.display.OdometerReadingSource
 import com.mileway.core.data.model.display.OdometerPurpose
@@ -8,7 +9,9 @@ import com.mileway.core.data.model.network.PolicyViolation
 import com.mileway.core.data.model.network.ViolationSeverity
 import com.mileway.core.data.model.network.SubmissionStatus
 import com.mileway.core.data.model.network.SubmitMilesRequestK
+import com.mileway.core.data.model.state.TrackMilesPluginConfig
 import com.mileway.core.network.api.MilewayNetworkApi
+import com.mileway.core.network.config.ConfigProvider
 import com.mileway.feature.tracking.manager.TrackingConfigManager
 import com.mileway.feature.tracking.repository.SavedTrackRepository
 import com.mileway.feature.tracking.repository.TripAttachmentRepository
@@ -55,14 +58,16 @@ class MileageSubmissionViewModelTest {
         override fun cancel(id: Int) = Unit
     }
 
-    private fun viewModel(api: MilewayNetworkApi = FakeTrackingNetworkApi()) =
-        MileageSubmissionViewModel(
-            api = api,
-            trackRepository = trackRepo,
-            attachmentRepository = attachmentRepo,
-            configManager = configManager,
-            notificationScheduler = noOpNotifier,
-        )
+    private fun viewModel(
+        api: MilewayNetworkApi = FakeTrackingNetworkApi(),
+        configManager: TrackingConfigManager = this.configManager,
+    ) = MileageSubmissionViewModel(
+        api = api,
+        trackRepository = trackRepo,
+        attachmentRepository = attachmentRepo,
+        configManager = configManager,
+        notificationScheduler = noOpNotifier,
+    )
 
     // ── Initial form state ────────────────────────────────────────────────────
 
@@ -291,5 +296,145 @@ class MileageSubmissionViewModelTest {
         assertEquals(SubmissionUiState.Idle, vm.state.value.submissionState)
         assertTrue(vm.state.value.pendingReceipts.isEmpty())
         assertNull(vm.state.value.pendingOdoStart)
+    }
+
+    // ── P6.1: odometer-not-working fallback ────────────────────────────────────
+
+    /** [ConfigProvider] whose track-miles config is overridable per test, everything else delegates to [DemoConfigManager]. */
+    private class FakeOdometerConfigProvider(
+        private val isOdometerMandatory: Boolean,
+        private val calculateExpenseViaOdometer: Boolean,
+    ) : ConfigProvider by DemoConfigManager() {
+        override fun getTrackMilesConfig(): TrackMilesPluginConfig =
+            TrackMilesPluginConfig(
+                isOdometerMandatory = isOdometerMandatory,
+                calculateExpenseViaOdometer = calculateExpenseViaOdometer,
+            )
+    }
+
+    private fun fillRequiredFields(vm: MileageSubmissionViewModel) {
+        vm.onAction(MileageSubmissionAction.SetFormValue("purpose", "Client visit"))
+        vm.onAction(MileageSubmissionAction.SetFormValue("gender", "Male"))
+        vm.onAction(MileageSubmissionAction.SelectOffice(vm.state.value.form.offices.first().code))
+        vm.onAction(MileageSubmissionAction.SelectEntity(vm.state.value.form.entities.first().name))
+    }
+
+    @Test
+    fun `canSubmit is false when odometer is mandatory and not captured, fallback off`() = runTest {
+        val vm = viewModel(
+            configManager = TrackingConfigManager(FakeOdometerConfigProvider(isOdometerMandatory = true, calculateExpenseViaOdometer = false)),
+        )
+        fillRequiredFields(vm)
+        assertTrue(!vm.state.value.form.canSubmit)
+        assertTrue(vm.state.value.form.remainingRequirements.contains("Odometer reading"))
+    }
+
+    @Test
+    fun `SetOdometerNotWorking unblocks canSubmit when fallback config is enabled`() = runTest {
+        val vm = viewModel(
+            configManager = TrackingConfigManager(FakeOdometerConfigProvider(isOdometerMandatory = true, calculateExpenseViaOdometer = true)),
+        )
+        fillRequiredFields(vm)
+        assertTrue(!vm.state.value.form.canSubmit)
+
+        vm.onAction(MileageSubmissionAction.SetOdometerNotWorking(true))
+        assertTrue(vm.state.value.form.canSubmit)
+    }
+
+    @Test
+    fun `submit with odometer-not-working fallback carries GPS distance and audit remark`() = runTest {
+        var capturedRequest: SubmitMilesRequestK? = null
+        val capturingApi = object : MilewayNetworkApi by FakeTrackingNetworkApi() {
+            override suspend fun submitMiles(request: SubmitMilesRequestK): ExpenseSubmissionResponse {
+                capturedRequest = request
+                return ExpenseSubmissionResponse(transId = "DEMO-ODO-FALLBACK", submissionStatus = SubmissionStatus.SUCCESS, reimbursableAmount = 42.0)
+            }
+        }
+
+        val vm = viewModel(
+            api = capturingApi,
+            configManager = TrackingConfigManager(FakeOdometerConfigProvider(isOdometerMandatory = true, calculateExpenseViaOdometer = true)),
+        )
+        fillRequiredFields(vm)
+        vm.onAction(MileageSubmissionAction.SetOdometerNotWorking(true))
+        assertTrue(vm.state.value.form.canSubmit)
+
+        vm.onAction(MileageSubmissionAction.Submit("route-odo-fallback", distanceKm = 12.5, vehicleKey = "fourWheelerPetrol", startTime = 0L, endTime = 1L))
+        advanceUntilIdle()
+
+        val request = capturedRequest
+        assertNotNull(request)
+        assertEquals(12.5, request.distance, 1e-9)
+        assertTrue(request.odometerNotWorking)
+        assertEquals("ODOMETER_NOT_WORKING", request.notes)
+        assertTrue(vm.state.value.submissionState is SubmissionUiState.Success)
+    }
+
+    // ── P6.2: round-trip auto-detection ────────────────────────────────────────
+
+    private fun track(
+        routeId: String,
+        startLat: Double,
+        startLng: Double,
+        endLat: Double,
+        endLng: Double,
+    ) = SavedTrack(
+        routeId = routeId,
+        name = "Test journey",
+        startLatitude = startLat, startLongitude = startLng,
+        endLatitude = endLat, endLongitude = endLng,
+        pausedLatitude = 0.0, pausedLongitude = 0.0,
+        startTime = 0L, endTime = -1L,
+        distance = 0.0, duration = 0L,
+        selectedVehicleType = "fourWheelerPetrol",
+        vehiclePricing = 10.0,
+        createdAt = 0L, startedAtTimestamp = 0L,
+        startedByEmployeeCode = "EMP001",
+    )
+
+    @Test
+    fun `LoadTrackInfo marks form roundTrip true when start and end are close after a long trip`() = runTest {
+        dao.preload(track("route-rt-001", 18.5204, 73.8567, 18.5204, 73.8567))
+        val vm = viewModel()
+
+        vm.onAction(MileageSubmissionAction.LoadTrackInfo("route-rt-001", "fourWheelerPetrol", distanceKm = 25.0))
+        advanceUntilIdle()
+
+        assertTrue(vm.state.value.form.roundTrip, "Same start/end after a long tracked trip should be a round trip")
+    }
+
+    @Test
+    fun `LoadTrackInfo leaves form roundTrip false when start and end are far apart`() = runTest {
+        dao.preload(track("route-rt-002", 18.5204, 73.8567, 18.6204, 73.8567))
+        val vm = viewModel()
+
+        vm.onAction(MileageSubmissionAction.LoadTrackInfo("route-rt-002", "fourWheelerPetrol", distanceKm = 25.0))
+        advanceUntilIdle()
+
+        assertTrue(!vm.state.value.form.roundTrip)
+    }
+
+    @Test
+    fun `submit threads roundTrip into SubmitMilesRequestK`() = runTest {
+        dao.preload(track("route-rt-003", 18.5204, 73.8567, 18.5204, 73.8567))
+        var capturedRequest: SubmitMilesRequestK? = null
+        val capturingApi = object : MilewayNetworkApi by FakeTrackingNetworkApi() {
+            override suspend fun submitMiles(request: SubmitMilesRequestK): ExpenseSubmissionResponse {
+                capturedRequest = request
+                return ExpenseSubmissionResponse(transId = "DEMO-ROUND-TRIP", submissionStatus = SubmissionStatus.SUCCESS, reimbursableAmount = 10.0)
+            }
+        }
+
+        val vm = viewModel(api = capturingApi)
+        fillRequiredFields(vm)
+        vm.onAction(MileageSubmissionAction.LoadTrackInfo("route-rt-003", "fourWheelerPetrol", distanceKm = 25.0))
+        advanceUntilIdle()
+
+        vm.onAction(MileageSubmissionAction.Submit("route-rt-003", distanceKm = 25.0, vehicleKey = "fourWheelerPetrol", startTime = 0L, endTime = 1L))
+        advanceUntilIdle()
+
+        val request = capturedRequest
+        assertNotNull(request)
+        assertTrue(request.roundTrip)
     }
 }

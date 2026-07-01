@@ -222,6 +222,8 @@ private class FakeDiscardSavedTrackDao(private val active: SavedTrack?) : SavedT
         routeId: String,
         voucherNumber: String,
     ): Int = 0
+
+    override suspend fun markOdometerNotWorking(routeId: String): Int = 0
 }
 
 private class FakeDiscardLocationDao : LocationDao {

@@ -56,4 +56,8 @@ class SavedTrackRepository(private val dao: SavedTrackDao) {
     ) {
         routeIds.forEach { dao.markClaimedByVoucher(it, voucherNumber) }
     }
+
+    // P6.1: persists the odometer-not-working fallback flag at submission time, so the existing
+    // Room column stops being dead.
+    suspend fun markOdometerNotWorking(routeId: String): Int = dao.markOdometerNotWorking(routeId)
 }
