@@ -104,13 +104,16 @@ data class LogMilesUiState(
 
     /**
      * Step 1 → Step 2 gate: at least two stops and a chosen vehicle, plus a complete, valid
-     * odometer capture whenever [odometerCaptureEnabled] is on (P5.3). Behavior is unchanged
-     * when the flag is off.
+     * odometer capture whenever [odometerCaptureEnabled] is on (P5.3), plus an explicit service
+     * selection whenever more than one service is available (P5.5) — with a single service (or
+     * none loaded yet) there's nothing to choose between, so the gate stays unaffected. Behavior
+     * is unchanged when neither condition applies.
      */
     val canProceedToStep2: Boolean
         get() =
             stops.size >= 2 && selectedVehicle != null &&
-                (!odometerCaptureEnabled || odometerCaptureComplete)
+                (!odometerCaptureEnabled || odometerCaptureComplete) &&
+                (services.size <= 1 || selectedService != null)
 
     /** Per-km rate of the selected vehicle (0 when none chosen). */
     val pricePerKm: Double get() = selectedVehicle?.vehiclePricing ?: 0.0
