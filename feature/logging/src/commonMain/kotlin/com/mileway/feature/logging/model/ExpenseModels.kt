@@ -50,6 +50,13 @@ data class ExpenseDraftRow(
     val merchantName: String = "",
     val note: String = "",
     val status: DraftStatus = DraftStatus.PENDING,
+    /**
+     * P2.5: local URI/path of an optional receipt photo scanned/attached for this row specifically
+     * (via [com.mileway.feature.logging.ui.screens.rememberReceiptAttachmentLauncher], the same
+     * per-row-scoped launcher the single-entry form's [ExpenseCategoryDef.requiresReceipt] flow
+     * already uses through P1.4); null when this row has no attachment.
+     */
+    val receiptImagePath: String? = null,
 )
 
 data class ExpenseRecord(

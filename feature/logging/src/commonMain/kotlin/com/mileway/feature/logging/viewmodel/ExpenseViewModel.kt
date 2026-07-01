@@ -443,6 +443,9 @@ class ExpenseViewModel(
             status = ExpenseStatus.PENDING,
             dateMs = kotlin.time.Clock.System.now().toEpochMilliseconds(),
             note = note,
+            // P2.5: this row's own receipt attachment (if any) carries through to the resulting
+            // record, mirroring the single-entry form's receiptImagePath but scoped per row.
+            receiptImagePath = receiptImagePath,
         )
     }
 
