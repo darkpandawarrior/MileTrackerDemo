@@ -76,6 +76,20 @@ class VoucherRepository(private val dao: VoucherDao) {
         if (!VoucherTransitions.isAllowed(from, to)) return
         dao.updateStatus(voucherNumber, to.label)
     }
+
+    /**
+     * P3.6: withdraws a submitted voucher — a deliberate simplification of the reference app's
+     * two-factor `draft OR pending-approval` + config-flag gate, since Mileway has no separate
+     * "pending approval permission" concept to gate on. Only [VoucherStatus.DRAFT] vouchers may
+     * be withdrawn here; anything past DRAFT (already moved to PENDING/decided/settled) is a
+     * no-op — the caller is expected to disable the action for those rows.
+     */
+    suspend fun withdraw(voucherNumber: String) {
+        val current = dao.getByNumber(voucherNumber) ?: return
+        val from = VoucherStatus.entries.firstOrNull { it.label == current.status } ?: return
+        if (from != VoucherStatus.DRAFT) return
+        dao.deleteByNumber(voucherNumber)
+    }
 }
 
 private fun VoucherEntity.toRecord() =

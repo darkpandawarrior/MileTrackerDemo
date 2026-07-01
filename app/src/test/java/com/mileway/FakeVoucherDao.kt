@@ -38,4 +38,8 @@ class FakeVoucherDao : VoucherDao {
     }
 
     override suspend fun getByNumber(voucherNumber: String): VoucherEntity? = vouchers.value[voucherNumber]
+
+    override suspend fun deleteByNumber(voucherNumber: String) {
+        vouchers.value = vouchers.value - voucherNumber
+    }
 }

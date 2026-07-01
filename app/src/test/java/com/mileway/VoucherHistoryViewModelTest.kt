@@ -28,7 +28,8 @@ class VoucherHistoryViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private fun viewModel(dao: FakeVoucherDao = FakeVoucherDao()) = VoucherHistoryViewModel(VoucherHistoryRepository(dao))
+    private fun viewModel(dao: FakeVoucherDao = FakeVoucherDao()) =
+        VoucherHistoryViewModel(VoucherHistoryRepository(dao), VoucherRepository(dao))
 
     private fun rows(vm: VoucherHistoryViewModel) =
         (vm.state.value.list as ScreenState.Content).data
@@ -109,5 +110,42 @@ class VoucherHistoryViewModelTest {
         assertTrue(rows.any { it.amount == 250.0 })
         // 8 seeded demo rows + the 1 just submitted, observed live without a manual Refresh.
         assertEquals(9, rows.size)
+    }
+
+    /**
+     * P3.6: withdrawing a DRAFT voucher (VCH-1000 is seeded DRAFT — see
+     * [VoucherHistoryRepository.demoSeed]) removes it from the live history list without a
+     * manual [VoucherHistoryAction.Refresh], since both the writer ([VoucherRepository.withdraw])
+     * and the reader ([VoucherHistoryRepository.observeVouchers]) share the same Room-backed DAO.
+     */
+    @Test
+    fun `Withdraw removes a DRAFT voucher from history`() = runTest {
+        val vm = viewModel()
+        advanceUntilIdle()
+        assertEquals(8, rows(vm).size)
+        assertTrue(rows(vm).any { it.id == "VCH-1000" && it.voucherState == VoucherStatus.DRAFT.label })
+
+        vm.onAction(VoucherHistoryAction.Withdraw("VCH-1000"))
+        advanceUntilIdle()
+
+        assertEquals(7, rows(vm).size)
+        assertTrue(rows(vm).none { it.id == "VCH-1000" })
+    }
+
+    /**
+     * P3.6's gate: withdraw is a no-op for anything past DRAFT — VCH-1004 is seeded APPROVED
+     * (see [VoucherHistoryRepository.demoSeed]) and must survive the call unchanged.
+     */
+    @Test
+    fun `Withdraw is a no-op for a non-DRAFT voucher`() = runTest {
+        val vm = viewModel()
+        advanceUntilIdle()
+        assertTrue(rows(vm).any { it.id == "VCH-1004" && it.voucherState == VoucherStatus.APPROVED.label })
+
+        vm.onAction(VoucherHistoryAction.Withdraw("VCH-1004"))
+        advanceUntilIdle()
+
+        assertEquals(8, rows(vm).size)
+        assertTrue(rows(vm).any { it.id == "VCH-1004" })
     }
 }

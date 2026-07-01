@@ -34,4 +34,8 @@ interface VoucherDao {
 
     @Query("SELECT * FROM vouchers WHERE voucherNumber = :voucherNumber LIMIT 1")
     suspend fun getByNumber(voucherNumber: String): VoucherEntity?
+
+    /** P3.6: the only deleter — a withdrawn (DRAFT-only, gated by the repository) voucher is removed outright. */
+    @Query("DELETE FROM vouchers WHERE voucherNumber = :voucherNumber")
+    suspend fun deleteByNumber(voucherNumber: String)
 }

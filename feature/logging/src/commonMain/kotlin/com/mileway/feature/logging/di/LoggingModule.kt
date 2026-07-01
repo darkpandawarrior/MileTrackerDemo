@@ -28,7 +28,7 @@ val loggingModule =
         factory { LogMilesSubmitUseCase(get()) }
         viewModel { LogMilesViewModel(get(), get(), get(), get()) }
         viewModel { ExpenseViewModel(get()) }
-        viewModel { VoucherHistoryViewModel(get()) }
+        viewModel { VoucherHistoryViewModel(get(), get()) }
         viewModel { SettlementHistoryViewModel(get()) }
         viewModel { CardsTxnHistoryViewModel(get()) }
         // SP.4: Spends contribution to master search (F0.5 registry).

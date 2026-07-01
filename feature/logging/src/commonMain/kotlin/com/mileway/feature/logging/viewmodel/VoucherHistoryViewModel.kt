@@ -6,6 +6,7 @@ import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.repository.VoucherHistoryRepository
 import com.mileway.feature.logging.ui.model.SubmittedVoucher
+import com.mileway.feature.tracking.repository.VoucherRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -25,6 +26,9 @@ sealed interface VoucherHistoryAction {
     data class SelectTab(val index: Int) : VoucherHistoryAction
 
     data class SetQuery(val query: String) : VoucherHistoryAction
+
+    /** P3.6: withdraws a DRAFT voucher (gated by [VoucherRepository.withdraw]); a no-op for any other status. */
+    data class Withdraw(val voucherNumber: String) : VoucherHistoryAction
 }
 
 sealed interface VoucherHistoryEffect
@@ -37,6 +41,7 @@ sealed interface VoucherHistoryEffect
  */
 class VoucherHistoryViewModel(
     private val repository: VoucherHistoryRepository,
+    private val voucherRepository: VoucherRepository,
 ) : BaseViewModel<VoucherHistoryUiState, VoucherHistoryEffect, VoucherHistoryAction>(VoucherHistoryUiState()) {
     private var reloadJob: Job? = null
 
@@ -55,6 +60,9 @@ class VoucherHistoryViewModel(
             is VoucherHistoryAction.SetQuery -> {
                 setState { copy(query = action.query) }
                 reload()
+            }
+            is VoucherHistoryAction.Withdraw -> {
+                viewModelScope.launch { voucherRepository.withdraw(action.voucherNumber) }
             }
         }
     }

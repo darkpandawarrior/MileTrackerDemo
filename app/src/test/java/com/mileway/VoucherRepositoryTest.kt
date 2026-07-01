@@ -92,4 +92,41 @@ class VoucherRepositoryTest {
 
         assertEquals(repo1.getAll().first().status, repo2.getAll().first().status)
     }
+
+    /** P3.6: withdrawing a DRAFT voucher removes it from the store outright. */
+    @Test
+    fun `withdraw removes a DRAFT voucher`() = runTest {
+        val dao = FakeVoucherDao()
+        val repo = VoucherRepository(dao)
+        repo.save(record("V-1"))
+
+        repo.withdraw("V-1")
+
+        assertEquals(0, repo.getAll().size)
+    }
+
+    /** P3.6's gate: withdraw is a no-op once the voucher has moved past DRAFT. */
+    @Test
+    fun `withdraw is a no-op for a non-DRAFT voucher`() = runTest {
+        val dao = FakeVoucherDao()
+        val repo = VoucherRepository(dao)
+        repo.save(record("V-1"))
+        repo.moveToApproval("V-1")
+
+        repo.withdraw("V-1")
+
+        assertEquals(1, repo.getAll().size)
+        assertEquals(VoucherStatus.PENDING.label, repo.getAll().first().status)
+    }
+
+    /** Defensive: withdraw on an unknown voucher number must not throw. */
+    @Test
+    fun `withdraw is a no-op for an unknown voucher number`() = runTest {
+        val dao = FakeVoucherDao()
+        val repo = VoucherRepository(dao)
+
+        repo.withdraw("does-not-exist")
+
+        assertEquals(0, repo.getAll().size)
+    }
 }
