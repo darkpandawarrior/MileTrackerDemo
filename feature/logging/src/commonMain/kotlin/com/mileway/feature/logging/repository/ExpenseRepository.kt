@@ -3,12 +3,15 @@ package com.mileway.feature.logging.repository
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class ExpenseRepository {
     private val baseMs = 1_700_000_000_000L
     private val dayMs = 86_400_000L
 
-    private val records =
+    private val seedRecords =
         listOf(
             ExpenseRecord(
                 id = "EXP-001",
@@ -83,9 +86,29 @@ class ExpenseRepository {
             ),
         )
 
+    private val _recordsFlow = MutableStateFlow(seedRecords)
+    val recordsFlow: StateFlow<List<ExpenseRecord>> = _recordsFlow.asStateFlow()
+
+    private val records: List<ExpenseRecord> get() = _recordsFlow.value
+
     fun getAll(): List<ExpenseRecord> = records
 
     fun getById(id: String): ExpenseRecord? = records.find { it.id == id }
 
     fun filterByStatus(status: ExpenseStatus?): List<ExpenseRecord> = if (status == null) records else records.filter { it.status == status }
+
+    /** Appends a new record, or replaces it if an entry with the same [ExpenseRecord.id] already exists. */
+    suspend fun insert(record: ExpenseRecord) {
+        _recordsFlow.value =
+            if (records.any { it.id == record.id }) {
+                records.map { if (it.id == record.id) record else it }
+            } else {
+                records + record
+            }
+    }
+
+    /** Replaces an existing record matching [ExpenseRecord.id]; a no-op if no such record exists. */
+    suspend fun update(record: ExpenseRecord) {
+        _recordsFlow.value = records.map { if (it.id == record.id) record else it }
+    }
 }

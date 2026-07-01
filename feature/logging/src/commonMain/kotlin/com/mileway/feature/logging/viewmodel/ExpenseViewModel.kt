@@ -1,5 +1,6 @@
 package com.mileway.feature.logging.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import com.mileway.core.common.UiText
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
@@ -9,6 +10,7 @@ import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
 import com.mileway.feature.logging.repository.ExpenseRepository
 import com.mileway.feature.logging.validation.ExpenseFormValidator
+import kotlinx.coroutines.launch
 
 enum class ExpenseFilter { ALL, DRAFTS, PENDING, SETTLED }
 
@@ -139,8 +141,21 @@ class ExpenseViewModel(
         }
         val amount = form.amountText.toDoubleOrNull() ?: 0.0
         val id = "EXP-NEW-${(form.merchantName.hashCode() and 0x7FFF_FFFF) % 9000 + 1000}"
-        setState { copy(lastSubmittedId = id, lastSubmittedAmount = amount) }
-        emitEffect(ExpenseEffect.NavigateToSuccess(id))
+        val record =
+            ExpenseRecord(
+                id = id,
+                category = form.category ?: ExpenseCategory.OTHER,
+                merchantName = form.merchantName,
+                amountRupees = amount,
+                status = ExpenseStatus.PENDING,
+                dateMs = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+                note = form.note,
+            )
+        viewModelScope.launch {
+            repository.insert(record)
+            setState { copy(lastSubmittedId = id, lastSubmittedAmount = amount) }
+            emitEffect(ExpenseEffect.NavigateToSuccess(id))
+        }
     }
 
     private fun openDetail(id: String) {

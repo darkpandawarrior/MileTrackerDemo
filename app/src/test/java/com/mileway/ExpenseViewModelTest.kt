@@ -16,6 +16,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -83,6 +84,25 @@ class ExpenseViewModelTest {
             assertEquals((effect as ExpenseEffect.NavigateToSuccess).id, vm.state.value.lastSubmittedId)
         }
         assertEquals(249.50, vm.state.value.lastSubmittedAmount)
+    }
+
+    @Test
+    fun `SubmitExpense appends the new record to the repository`() = runTest {
+        val repository = ExpenseRepository()
+        val vm = ExpenseViewModel(repository)
+        val before = repository.getAll().size
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+        vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
+        vm.onAction(ExpenseAction.SetAmount("249.50"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        assertEquals(before + 1, repository.getAll().size)
+        val inserted = repository.getById(vm.state.value.lastSubmittedId)
+        assertNotNull(inserted)
+        assertEquals("Cafe Coffee Day", inserted.merchantName)
+        assertEquals(ExpenseCategory.FOOD, inserted.category)
     }
 
     @Test

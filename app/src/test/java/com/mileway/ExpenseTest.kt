@@ -1,7 +1,10 @@
 package com.mileway
 
+import com.mileway.feature.logging.model.ExpenseCategory
+import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
 import com.mileway.feature.logging.repository.ExpenseRepository
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -88,4 +91,61 @@ class ExpenseTest {
             assertTrue(expense.merchantName.isNotBlank(), "${expense.id} has blank merchant name")
         }
     }
+
+    @Test
+    fun `insert appends a new record and getAll reflects it`() =
+        runTest {
+            val before = repo.getAll().size
+            val new =
+                ExpenseRecord(
+                    id = "EXP-NEW-1",
+                    category = ExpenseCategory.FOOD,
+                    merchantName = "Test Cafe",
+                    amountRupees = 199.0,
+                    status = ExpenseStatus.PENDING,
+                    dateMs = 0L,
+                )
+            repo.insert(new)
+            assertEquals(before + 1, repo.getAll().size)
+            assertEquals(new, repo.getById("EXP-NEW-1"))
+        }
+
+    @Test
+    fun `insert with an existing id replaces that record instead of duplicating it`() =
+        runTest {
+            val before = repo.getAll().size
+            val replacement = repo.getById("EXP-001")!!.copy(merchantName = "Updated Merchant")
+            repo.insert(replacement)
+            assertEquals(before, repo.getAll().size)
+            assertEquals("Updated Merchant", repo.getById("EXP-001")?.merchantName)
+        }
+
+    @Test
+    fun `update replaces an existing record's fields`() =
+        runTest {
+            val updated = repo.getById("EXP-002")!!.copy(status = ExpenseStatus.APPROVED, amountRupees = 7000.0)
+            repo.update(updated)
+            val result = repo.getById("EXP-002")
+            assertNotNull(result)
+            assertEquals(ExpenseStatus.APPROVED, result.status)
+            assertEquals(7000.0, result.amountRupees)
+        }
+
+    @Test
+    fun `update for an unknown id is a no-op`() =
+        runTest {
+            val before = repo.getAll()
+            val ghost =
+                ExpenseRecord(
+                    id = "EXP-DOES-NOT-EXIST",
+                    category = ExpenseCategory.OTHER,
+                    merchantName = "Ghost",
+                    amountRupees = 1.0,
+                    status = ExpenseStatus.DRAFT,
+                    dateMs = 0L,
+                )
+            repo.update(ghost)
+            assertEquals(before, repo.getAll())
+            assertNull(repo.getById("EXP-DOES-NOT-EXIST"))
+        }
 }
