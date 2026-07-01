@@ -13,6 +13,7 @@ import com.mileway.core.network.model.BusinessEntity
 import com.mileway.core.network.model.Office
 import com.mileway.core.platform.NotificationScheduler
 import com.mileway.core.ui.mvi.BaseViewModel
+import com.mileway.feature.tracking.checkin.RoundTripClassifier
 import com.mileway.feature.tracking.manager.TrackingConfigManager
 import com.mileway.feature.tracking.repository.OfflinePlacesRepository
 import com.mileway.feature.tracking.repository.SavedTrackRepository
@@ -79,6 +80,9 @@ data class SubmissionFormUi(
     // P6.1: user-declared "odometer isn't working" fallback. Only meaningful (and only bypasses
     // the odometer requirement) when config.calculateExpenseViaOdometer is true.
     val odometerNotWorking: Boolean = false,
+    // P6.2: auto-detected via RoundTripClassifier once start/end coords are loaded from
+    // SavedTrackRepository in loadTrackInfo(); threaded into SubmitMilesRequestK on submit.
+    val roundTrip: Boolean = false,
 ) {
     private val odometerCaptured: Boolean get() = simulatedStartOdo != null && simulatedEndOdo != null
 
@@ -331,6 +335,17 @@ class MileageSubmissionViewModel(
             val endAddr = if (track != null) OfflinePlacesRepository.addressFor(track.endLatitude, track.endLongitude) else "End Location"
             val vehicles = runCatching { api.vehicles(trackMiles = true).vehicles }.getOrElse { emptyList() }
             val vehicle = vehicles.firstOrNull { it.vehicleKey == vehicleKey }
+            // P6.2: auto-detect a round trip from the saved track's start/end coordinates and the
+            // already-tracked distance, so SubmitMilesRequestK.roundTrip stops being always-false.
+            val roundTrip =
+                track != null &&
+                    RoundTripClassifier.isRoundTrip(
+                        startLat = track.startLatitude,
+                        startLng = track.startLongitude,
+                        endLat = track.endLatitude,
+                        endLng = track.endLongitude,
+                        totalDistanceKm = distanceKm,
+                    )
             setState {
                 copy(
                     form =
@@ -339,6 +354,7 @@ class MileageSubmissionViewModel(
                             endAddress = endAddr,
                             vehicleName = vehicle?.vehicleName ?: vehicleKey,
                             vehicleRatePerKm = vehicle?.vehiclePricing ?: 0.0,
+                            roundTrip = roundTrip,
                         ),
                 )
             }
@@ -373,6 +389,8 @@ class MileageSubmissionViewModel(
                         submissionTime = Clock.System.now().toEpochMilliseconds(),
                         odometerNotWorking = odometerFallbackActive,
                         notes = if (odometerFallbackActive) ODOMETER_NOT_WORKING_REMARK else null,
+                        // P6.2: auto-detected in loadTrackInfo() from start/end coords + tracked distance.
+                        roundTrip = currentState.form.roundTrip,
                     ),
                 )
             }.onSuccess { response ->

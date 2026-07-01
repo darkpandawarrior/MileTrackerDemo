@@ -1,5 +1,6 @@
 package com.mileway
 
+import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.display.OdometerCaptureResult
 import com.mileway.core.data.model.display.OdometerReadingSource
 import com.mileway.core.data.model.display.OdometerPurpose
@@ -367,5 +368,73 @@ class MileageSubmissionViewModelTest {
         assertTrue(request.odometerNotWorking)
         assertEquals("ODOMETER_NOT_WORKING", request.notes)
         assertTrue(vm.state.value.submissionState is SubmissionUiState.Success)
+    }
+
+    // ── P6.2: round-trip auto-detection ────────────────────────────────────────
+
+    private fun track(
+        routeId: String,
+        startLat: Double,
+        startLng: Double,
+        endLat: Double,
+        endLng: Double,
+    ) = SavedTrack(
+        routeId = routeId,
+        name = "Test journey",
+        startLatitude = startLat, startLongitude = startLng,
+        endLatitude = endLat, endLongitude = endLng,
+        pausedLatitude = 0.0, pausedLongitude = 0.0,
+        startTime = 0L, endTime = -1L,
+        distance = 0.0, duration = 0L,
+        selectedVehicleType = "fourWheelerPetrol",
+        vehiclePricing = 10.0,
+        createdAt = 0L, startedAtTimestamp = 0L,
+        startedByEmployeeCode = "EMP001",
+    )
+
+    @Test
+    fun `LoadTrackInfo marks form roundTrip true when start and end are close after a long trip`() = runTest {
+        dao.preload(track("route-rt-001", 18.5204, 73.8567, 18.5204, 73.8567))
+        val vm = viewModel()
+
+        vm.onAction(MileageSubmissionAction.LoadTrackInfo("route-rt-001", "fourWheelerPetrol", distanceKm = 25.0))
+        advanceUntilIdle()
+
+        assertTrue(vm.state.value.form.roundTrip, "Same start/end after a long tracked trip should be a round trip")
+    }
+
+    @Test
+    fun `LoadTrackInfo leaves form roundTrip false when start and end are far apart`() = runTest {
+        dao.preload(track("route-rt-002", 18.5204, 73.8567, 18.6204, 73.8567))
+        val vm = viewModel()
+
+        vm.onAction(MileageSubmissionAction.LoadTrackInfo("route-rt-002", "fourWheelerPetrol", distanceKm = 25.0))
+        advanceUntilIdle()
+
+        assertTrue(!vm.state.value.form.roundTrip)
+    }
+
+    @Test
+    fun `submit threads roundTrip into SubmitMilesRequestK`() = runTest {
+        dao.preload(track("route-rt-003", 18.5204, 73.8567, 18.5204, 73.8567))
+        var capturedRequest: SubmitMilesRequestK? = null
+        val capturingApi = object : MilewayNetworkApi by FakeTrackingNetworkApi() {
+            override suspend fun submitMiles(request: SubmitMilesRequestK): ExpenseSubmissionResponse {
+                capturedRequest = request
+                return ExpenseSubmissionResponse(transId = "DEMO-ROUND-TRIP", submissionStatus = SubmissionStatus.SUCCESS, reimbursableAmount = 10.0)
+            }
+        }
+
+        val vm = viewModel(api = capturingApi)
+        fillRequiredFields(vm)
+        vm.onAction(MileageSubmissionAction.LoadTrackInfo("route-rt-003", "fourWheelerPetrol", distanceKm = 25.0))
+        advanceUntilIdle()
+
+        vm.onAction(MileageSubmissionAction.Submit("route-rt-003", distanceKm = 25.0, vehicleKey = "fourWheelerPetrol", startTime = 0L, endTime = 1L))
+        advanceUntilIdle()
+
+        val request = capturedRequest
+        assertNotNull(request)
+        assertTrue(request.roundTrip)
     }
 }
