@@ -85,6 +85,9 @@ class ExpenseRepository(
                 status = ExpenseStatus.REJECTED,
                 dateMs = baseMs - 14 * dayMs,
                 note = "Q3 client entertainment",
+                rejectionReason =
+                    "Exceeds the ₹3,000 per-head client entertainment limit for this cost " +
+                        "center. Resubmit with an itemized receipt or a lower amount.",
             ),
             ExpenseRecord(
                 id = "EXP-008",

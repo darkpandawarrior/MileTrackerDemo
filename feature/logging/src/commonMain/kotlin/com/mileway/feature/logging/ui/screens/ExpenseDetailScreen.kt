@@ -138,8 +138,10 @@ fun ExpenseDetailScreen(
                     }
                 }
 
-                // P1.8: edit/resubmit entry point — loads this record into the form, then
-                // navigates into the same details-input flow used for a fresh expense.
+                // P1.8: edit entry point — loads this record into the form, then navigates into
+                // the same details-input flow used for a fresh expense.
+                // P1.9: for a REJECTED expense this is the resubmit path, so it's labeled
+                // "Resubmit"; other statuses keep the plain "Edit Expense" affordance.
                 OutlinedButton(
                     onClick = {
                         viewModel.onAction(ExpenseAction.OpenEdit(expense.id))
@@ -149,7 +151,7 @@ fun ExpenseDetailScreen(
                 ) {
                     Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(DesignTokens.Spacing.s))
-                    Text("Edit Expense")
+                    Text(if (expense.status == ExpenseStatus.REJECTED) "Resubmit" else "Edit Expense")
                 }
 
                 Spacer(Modifier.height(DesignTokens.Spacing.l))
@@ -419,7 +421,9 @@ private fun buildTimelineSteps(expense: ExpenseRecord): List<TimelineStep> {
                     icon = Icons.Filled.Error,
                     color = StatusColors.error,
                     active = true,
-                    timestamp = "Contact your manager",
+                    // P1.9: real per-record rejection reason, falling back to the previous
+                    // generic copy for any rejected record seeded before this reason existed.
+                    timestamp = expense.rejectionReason ?: "Contact your manager",
                 )
             else ->
                 TimelineStep(

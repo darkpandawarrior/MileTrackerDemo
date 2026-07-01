@@ -522,4 +522,36 @@ class ExpenseViewModelTest {
             assertNull(dao.getDraft())
             assertNull(vm.state.value.resumableDraft)
         }
+
+    // ── P1.9: rejection reason + resubmit-after-rejection ──────────────────────
+
+    @Test
+    fun `EXP-007 is seeded REJECTED with a real rejection reason`() {
+        val rejected = ExpenseRepository().getById("EXP-007")
+        assertNotNull(rejected)
+        assertEquals(ExpenseStatus.REJECTED, rejected.status)
+        val reason = rejected.rejectionReason
+        assertNotNull(reason)
+        assertTrue(reason.isNotBlank())
+    }
+
+    @Test
+    fun `OpenDetail on a rejected record surfaces its rejection reason`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.OpenDetail("EXP-007"))
+        val detail = vm.state.value.detailState
+        assertTrue(detail is ScreenState.Content<ExpenseRecord>)
+        val record = (detail as ScreenState.Content<ExpenseRecord>).data
+        assertEquals(ExpenseStatus.REJECTED, record.status)
+        assertNotNull(record.rejectionReason)
+    }
+
+    @Test
+    fun `non-rejected records have no rejection reason`() {
+        val repository = ExpenseRepository()
+        val approved = repository.getById("EXP-001")
+        assertNotNull(approved)
+        assertEquals(ExpenseStatus.APPROVED, approved.status)
+        assertNull(approved.rejectionReason)
+    }
 }

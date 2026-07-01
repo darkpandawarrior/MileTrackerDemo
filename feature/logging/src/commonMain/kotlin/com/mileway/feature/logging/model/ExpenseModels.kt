@@ -51,6 +51,12 @@ data class ExpenseRecord(
      * [ExpenseCategoryDef.requiresCostCenter] is true; null otherwise.
      */
     val officeCode: String? = null,
+    /**
+     * P1.9: the manager/policy-engine's real reason for a [ExpenseStatus.REJECTED] record, shown
+     * in [com.mileway.feature.logging.ui.screens.ExpenseDetailScreen]'s approval timeline instead
+     * of a static placeholder string. Null for any non-rejected record.
+     */
+    val rejectionReason: String? = null,
 ) {
     val requiresApproval: Boolean get() = amountRupees > 5000.0
 }
