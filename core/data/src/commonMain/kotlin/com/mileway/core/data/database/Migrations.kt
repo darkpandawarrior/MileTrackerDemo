@@ -5,6 +5,19 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 8 → 9 (P3.3): additive `claimedByVoucherNumber` column on `saved_tracks` — the
+ * already-claimed guard so the same completed trip can't fund two separate vouchers (the reference app's
+ * server-side equivalent: `remainingVoucherCountForTrip`). Null means "unclaimed"; existing rows
+ * default to null, so nothing already-submitted becomes newly claimed by this migration alone.
+ */
+val MIGRATION_8_9 =
+    object : Migration(8, 9) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL("ALTER TABLE `saved_tracks` ADD COLUMN `claimedByVoucherNumber` TEXT")
+        }
+    }
+
+/**
  * Migration 7 → 8 (P3.1): shared `vouchers` table — the single Room-backed store both
  * `CreateVoucherViewModel` (feature/tracking) and `VoucherHistoryViewModel` (feature/logging)
  * bind to via Koin, replacing two disconnected in-memory stores. See

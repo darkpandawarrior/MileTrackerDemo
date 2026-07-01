@@ -195,4 +195,9 @@ private class FakeSystemRecoveryDao : SavedTrackDao {
     override suspend fun markLocalDataPurged(routeId: String) {}
 
     override suspend fun markPhoneShutDown(routeId: String): Int = 0
+
+    override suspend fun markClaimedByVoucher(
+        routeId: String,
+        voucherNumber: String,
+    ): Int = 0
 }

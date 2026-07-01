@@ -193,4 +193,9 @@ private class FakeAppKilledSavedTrackDao : SavedTrackDao {
     override suspend fun markFgTerminated(routeId: String): Int = 0
 
     override suspend fun markPhoneShutDown(routeId: String): Int = 0
+
+    override suspend fun markClaimedByVoucher(
+        routeId: String,
+        voucherNumber: String,
+    ): Int = 0
 }

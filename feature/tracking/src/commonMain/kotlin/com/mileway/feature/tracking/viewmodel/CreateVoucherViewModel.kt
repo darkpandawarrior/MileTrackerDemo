@@ -86,7 +86,9 @@ class CreateVoucherViewModel(
         viewModelScope.launch {
             val tracks =
                 savedTrackRepository.completedTracksFlow().first()
-                    .filter { it.isSubmitted && it.reimbursableAmount > 0 }
+                    // P3.3: already-claimed guard — a trip already inside a voucher can't fund
+                    // a second one (the reference app's server-side equivalent: remainingVoucherCountForTrip).
+                    .filter { it.isSubmitted && it.reimbursableAmount > 0 && it.claimedByVoucherNumber == null }
             val defaultTitle =
                 run {
                     val ldt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -120,6 +122,9 @@ class CreateVoucherViewModel(
             // P3.2: a voucher isn't useful sitting in DRAFT forever — move it to PENDING as part
             // of the same submit flow.
             voucherRepository.moveToApproval(number)
+            // P3.3: already-claimed guard — stamp every selected trip with this voucher's number
+            // so it can't be selected into a second voucher later.
+            savedTrackRepository.markClaimedByVoucher(state.selectedTokens.toList(), number)
             setState { copy(isSubmitting = false, submittedVoucherNumber = number, step = 3) }
         }
     }

@@ -215,4 +215,12 @@ interface SavedTrackDao {
     // P-C.3: L4 flag — set when the device shuts down while the session is active.
     @Query("UPDATE saved_tracks SET wasPhoneShutDown = 1 WHERE routeId = :routeId")
     suspend fun markPhoneShutDown(routeId: String): Int
+
+    // P3.3: already-claimed guard — a completed trip can only fund one voucher. Called once per
+    // selected trip when a voucher is submitted (CreateVoucherViewModel.submit()).
+    @Query("UPDATE saved_tracks SET claimedByVoucherNumber = :voucherNumber WHERE routeId = :routeId")
+    suspend fun markClaimedByVoucher(
+        routeId: String,
+        voucherNumber: String,
+    ): Int
 }

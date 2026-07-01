@@ -151,6 +151,11 @@ private class FakeSavedTrackDao(tracks: List<SavedTrack> = emptyList()) : SavedT
     override suspend fun markFgTerminated(routeId: String): Int = 0
 
     override suspend fun markPhoneShutDown(routeId: String): Int = 0
+
+    override suspend fun markClaimedByVoucher(
+        routeId: String,
+        voucherNumber: String,
+    ): Int = 0
 }
 
 private fun fakeTrack(

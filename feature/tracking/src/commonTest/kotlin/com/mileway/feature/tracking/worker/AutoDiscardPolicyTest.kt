@@ -217,6 +217,11 @@ private class FakeDiscardSavedTrackDao(private val active: SavedTrack?) : SavedT
     override suspend fun getRouteIdsEligibleForCleanup(cutoffMillis: Long): List<String> = emptyList()
 
     override suspend fun markLocalDataPurged(routeId: String) {}
+
+    override suspend fun markClaimedByVoucher(
+        routeId: String,
+        voucherNumber: String,
+    ): Int = 0
 }
 
 private class FakeDiscardLocationDao : LocationDao {

@@ -225,4 +225,9 @@ private class FakeShutdownDao : SavedTrackDao {
     override suspend fun getRouteIdsEligibleForCleanup(cutoffMillis: Long): List<String> = emptyList()
 
     override suspend fun markLocalDataPurged(routeId: String) {}
+
+    override suspend fun markClaimedByVoucher(
+        routeId: String,
+        voucherNumber: String,
+    ): Int = 0
 }

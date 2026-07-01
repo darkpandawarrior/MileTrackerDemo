@@ -342,4 +342,13 @@ class FakeSavedTrackDao(
         tracks.map { it.values.toList() }
 
     override suspend fun count(): Long = tracks.value.size.toLong()
+
+    override suspend fun markClaimedByVoucher(
+        routeId: String,
+        voucherNumber: String,
+    ): Int {
+        val track = tracks.value[routeId] ?: return 0
+        tracks.update { it + (routeId to track.copy(claimedByVoucherNumber = voucherNumber)) }
+        return 1
+    }
 }

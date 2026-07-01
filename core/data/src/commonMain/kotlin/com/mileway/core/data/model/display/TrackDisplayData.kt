@@ -23,6 +23,9 @@ data class TrackDisplayData(
     val submittedAt: Long = 0L,
     val isSubmitted: Boolean = false,
     val locationCount: Int = 0,
+    // P3.3: non-null once this trip has been selected into a submitted voucher — the
+    // already-claimed guard excludes these from a subsequent Create Voucher selection list.
+    val claimedByVoucherNumber: String? = null,
 ) {
     fun getDurationMs(): Long =
         when {
@@ -67,4 +70,5 @@ fun SavedTrack.toDisplayData() =
         submittedAt = submissionTime,
         isSubmitted = serverUploaded,
         locationCount = totalLocationPoints.toInt(),
+        claimedByVoucherNumber = claimedByVoucherNumber,
     )

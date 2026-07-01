@@ -47,4 +47,13 @@ class SavedTrackRepository(private val dao: SavedTrackDao) {
 
     // P-C.3: write wasPhoneShutDown=true; returns rows updated.
     suspend fun markPhoneShutDown(routeId: String): Int = dao.markPhoneShutDown(routeId)
+
+    // P3.3: already-claimed guard — stamps every trip selected into a just-submitted voucher with
+    // that voucher's number so it's excluded from a subsequent Create Voucher selection list.
+    suspend fun markClaimedByVoucher(
+        routeIds: List<String>,
+        voucherNumber: String,
+    ) {
+        routeIds.forEach { dao.markClaimedByVoucher(it, voucherNumber) }
+    }
 }

@@ -164,4 +164,35 @@ class CreateVoucherViewModelTest {
         // a voucher isn't useful sitting in DRAFT forever.
         assertEquals(VoucherStatus.PENDING.label, saved.first().status)
     }
+
+    @Test
+    fun `a trip already claimed by a voucher is excluded from the selection list`() = runTest {
+        dao.preload(makeSubmittedTrack("T1", 100.0).copy(claimedByVoucherNumber = "V-1234"))
+        dao.preload(makeSubmittedTrack("T2", 200.0))
+        val vm = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(1, vm.state.value.expenses.size)
+        assertEquals("T2", vm.state.value.expenses.first().token)
+    }
+
+    @Test
+    fun `Submit claims every selected trip so it can't fund a second voucher`() = runTest {
+        dao.preload(makeSubmittedTrack("T1", 150.0))
+        val vm = viewModel()
+        advanceUntilIdle()
+
+        vm.onAction(CreateVoucherAction.SelectAll)
+        vm.onAction(CreateVoucherAction.Submit)
+        advanceUntilIdle()
+
+        val voucherNumber = vm.state.value.submittedVoucherNumber
+        assertNotNull(voucherNumber)
+        assertEquals(voucherNumber, dao.getSavedTrackById("T1")?.claimedByVoucherNumber)
+
+        // A second CreateVoucherViewModel instance (e.g. re-entering the flow) no longer sees T1.
+        val vm2 = viewModel()
+        advanceUntilIdle()
+        assertTrue(vm2.state.value.expenses.isEmpty())
+    }
 }
