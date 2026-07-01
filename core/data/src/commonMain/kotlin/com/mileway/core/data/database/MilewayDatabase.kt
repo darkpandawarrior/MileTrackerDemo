@@ -10,6 +10,7 @@ import com.mileway.core.data.dao.HardwareEventDao
 import com.mileway.core.data.dao.LocationDao
 import com.mileway.core.data.dao.LogMilesDraftDao
 import com.mileway.core.data.dao.LogMilesFrequentRouteDao
+import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.SubmitDraftDao
 import com.mileway.core.data.dao.TripAttachmentDao
@@ -23,6 +24,7 @@ import com.mileway.core.data.model.db.HardwareEvent
 import com.mileway.core.data.model.db.LocationData
 import com.mileway.core.data.model.db.LogMilesDraftEntity
 import com.mileway.core.data.model.db.LogMilesFrequentRouteEntity
+import com.mileway.core.data.model.db.MockAccountEntity
 import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.db.SubmitDraftEntity
 import com.mileway.core.data.model.db.TripAttachmentEntity
@@ -42,8 +44,9 @@ import com.mileway.core.data.model.db.VoucherEntity
         AgentMessageEntity::class,
         DraftExpenseEntity::class,
         VoucherEntity::class,
+        MockAccountEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false,
 )
 @ConstructedBy(MilewayDatabaseConstructor::class)
@@ -69,6 +72,8 @@ abstract class MilewayDatabase : RoomDatabase() {
     abstract fun draftExpenseDao(): DraftExpenseDao
 
     abstract fun voucherDao(): VoucherDao
+
+    abstract fun mockAccountDao(): MockAccountDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

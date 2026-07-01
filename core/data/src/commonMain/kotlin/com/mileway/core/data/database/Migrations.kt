@@ -5,6 +5,32 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 10 → 11 (PLAN_V22 P1.1): additive `mock_accounts` table — a real, persisted,
+ * seedable multi-persona account store, replacing `stub.ProfileMockData.accounts()`'s bare
+ * in-memory list as the source of truth for account switching. See
+ * [com.mileway.core.data.model.db.MockAccountEntity].
+ */
+val MIGRATION_10_11 =
+    object : Migration(10, 11) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `mock_accounts` (
+                    `accountId`     TEXT    NOT NULL PRIMARY KEY,
+                    `displayName`   TEXT    NOT NULL,
+                    `employeeCode`  TEXT    NOT NULL,
+                    `organization`  TEXT    NOT NULL,
+                    `avatarSeed`    TEXT    NOT NULL,
+                    `isActive`      INTEGER NOT NULL,
+                    `lastLoginAtMs` INTEGER NOT NULL,
+                    `createdAtMs`   INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 9 → 10 (P3.4): `vouchers.category` becomes the typed [com.mileway.core.data.model.db
  * .VoucherCategory] enum instead of a free-text `String` — but the underlying column is still
  * `TEXT` storing the exact same label values (`"Travel"`/`"Fuel"`/`"Maintenance"`/`"Other"`) via

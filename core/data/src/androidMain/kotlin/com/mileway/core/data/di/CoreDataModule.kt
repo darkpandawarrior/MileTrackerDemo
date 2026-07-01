@@ -31,6 +31,7 @@ val coreDataModule =
         single { get<MilewayDatabase>().agentDao() }
         single { get<MilewayDatabase>().draftExpenseDao() }
         single { get<MilewayDatabase>().voucherDao() }
+        single { get<MilewayDatabase>().mockAccountDao() }
         single { CurrentTrackDataStore(androidContext()) }
         single<CurrentTrackDataSource> { get<CurrentTrackDataStore>() }
         single { SessionRepository(androidContext()) }

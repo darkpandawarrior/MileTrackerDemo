@@ -14,6 +14,7 @@ kotlin {
         namespace = "com.mileway.core.data"
         compileSdk = 37
         minSdk = 30
+        withHostTest {}
     }
 
     sourceSets {
@@ -33,6 +34,10 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.sqlite.bundled)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }
