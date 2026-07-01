@@ -11,6 +11,7 @@ import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.ActiveAccountStore
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
+import com.mileway.core.data.session.MockAccountSessionCoordinator
 import com.mileway.core.data.session.PinHashSource
 import com.mileway.core.data.session.PinHashStore
 import com.mileway.core.data.session.SessionRepository
@@ -45,6 +46,9 @@ val coreDataModule =
         single { PinHashStore() }
         single<PinHashSource> { get<PinHashStore>() }
         single { DemoSettingsRepository() }
+        // P3.4: pause/restore hook run before ProfileViewModel.CommitAccountSwitch flips the
+        // active-account pointer.
+        single { MockAccountSessionCoordinator(get(), get(), get()) }
         single<AgentSessionStore> { AgentSessionStoreImpl() }
         single { Json { ignoreUnknownKeys = true } }
         single<SubmitOutbox<TripDraft>> { RoomSubmitOutbox(get(), get()) }

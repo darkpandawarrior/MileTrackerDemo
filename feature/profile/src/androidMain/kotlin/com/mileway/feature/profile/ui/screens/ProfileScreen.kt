@@ -283,6 +283,10 @@ fun ProfileScreen(
             onDismiss = { viewModel.onAction(ProfileAction.CancelAccountSwitch) },
         )
     }
+
+    if (state.pausedTripNotice != null) {
+        PausedTripNoticeSheet(onDismiss = { viewModel.onAction(ProfileAction.DismissPausedTripNotice) })
+    }
 }
 
 /** Badge count shown on the Notifications tile (matches the reference "174"). */

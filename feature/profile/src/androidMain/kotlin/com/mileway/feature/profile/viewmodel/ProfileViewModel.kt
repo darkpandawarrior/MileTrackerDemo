@@ -2,6 +2,7 @@ package com.mileway.feature.profile.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.data.session.ActiveAccountSource
+import com.mileway.core.data.session.MockAccountSessionCoordinator
 import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.mvi.BaseViewModel
@@ -73,6 +74,13 @@ sealed interface ProfileAction {
      * [SessionRepository.signOut] and emits [ProfileEffect.NavigateToLogin] instead.
      */
     data class SignOut(val accountId: String) : ProfileAction
+
+    /**
+     * P3.4: dismisses the "Trip in progress — pause and switch?" notice
+     * [ProfileUiState.pausedTripNotice] surfaces after [CommitAccountSwitch] paused the outgoing
+     * persona's running trip.
+     */
+    data object DismissPausedTripNotice : ProfileAction
 }
 
 sealed interface ProfileEffect {
@@ -105,6 +113,10 @@ class ProfileViewModel(
     private val activeAccountSource: ActiveAccountSource,
     private val demoSettingsRepository: DemoSettingsRepository,
     private val sessionRepository: SessionRepository,
+    // P3.4: pause/restore hook for a running trip when the active persona switches. Defaulted to
+    // null so existing test call sites (5 files, all built before this task) don't need updating;
+    // production Koin always supplies the real singleton.
+    private val sessionCoordinator: MockAccountSessionCoordinator? = null,
 ) : BaseViewModel<ProfileUiState, ProfileEffect, ProfileAction>(
         repository.accounts().let { acc ->
             ProfileUiState(
@@ -168,6 +180,7 @@ class ProfileViewModel(
             is ProfileAction.ViewAccountDetails -> viewAccountDetails(action.accountId)
             ProfileAction.DismissAccountDetails -> setState { copy(accountDetailsSheet = null) }
             is ProfileAction.SignOut -> signOut(action.accountId)
+            ProfileAction.DismissPausedTripNotice -> setState { copy(pausedTripNotice = null) }
         }
     }
 
@@ -212,15 +225,21 @@ class ProfileViewModel(
     /**
      * P2.2/P2.3: the real switch, not a cosmetic UI-state flag — called only after
      * [requestAccountSwitch]'s gate succeeds. Updates local state immediately (so the switcher row
-     * reflects the tap without waiting on I/O), then persists the choice to [activeAccountSource]
-     * (survives process death, P2.1) and [ProfileRepository.setActiveAccount] (flips the DAO's
-     * exclusive `isActive` row, P1.1/P1.2) — both writes drive downstream re-queries:
-     * `ActiveAccountSource.activeAccountId` is what `SavedTracksViewModel` collects to re-scope
-     * Journeys/Expenses to the new persona.
+     * reflects the tap without waiting on I/O), then runs [sessionCoordinator] (P3.4 — pauses a
+     * running trip started by the outgoing persona and restores the incoming persona's own paused
+     * trip, if any) **before** persisting the choice to [activeAccountSource] (survives process
+     * death, P2.1) and [ProfileRepository.setActiveAccount] (flips the DAO's exclusive `isActive`
+     * row, P1.1/P1.2) — both writes drive downstream re-queries: `ActiveAccountSource
+     * .activeAccountId` is what `SavedTracksViewModel` collects to re-scope Journeys/Expenses to
+     * the new persona.
      */
     private fun commitAccountSwitch(accountId: String) {
         setState { copy(selectedAccountId = accountId, pendingSwitchAccountId = null) }
         viewModelScope.launch {
+            val outcome = sessionCoordinator?.onPersonaSwitch(accountId)?.getOrNull()
+            if (outcome is MockAccountSessionCoordinator.Outcome.Paused) {
+                setState { copy(pausedTripNotice = accountId) }
+            }
             activeAccountSource.setActiveAccountId(accountId)
             repository.setActiveAccount(accountId)
         }

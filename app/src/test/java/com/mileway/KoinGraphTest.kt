@@ -19,6 +19,7 @@ import com.mileway.core.data.library.MediaLibraryDao
 import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
+import com.mileway.core.data.session.MockAccountSessionCoordinator
 import com.mileway.core.data.session.PinHashSource
 import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.ui.di.coreUiModule
@@ -124,6 +125,9 @@ class KoinGraphTest : KoinTest {
         single<DemoSettingsRepository> { mockk(relaxed = true) }
         // P2.4: ProfileViewModel now depends on SessionRepository (SignOut's global-fallback path).
         single<SessionRepository> { mockk(relaxed = true) }
+        // P3.4: ProfileViewModel now depends on MockAccountSessionCoordinator (pause/restore hook);
+        // its own DAO deps above are already deterministic fakes, not relaxed mocks.
+        single { MockAccountSessionCoordinator(get(), get(), get()) }
         single<NotificationScheduler> { mockk(relaxed = true) }
         single<ShareSheet> { mockk(relaxed = true) }
         single<PermissionsProvider> { mockk(relaxed = true) }

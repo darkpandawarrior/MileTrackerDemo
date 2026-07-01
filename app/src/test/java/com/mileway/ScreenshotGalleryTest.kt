@@ -31,6 +31,7 @@ import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
+import com.mileway.core.data.session.MockAccountSessionCoordinator
 import com.mileway.core.data.session.PinHashSource
 import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.data.settings.DemoSettingsRepository
@@ -275,6 +276,8 @@ class ScreenshotGalleryTest {
             single<DemoSettingsRepository> { mockk(relaxed = true) }
             // P2.4: ProfileViewModel now depends on SessionRepository (SignOut's global-fallback path).
             single<SessionRepository> { mockk(relaxed = true) }
+            // P3.4: ProfileViewModel now depends on MockAccountSessionCoordinator (pause/restore hook).
+            single { MockAccountSessionCoordinator(get(), get(), get()) }
             // Map screens (GeoCheckIn, LocationMap, LiveTrack, LogMiles thumbnail) inject
             // MapSurface; the real flavor surfaces need GMS / MapLibre native, so use a
             // no-op fake on the JVM. mapsKoinModule() is deliberately excluded.

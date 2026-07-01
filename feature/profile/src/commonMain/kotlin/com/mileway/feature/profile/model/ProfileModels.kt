@@ -80,6 +80,14 @@ data class ProfileUiState(
      * path; the biometric path never sets this (see `ProfileEffect.RequestBiometricGate`).
      */
     val pendingSwitchAccountId: String? = null,
+    /**
+     * P3.4: the persona just switched *to*, when [com.mileway.core.data.session.MockAccountSessionCoordinator]
+     * (via `ProfileViewModel.CommitAccountSwitch`) found and paused a trip the outgoing persona had
+     * running — non-null shows the "Trip in progress — pause and switch?" notice sheet; null (the
+     * default, and the state after dismissal) means no notice is pending. A switch with no active
+     * trip never sets this, so the notice is silent in the common case.
+     */
+    val pausedTripNotice: String? = null,
 )
 
 data class SettingsUiState(
