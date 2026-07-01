@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -130,6 +131,15 @@ fun ExpenseEntryScreen(
             Spacer(Modifier.height(DesignTokens.Spacing.l))
 
             if (bulkMode) {
+                // P2.4: local CSV/TSV bulk-import — parses the picked file's raw text into rows
+                // appended alongside whatever the grid already has.
+                val importCsv = rememberExpenseCsvImportLauncher { text -> viewModel.onAction(ExpenseAction.ImportCsv(text)) }
+                OutlinedButton(onClick = importCsv, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Filled.UploadFile, contentDescription = null)
+                    Text(" Import CSV")
+                }
+                Spacer(Modifier.height(DesignTokens.Spacing.m))
+
                 BulkDraftGrid(
                     rows = ui.rows,
                     onAddRow = { viewModel.onAction(ExpenseAction.AddDraftRow) },

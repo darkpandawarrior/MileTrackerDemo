@@ -8,6 +8,7 @@ import com.mileway.core.network.model.SubmissionStatus
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.catalog.ExpenseCategoryCatalog
+import com.mileway.feature.logging.import.ExpenseCsvImporter
 import com.mileway.feature.logging.model.DraftStatus
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseDraftRow
@@ -152,6 +153,15 @@ sealed interface ExpenseAction {
 
     /** Resubmits only rows currently [DraftStatus.ERROR], leaving PENDING/SUCCESS rows untouched. */
     data object RetryFailedDrafts : ExpenseAction
+
+    // ── P2.4: local CSV/TSV bulk-import parser (no backend) ────────────────────
+
+    /**
+     * Parses [text] (raw CSV/TSV file contents, already read from the platform file-picker by the
+     * caller) via [ExpenseCsvImporter] and appends the resulting rows to the bulk-entry grid
+     * alongside whatever [ExpenseUiState.rows] already has.
+     */
+    data class ImportCsv(val text: String) : ExpenseAction
 }
 
 sealed interface ExpenseEffect {
@@ -235,6 +245,7 @@ class ExpenseViewModel(
             is ExpenseAction.ApplyCategoryToAll -> applyCategoryToAll(action.category)
             ExpenseAction.SubmitAllDrafts -> submitAllDrafts()
             ExpenseAction.RetryFailedDrafts -> retryFailedDrafts()
+            is ExpenseAction.ImportCsv -> importCsv(action.text)
         }
     }
 
@@ -482,5 +493,18 @@ class ExpenseViewModel(
             return
         }
         submitRows(errorIds)
+    }
+
+    // ── P2.4: local CSV/TSV bulk-import parser (no backend) ────────────────────
+
+    /**
+     * Re-ids each parsed row through [newRowId] (rather than [ExpenseCsvImporter]'s own row-local
+     * ids) so imported rows never collide with ids already in [ExpenseUiState.rows], then appends
+     * them to the grid.
+     */
+    private fun importCsv(text: String) {
+        val imported = ExpenseCsvImporter.parse(text).map { it.copy(id = newRowId()) }
+        if (imported.isEmpty()) return
+        setState { copy(rows = rows + imported) }
     }
 }

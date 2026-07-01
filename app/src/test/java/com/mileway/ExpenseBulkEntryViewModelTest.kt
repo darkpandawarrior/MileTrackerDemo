@@ -237,4 +237,60 @@ class ExpenseBulkEntryViewModelTest {
         assertEquals(before, repository.getAll().size)
         assertEquals(DraftStatus.PENDING, vm.state.value.rows.first().status)
     }
+
+    // ── P2.4: local CSV/TSV bulk-import parser (no backend) ─────────────────────
+
+    @Test
+    fun `ImportCsv appends parsed rows to the existing grid without disturbing the starter row`() {
+        val vm = viewModel()
+        val startId = vm.state.value.rows.first().id
+        val csv =
+            """
+            category,amount,merchant,note
+            Food,100,Cafe A,
+            Travel,250,Ola Cabs,
+            """.trimIndent()
+
+        vm.onAction(ExpenseAction.ImportCsv(csv))
+
+        val rows = vm.state.value.rows
+        assertEquals(3, rows.size)
+        assertEquals(startId, rows.first().id)
+        assertTrue(rows.drop(1).all { it.status == DraftStatus.PENDING })
+        assertEquals("Cafe A", rows[1].merchantName)
+        assertEquals("Ola Cabs", rows[2].merchantName)
+        // Imported rows are re-ided through the ViewModel's own row sequence, never colliding with existing ids.
+        assertEquals(rows.size, rows.map { it.id }.toSet().size)
+    }
+
+    @Test
+    fun `ImportCsv with one malformed row yields one ERROR row among the imported rows`() {
+        val vm = viewModel()
+        val csv =
+            """
+            category,amount,merchant,note
+            Food,100,Cafe A,
+            Travel,not-a-number,Ola Cabs,
+            Accommodation,4200,Taj Hotel,
+            Office Supplies,899,Staples,
+            Other,50,Misc Vendor,
+            """.trimIndent()
+
+        vm.onAction(ExpenseAction.ImportCsv(csv))
+
+        val imported = vm.state.value.rows.drop(1)
+        assertEquals(5, imported.size)
+        assertEquals(1, imported.count { it.status == DraftStatus.ERROR })
+        assertEquals(4, imported.count { it.status == DraftStatus.PENDING })
+    }
+
+    @Test
+    fun `ImportCsv with blank text is a no-op`() {
+        val vm = viewModel()
+        val before = vm.state.value.rows
+
+        vm.onAction(ExpenseAction.ImportCsv(""))
+
+        assertEquals(before, vm.state.value.rows)
+    }
 }
