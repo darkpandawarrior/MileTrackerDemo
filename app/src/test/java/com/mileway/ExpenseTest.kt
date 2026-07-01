@@ -148,4 +148,35 @@ class ExpenseTest {
             assertEquals(before, repo.getAll())
             assertNull(repo.getById("EXP-DOES-NOT-EXIST"))
         }
+
+    @Test
+    fun `receiptImagePath defaults to null when not supplied`() {
+        val record =
+            ExpenseRecord(
+                id = "EXP-NEW-2",
+                category = ExpenseCategory.FOOD,
+                merchantName = "Test Cafe",
+                amountRupees = 100.0,
+                status = ExpenseStatus.PENDING,
+                dateMs = 0L,
+            )
+        assertNull(record.receiptImagePath)
+    }
+
+    @Test
+    fun `insert persists a record with an attached receipt image path`() =
+        runTest {
+            val withReceipt =
+                ExpenseRecord(
+                    id = "EXP-NEW-3",
+                    category = ExpenseCategory.TRAVEL,
+                    merchantName = "Ola Cabs",
+                    amountRupees = 500.0,
+                    status = ExpenseStatus.PENDING,
+                    dateMs = 0L,
+                    receiptImagePath = "content://media/picked/1",
+                )
+            repo.insert(withReceipt)
+            assertEquals("content://media/picked/1", repo.getById("EXP-NEW-3")?.receiptImagePath)
+        }
 }

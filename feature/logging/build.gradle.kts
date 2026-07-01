@@ -18,6 +18,8 @@ kotlin {
             implementation(project(":core:network"))
             implementation(project(":core:ui"))
             implementation(project(":feature:tracking"))
+            // P1.4: renders an optional local receipt photo on the entry form + detail screen.
+            implementation(libs.coil3.compose)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

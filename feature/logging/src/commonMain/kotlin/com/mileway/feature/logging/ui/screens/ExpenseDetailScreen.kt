@@ -41,10 +41,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.mileway.core.common.formatDecimal
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.mvi.dataOrNull
@@ -167,22 +170,37 @@ private fun ReceiptPlaceholder(expense: ExpenseRecord) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(60.dp)
-                        .background(
-                            MaterialTheme.colorScheme.secondaryContainer,
-                            CircleShape,
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = expense.category.icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(30.dp),
+            val receiptImagePath = expense.receiptImagePath
+            if (receiptImagePath != null) {
+                // P1.4: a receipt photo was attached at submit time — render it instead of the icon placeholder.
+                AsyncImage(
+                    model = receiptImagePath,
+                    contentDescription = "Attached receipt photo",
+                    contentScale = ContentScale.Crop,
+                    modifier =
+                        Modifier
+                            .size(60.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.secondaryContainer),
                 )
+            } else {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(60.dp)
+                            .background(
+                                MaterialTheme.colorScheme.secondaryContainer,
+                                CircleShape,
+                            ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = expense.category.icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(30.dp),
+                    )
+                }
             }
             Text(
                 text = expense.merchantName,

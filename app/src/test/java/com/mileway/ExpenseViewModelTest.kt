@@ -116,6 +116,48 @@ class ExpenseViewModelTest {
     }
 
     @Test
+    fun `SetReceiptImage attaches then SetReceiptImage null clears it`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SetReceiptImage("content://media/picked/1"))
+        assertEquals("content://media/picked/1", vm.state.value.form.receiptImagePath)
+        vm.onAction(ExpenseAction.SetReceiptImage(null))
+        assertEquals(null, vm.state.value.form.receiptImagePath)
+    }
+
+    @Test
+    fun `SubmitExpense persists the attached receipt image path to the repository`() = runTest {
+        val repository = ExpenseRepository()
+        val vm = ExpenseViewModel(repository)
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+        vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
+        vm.onAction(ExpenseAction.SetAmount("249.50"))
+        vm.onAction(ExpenseAction.SetReceiptImage("content://media/picked/2"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        val inserted = repository.getById(vm.state.value.lastSubmittedId)
+        assertNotNull(inserted)
+        assertEquals("content://media/picked/2", inserted.receiptImagePath)
+    }
+
+    @Test
+    fun `SubmitExpense with no receipt attached persists a null receiptImagePath`() = runTest {
+        val repository = ExpenseRepository()
+        val vm = ExpenseViewModel(repository)
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+        vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
+        vm.onAction(ExpenseAction.SetAmount("249.50"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        val inserted = repository.getById(vm.state.value.lastSubmittedId)
+        assertNotNull(inserted)
+        assertEquals(null, inserted.receiptImagePath)
+    }
+
+    @Test
     fun `OpenDetail resolves a known id and falls back to Empty for an unknown one`() {
         val vm = viewModel()
         val known: ExpenseRecord = ExpenseRepository().getAll().first()

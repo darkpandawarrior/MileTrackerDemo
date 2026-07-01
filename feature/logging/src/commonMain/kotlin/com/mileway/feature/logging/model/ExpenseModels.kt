@@ -42,6 +42,8 @@ data class ExpenseRecord(
     val status: ExpenseStatus,
     val dateMs: Long,
     val note: String = "",
+    /** Local URI/path of an optional attached receipt photo (P1.4); null when none was attached. */
+    val receiptImagePath: String? = null,
 ) {
     val requiresApproval: Boolean get() = amountRupees > 5000.0
 }

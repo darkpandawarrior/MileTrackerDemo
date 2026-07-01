@@ -1,5 +1,7 @@
 package com.mileway.feature.logging.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +20,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,10 +40,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.mileway.core.common.asString
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
@@ -57,6 +66,10 @@ fun ExpenseDetailsInputScreen(
 ) {
     val ui by viewModel.state.collectAsState()
     val form = ui.form
+    val launchReceiptPicker =
+        rememberReceiptAttachmentLauncher { path ->
+            viewModel.onAction(ExpenseAction.SetReceiptImage(path))
+        }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -171,6 +184,12 @@ fun ExpenseDetailsInputScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            ReceiptAttachmentRow(
+                receiptImagePath = form.receiptImagePath,
+                onAttach = launchReceiptPicker,
+                onRemove = { viewModel.onAction(ExpenseAction.SetReceiptImage(null)) },
+            )
+
             if ((form.amountText.toDoubleOrNull() ?: 0.0) > 5000.0) {
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
@@ -186,6 +205,77 @@ fun ExpenseDetailsInputScreen(
             }
 
             Spacer(Modifier.height(DesignTokens.Spacing.xxl))
+        }
+    }
+}
+
+/**
+ * Optional local receipt attachment row (P1.4). Shows an "Attach Receipt" affordance when empty,
+ * or a thumbnail + remove action once a photo has been picked. Never blocks Submit — the receipt
+ * is optional.
+ */
+@Composable
+private fun ReceiptAttachmentRow(
+    receiptImagePath: String?,
+    onAttach: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    if (receiptImagePath == null) {
+        Card(
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onAttach),
+            shape = DesignTokens.Shape.roundedMd,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(DesignTokens.Spacing.l),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AddAPhoto,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Attach Receipt (optional)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
+        ) {
+            Box(modifier = Modifier.size(56.dp)) {
+                AsyncImage(
+                    model = receiptImagePath,
+                    contentDescription = "Attached receipt photo",
+                    contentScale = ContentScale.Crop,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(0.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant, DesignTokens.Shape.roundedSm),
+                )
+            }
+            Icon(
+                imageVector = Icons.Filled.Receipt,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = "Receipt attached",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onRemove) {
+                Icon(Icons.Filled.Close, contentDescription = "Remove attached receipt")
+            }
         }
     }
 }

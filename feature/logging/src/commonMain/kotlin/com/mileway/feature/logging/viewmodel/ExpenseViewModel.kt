@@ -31,6 +31,8 @@ data class ExpenseFormState(
     val amountText: String = "",
     val merchantName: String = "",
     val note: String = "",
+    /** Local URI/path of an optional attached receipt photo (P1.4); null when none was attached. */
+    val receiptImagePath: String? = null,
     val errors: Map<String, UiText> = emptyMap(),
 )
 
@@ -58,6 +60,9 @@ sealed interface ExpenseAction {
     data class SetMerchant(val name: String) : ExpenseAction
 
     data class SetNote(val note: String) : ExpenseAction
+
+    /** Attaches (or clears, when [path] is null) an optional local receipt photo (P1.4). */
+    data class SetReceiptImage(val path: String?) : ExpenseAction
 
     data object SubmitExpense : ExpenseAction
 
@@ -96,6 +101,7 @@ class ExpenseViewModel(
             is ExpenseAction.SetAmount -> setState { copy(form = form.copy(amountText = action.text)) }
             is ExpenseAction.SetMerchant -> setState { copy(form = form.copy(merchantName = action.name)) }
             is ExpenseAction.SetNote -> setState { copy(form = form.copy(note = action.note)) }
+            is ExpenseAction.SetReceiptImage -> setState { copy(form = form.copy(receiptImagePath = action.path)) }
             ExpenseAction.SubmitExpense -> submitExpense()
             ExpenseAction.ResetForm ->
                 setState { copy(form = ExpenseFormState(), lastSubmittedId = "", lastSubmittedAmount = 0.0) }
@@ -150,6 +156,7 @@ class ExpenseViewModel(
                 status = ExpenseStatus.PENDING,
                 dateMs = kotlin.time.Clock.System.now().toEpochMilliseconds(),
                 note = form.note,
+                receiptImagePath = form.receiptImagePath,
             )
         viewModelScope.launch {
             repository.insert(record)
