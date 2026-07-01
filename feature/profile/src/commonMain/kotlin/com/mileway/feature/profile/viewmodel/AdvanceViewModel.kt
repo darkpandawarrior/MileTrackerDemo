@@ -6,6 +6,7 @@ import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.profile.model.AdvanceMode
 import com.mileway.feature.profile.model.AdvanceRecord
 import com.mileway.feature.profile.model.AdvanceStatus
+import com.mileway.feature.profile.model.AdvanceType
 import com.mileway.feature.profile.model.CardStatus
 import com.mileway.feature.profile.model.CorporateCard
 import com.mileway.feature.profile.repository.AdvanceRepository
@@ -23,6 +24,7 @@ data class AdvanceFormState(
     val selectedCardId: String? = null,
     val amountText: String = "",
     val purpose: String = "",
+    val type: AdvanceType? = null,
     val requiredByDate: String = "",
     val declarationChecked: Boolean = false,
 )
@@ -51,6 +53,8 @@ sealed interface AdvanceAction {
     data class SetAmount(val text: String) : AdvanceAction
 
     data class SetPurpose(val text: String) : AdvanceAction
+
+    data class SetType(val type: AdvanceType?) : AdvanceAction
 
     data class SetRequiredByDate(val date: String) : AdvanceAction
 
@@ -100,6 +104,7 @@ class AdvanceViewModel(
             is AdvanceAction.SelectCard -> setState { copy(form = form.copy(selectedCardId = action.cardId)) }
             is AdvanceAction.SetAmount -> setState { copy(form = form.copy(amountText = action.text)) }
             is AdvanceAction.SetPurpose -> setState { copy(form = form.copy(purpose = action.text)) }
+            is AdvanceAction.SetType -> setState { copy(form = form.copy(type = action.type)) }
             is AdvanceAction.SetRequiredByDate -> setState { copy(form = form.copy(requiredByDate = action.date)) }
             is AdvanceAction.SetDeclaration -> setState { copy(form = form.copy(declarationChecked = action.checked)) }
             is AdvanceAction.GoToStep -> setState { copy(form = form.copy(step = action.step)) }

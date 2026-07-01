@@ -52,6 +52,7 @@ import com.mileway.core.ui.theme.DesignTokens.StatusColors
 import com.mileway.core.ui.theme.dataStyle
 import com.mileway.feature.profile.model.AdvanceRecord
 import com.mileway.feature.profile.model.AdvanceStatus
+import com.mileway.feature.profile.model.AdvanceType
 import com.mileway.feature.profile.viewmodel.AdvanceAction
 import com.mileway.feature.profile.viewmodel.AdvanceTabFilter
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
@@ -167,6 +168,14 @@ fun AdvanceHistoryScreen(
     }
 }
 
+internal fun AdvanceType.label(): String =
+    when (this) {
+        AdvanceType.TRAVEL -> "Travel"
+        AdvanceType.FIELD_VISIT -> "Field Visit"
+        AdvanceType.TRAINING -> "Training"
+        AdvanceType.CLIENT_ONBOARDING -> "Client Onboarding"
+    }
+
 @Composable
 private fun AdvanceCard(
     record: AdvanceRecord,
@@ -205,6 +214,14 @@ private fun AdvanceCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(record.id, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(record.purpose, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                if (record.type != null) {
+                    Text(
+                        record.type.label(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
                 Text(
                     Instant.fromEpochMilliseconds(record.requestedDateMs).toLocalDateTime(TimeZone.currentSystemDefault()).let {
                             ldt ->

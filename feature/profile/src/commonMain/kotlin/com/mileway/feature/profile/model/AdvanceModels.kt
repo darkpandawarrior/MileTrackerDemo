@@ -4,10 +4,13 @@ enum class AdvanceStatus { PENDING, UNDER_REVIEW, APPROVED, DISBURSED, REJECTED 
 
 enum class AdvanceMode { CASH, CARD_LINKED }
 
+enum class AdvanceType { TRAVEL, FIELD_VISIT, TRAINING, CLIENT_ONBOARDING }
+
 data class AdvanceRecord(
     val id: String,
     val amountRupees: Double,
     val purpose: String,
+    val type: AdvanceType? = null,
     val status: AdvanceStatus,
     val requestedDateMs: Long,
     val requiredByDate: String,

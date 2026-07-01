@@ -5,6 +5,8 @@ package com.mileway.feature.profile.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,12 +57,13 @@ import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
 import com.mileway.core.ui.theme.MilewayColors
 import com.mileway.core.ui.theme.dataStyle
 import com.mileway.feature.profile.model.AdvanceMode
+import com.mileway.feature.profile.model.AdvanceType
 import com.mileway.feature.profile.model.CorporateCard
 import com.mileway.feature.profile.viewmodel.AdvanceAction
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AskAdvanceFormScreen(
     onBack: () -> Unit,
@@ -232,6 +236,29 @@ fun AskAdvanceFormScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+
+                    Text(
+                        "Type (optional)",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.s),
+                        verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.s),
+                    ) {
+                        AdvanceType.entries.forEach { type ->
+                            FilterChip(
+                                selected = form.type == type,
+                                onClick = {
+                                    viewModel.onAction(
+                                        AdvanceAction.SetType(if (form.type == type) null else type),
+                                    )
+                                },
+                                label = { Text(type.label()) },
+                            )
+                        }
+                    }
                 }
 
                 2 -> {

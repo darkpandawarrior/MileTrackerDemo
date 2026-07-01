@@ -1,6 +1,8 @@
 package com.mileway
 
+import com.mileway.core.ui.mvi.dataOrNull
 import com.mileway.feature.profile.model.AdvanceMode
+import com.mileway.feature.profile.model.AdvanceType
 import com.mileway.feature.profile.repository.AdvanceRepository
 import com.mileway.feature.profile.viewmodel.AdvanceAction
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
@@ -79,5 +81,43 @@ class AdvanceViewModelTest {
             assertEquals(0, vm.state.value.form.step)
             assertEquals(AdvanceMode.CASH, vm.state.value.form.mode)
             assertNull(vm.state.value.form.selectedCardId)
+        }
+
+    // P4.3: AdvanceType taxonomy (optional selector).
+    @Test
+    fun `form starts with no type selected`() =
+        runTest {
+            val vm = vm()
+            assertNull(vm.state.value.form.type)
+        }
+
+    @Test
+    fun `selecting a type records it on the form`() =
+        runTest {
+            val vm = vm()
+            vm.onAction(AdvanceAction.SetType(AdvanceType.TRAINING))
+            assertEquals(AdvanceType.TRAINING, vm.state.value.form.type)
+        }
+
+    @Test
+    fun `type selection does not block advancing past step 1 when left unset`() =
+        runTest {
+            val vm = vm()
+            vm.onAction(AdvanceAction.SetAmount("500"))
+            vm.onAction(AdvanceAction.SetPurpose("Local travel"))
+            vm.onAction(AdvanceAction.SetRequiredByDate("2024-03-01"))
+            assertNull(vm.state.value.form.type)
+
+            vm.onAction(AdvanceAction.GoToStep(2))
+
+            assertEquals(2, vm.state.value.form.step)
+        }
+
+    @Test
+    fun `seeded advance record exposes its type for the history card`() =
+        runTest {
+            val vm = vm()
+            vm.onAction(AdvanceAction.LoadDetail("ADV-001"))
+            assertEquals(AdvanceType.FIELD_VISIT, vm.state.value.detail.dataOrNull?.type)
         }
 }

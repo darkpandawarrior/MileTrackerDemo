@@ -2,6 +2,7 @@ package com.mileway.feature.profile.repository
 
 import com.mileway.feature.profile.model.AdvanceRecord
 import com.mileway.feature.profile.model.AdvanceStatus
+import com.mileway.feature.profile.model.AdvanceType
 import com.mileway.feature.profile.model.ApproverStep
 import com.mileway.feature.profile.model.ApproverStepStatus
 import com.mileway.feature.profile.model.CardStatus
@@ -20,6 +21,7 @@ class AdvanceRepository {
                 id = "ADV-001",
                 amountRupees = 8000.0,
                 purpose = "Field visit expenses – Nashik",
+                type = AdvanceType.FIELD_VISIT,
                 status = AdvanceStatus.DISBURSED,
                 requestedDateMs = baseMs - 30 * dayMs,
                 requiredByDate = "2024-01-05",
@@ -39,6 +41,7 @@ class AdvanceRepository {
                 id = "ADV-002",
                 amountRupees = 15000.0,
                 purpose = "Outstation client onboarding trip",
+                type = AdvanceType.CLIENT_ONBOARDING,
                 status = AdvanceStatus.APPROVED,
                 requestedDateMs = baseMs - 10 * dayMs,
                 requiredByDate = "2024-01-25",
@@ -57,6 +60,7 @@ class AdvanceRepository {
                 id = "ADV-003",
                 amountRupees = 5500.0,
                 purpose = "Training workshop materials",
+                type = AdvanceType.TRAINING,
                 status = AdvanceStatus.UNDER_REVIEW,
                 requestedDateMs = baseMs - 3 * dayMs,
                 requiredByDate = "2024-02-01",
