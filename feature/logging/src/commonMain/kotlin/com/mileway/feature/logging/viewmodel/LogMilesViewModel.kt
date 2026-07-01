@@ -124,8 +124,14 @@ data class LogMilesUiState(
  * Builds the network payload from the current form state (P5.2). Extracted as a pure mapper
  * (mirrors [LogMilesDraftRepository.toDraftEntity]) so the submit request shape is unit-testable
  * without standing up the whole ViewModel.
+ *
+ * @param force            set on a resubmit after the user resolved a policy violation (P5.4)
+ * @param violationRemarks the resolution note carried alongside a forced resubmit (P5.4)
  */
-fun LogMilesUiState.toSubmitRequest(): LogMilesSubmitRequestV2 =
+fun LogMilesUiState.toSubmitRequest(
+    force: Boolean = false,
+    violationRemarks: String? = null,
+): LogMilesSubmitRequestV2 =
     LogMilesSubmitRequestV2(
         vehicleType = selectedVehicle?.vehicleKey,
         distance = distanceKm,
@@ -138,7 +144,21 @@ fun LogMilesUiState.toSubmitRequest(): LogMilesSubmitRequestV2 =
         serviceId = selectedService?.id,
         invoiceDate = invoiceDateMillis,
         odometerDistance = odometerEnd?.reading?.let { end -> odometerStart?.reading?.let { start -> end - start } },
+        force = force.takeIf { it },
+        violationRemarks = violationRemarks?.ifBlank { null },
     )
+
+/**
+ * Whether [response] needs the severity-branched [com.mileway.feature.logging.ui.dialog
+ * .ViolationDialog] (P5.4) rather than a clean pass-through to the success route. Extracted as a
+ * pure function so the three-tier branch is unit-testable without standing up the ViewModel.
+ */
+fun ExpenseSubmissionResponse.needsViolationDialog(): Boolean =
+    submissionStatus == SubmissionStatus.POLICY_VIOLATION ||
+        submissionStatus == SubmissionStatus.REIMBURSABLE_ADJUSTED ||
+        submissionStatus == SubmissionStatus.HARD_STOP ||
+        violations.isNotEmpty() ||
+        !policyViolations.isNullOrEmpty()
 
 sealed interface LogMilesAction {
     data object Refresh : LogMilesAction
@@ -196,6 +216,13 @@ sealed interface LogMilesAction {
     data object Submit : LogMilesAction
 
     data object DismissViolationDialog : LogMilesAction
+
+    /**
+     * Resubmits after the user resolved a policy violation from [com.mileway.feature.logging.ui
+     * .dialog.ViolationDialog] (P5.4). [notes] is blank for a `REIMBURSABLE_ADJUSTED` accept and
+     * required (validated by the dialog) for a `POLICY_VIOLATION` resubmit.
+     */
+    data class ResubmitInPolicy(val notes: String) : LogMilesAction
 
     data object ResetSubmission : LogMilesAction
 }
@@ -302,6 +329,7 @@ class LogMilesViewModel(
             is LogMilesAction.LoadDraft -> loadDraft(action.draftId)
             LogMilesAction.Submit -> submit()
             LogMilesAction.DismissViolationDialog -> setState { copy(showViolationDialog = false) }
+            is LogMilesAction.ResubmitInPolicy -> submit(force = true, violationRemarks = action.notes)
             LogMilesAction.ResetSubmission -> resetSubmission()
         }
     }
@@ -459,24 +487,28 @@ class LogMilesViewModel(
     }
 
     /**
-     * Submit the journey via [LogMilesSubmitUseCase]. On success with policy
-     * violations we surface a violation dialog; failures emit a [LogMilesEffect.ShowError].
+     * Submit the journey via [LogMilesSubmitUseCase]. On success with policy violations we
+     * surface the severity-branched [com.mileway.feature.logging.ui.dialog.ViolationDialog]
+     * (P5.4); failures emit a [LogMilesEffect.ShowError].
+     *
+     * @param force            resubmit after resolving a violation (P5.4); see [LogMilesAction
+     *                         .ResubmitInPolicy]
+     * @param violationRemarks resolution note carried alongside a forced resubmit
      */
-    private fun submit() {
+    private fun submit(
+        force: Boolean = false,
+        violationRemarks: String? = null,
+    ) {
         val s = currentState
         if (s.selectedVehicle == null) return
         if (s.stops.size < 2) return
         setState { copy(isSubmitting = true) }
         viewModelScope.launch {
             submitUseCase(
-                s.toSubmitRequest(),
+                s.toSubmitRequest(force = force, violationRemarks = violationRemarks),
             ).onSuccess { resp ->
-                val hasViolations =
-                    resp.submissionStatus == SubmissionStatus.POLICY_VIOLATION ||
-                        resp.violations.isNotEmpty() ||
-                        !resp.policyViolations.isNullOrEmpty()
                 setState {
-                    copy(isSubmitting = false, submissionResult = resp, showViolationDialog = hasViolations)
+                    copy(isSubmitting = false, submissionResult = resp, showViolationDialog = resp.needsViolationDialog())
                 }
             }.onFailure { e ->
                 setState { copy(isSubmitting = false) }

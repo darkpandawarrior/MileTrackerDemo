@@ -259,6 +259,15 @@ data class LogMilesSubmitRequestV2(
     @SerialName("invoiceDate") val invoiceDate: Long? = null,
     /** end-minus-start odometer reading, in km, when odometer capture (P5.3) was completed. */
     @SerialName("odometerDistance") val odometerDistance: Int? = null,
+    /**
+     * Set on a resubmit after the user resolved a policy violation (P5.4) — mirrors the
+     * `submitMiles`/`PolicyViolationSheet` "Ask Authorities" resolution's intent, so the same
+     * request shape carries a forced-through submission for the tracking pipeline too.
+     */
+    @SerialName("force") val force: Boolean? = null,
+    /** User-entered remarks explaining a `POLICY_VIOLATION`-tier resubmit (P5.4); required by the
+     * dialog before resubmit is enabled, carried through so the policy engine has an audit trail. */
+    @SerialName("violationRemarks") val violationRemarks: String? = null,
 )
 
 @Serializable

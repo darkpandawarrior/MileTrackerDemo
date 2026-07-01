@@ -286,9 +286,12 @@ fun LogMilesStep2Screen(
         uiState.submissionResult?.let { result ->
             ViolationDialog(
                 response = result,
-                onAcknowledge = {
+                onResubmit = { remarks ->
                     viewModel.onAction(LogMilesAction.DismissViolationDialog)
-                    onSubmitted()
+                    viewModel.onAction(LogMilesAction.ResubmitInPolicy(remarks))
+                },
+                onDismiss = {
+                    viewModel.onAction(LogMilesAction.DismissViolationDialog)
                 },
             )
         }
