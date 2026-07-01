@@ -11,6 +11,8 @@ import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.ActiveAccountStore
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
+import com.mileway.core.data.session.PinHashSource
+import com.mileway.core.data.session.PinHashStore
 import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.data.settings.AgentSessionStore
 import com.mileway.core.data.settings.AgentSessionStoreImpl
@@ -38,6 +40,8 @@ val coreDataModule =
         single { SessionRepository() }
         single { ActiveAccountStore() }
         single<ActiveAccountSource> { get<ActiveAccountStore>() }
+        single { PinHashStore() }
+        single<PinHashSource> { get<PinHashStore>() }
         single { DemoSettingsRepository() }
         single<AgentSessionStore> { AgentSessionStoreImpl() }
         single { Json { ignoreUnknownKeys = true } }

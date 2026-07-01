@@ -73,6 +73,13 @@ data class ProfileUiState(
     val preferenceMessage: String? = null,
     /** P1.3: the persona currently shown in [AccountDetailsSheet][com.mileway.feature.profile.ui.screens.AccountDetailsSheet], or null when dismissed. */
     val accountDetailsSheet: DemoAccount? = null,
+    /**
+     * P2.3: the persona a switch was requested for but not yet confirmed by
+     * [SwitchAccountPinSheet][com.mileway.feature.profile.ui.screens.SwitchAccountPinSheet] — non-null
+     * shows the PIN sheet; null (the default) means no switch is pending. Only used on the local-PIN
+     * path; the biometric path never sets this (see `ProfileEffect.RequestBiometricGate`).
+     */
+    val pendingSwitchAccountId: String? = null,
 )
 
 data class SettingsUiState(

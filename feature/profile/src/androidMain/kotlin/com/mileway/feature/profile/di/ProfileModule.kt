@@ -7,6 +7,7 @@ import com.mileway.feature.profile.repository.ProfileRepository
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
 import com.mileway.feature.profile.viewmodel.DemoSettingsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import com.mileway.feature.profile.viewmodel.SwitchAccountViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -19,4 +20,5 @@ val profileModule =
         viewModelOf(::ProfileViewModel)
         viewModel { AdvanceViewModel(get()) }
         viewModelOf(::DemoSettingsViewModel)
+        viewModelOf(::SwitchAccountViewModel)
     }

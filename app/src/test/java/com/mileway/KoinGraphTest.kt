@@ -19,6 +19,7 @@ import com.mileway.core.data.library.MediaLibraryDao
 import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
+import com.mileway.core.data.session.PinHashSource
 import com.mileway.core.ui.di.coreUiModule
 import com.mileway.feature.agent.di.agentModule
 import com.mileway.feature.agent.viewmodel.AgentViewModel
@@ -43,6 +44,7 @@ import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
 import com.mileway.feature.profile.viewmodel.DemoSettingsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import com.mileway.feature.profile.viewmodel.SwitchAccountViewModel
 import com.mileway.feature.tracking.debug.DebugMenuComposeViewModel
 import com.mileway.feature.tracking.di.trackingModule
 import com.mileway.feature.tracking.viewmodel.CheckInViewModel
@@ -115,6 +117,9 @@ class KoinGraphTest : KoinTest {
         // Flow<String?>-from-relaxed-mockk null-collector trap (memory: screenshot Koin needs
         // deterministic fakes).
         single<ActiveAccountSource> { FakeActiveAccountSource() }
+        // P2.3: SwitchAccountViewModel.verify() reads this; a real in-memory fake avoids the
+        // suspend-fun-on-a-relaxed-mockk trap (memory: screenshot Koin needs deterministic fakes).
+        single<PinHashSource> { FakePinHashSource() }
         single<DemoSettingsRepository> { mockk(relaxed = true) }
         single<NotificationScheduler> { mockk(relaxed = true) }
         single<ShareSheet> { mockk(relaxed = true) }
@@ -173,6 +178,7 @@ class KoinGraphTest : KoinTest {
         assertNotNull(get<ProfileViewModel>())
         assertNotNull(get<AdvanceViewModel>())
         assertNotNull(get<DemoSettingsViewModel>())
+        assertNotNull(get<SwitchAccountViewModel>())
         assertNotNull(get<CheckInViewModel>())
         assertNotNull(get<ApprovalsViewModel>())
         assertNotNull(get<PayablesViewModel>())

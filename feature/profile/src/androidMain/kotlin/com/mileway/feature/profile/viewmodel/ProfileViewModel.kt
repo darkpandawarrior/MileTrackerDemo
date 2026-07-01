@@ -2,6 +2,7 @@ package com.mileway.feature.profile.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.data.session.ActiveAccountSource
+import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.theme.AccentPalette
 import com.mileway.core.ui.theme.AppLanguage
@@ -18,7 +19,26 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 sealed interface ProfileAction {
+    /**
+     * P2.3: no longer switches immediately — gates on [DemoSettingsRepository.biometricGuardEnabled]
+     * first. When enabled, emits [ProfileEffect.RequestBiometricGate] for the screen to run
+     * `BiometricGuard`; when disabled, sets `pendingSwitchAccountId` so the screen shows
+     * [SwitchAccountPinSheet][com.mileway.feature.profile.ui.screens.SwitchAccountPinSheet]. Either
+     * path calls [CommitAccountSwitch] on success.
+     */
     data class SwitchAccount(val id: String) : ProfileAction
+
+    /** The gate ([SwitchAccount]'s biometric or PIN path) succeeded; performs the real switch. */
+    data class CommitAccountSwitch(val id: String) : ProfileAction
+
+    /** The PIN sheet or biometric prompt was dismissed/cancelled without switching. */
+    data object CancelAccountSwitch : ProfileAction
+
+    /**
+     * Biometric guard is enabled but no usable biometric hardware/enrolment exists on-device —
+     * falls back to the PIN sheet instead of silently committing the switch unconfirmed.
+     */
+    data class FallBackToPinGate(val id: String) : ProfileAction
 
     data object OpenSessionsDialog : ProfileAction
 
@@ -45,8 +65,14 @@ sealed interface ProfileAction {
     data object DismissAccountDetails : ProfileAction
 }
 
-/** No one-shot effects; preference messages live in state. Present to satisfy the MVI contract. */
-sealed interface ProfileEffect
+sealed interface ProfileEffect {
+    /**
+     * P2.3: raised by [ProfileAction.SwitchAccount] when [DemoSettingsRepository.biometricGuardEnabled]
+     * is on. `ProfileScreen` (Android-only, since `BiometricPrompt` needs a `FragmentActivity`) runs
+     * `BiometricGuard.showPrompt` and dispatches [ProfileAction.CommitAccountSwitch] on success.
+     */
+    data class RequestBiometricGate(val accountId: String) : ProfileEffect
+}
 
 /**
  * Backs the whole account suite (Account hub, Profile Details, Preferences, Settings/Help).
@@ -58,6 +84,7 @@ class ProfileViewModel(
     private val repository: ProfileRepository,
     private val themeController: ThemeController,
     private val activeAccountSource: ActiveAccountSource,
+    private val demoSettingsRepository: DemoSettingsRepository,
 ) : BaseViewModel<ProfileUiState, ProfileEffect, ProfileAction>(
         repository.accounts().let { acc ->
             ProfileUiState(
@@ -104,7 +131,10 @@ class ProfileViewModel(
 
     override fun onAction(action: ProfileAction) {
         when (action) {
-            is ProfileAction.SwitchAccount -> switchAccount(action.id)
+            is ProfileAction.SwitchAccount -> requestAccountSwitch(action.id)
+            is ProfileAction.CommitAccountSwitch -> commitAccountSwitch(action.id)
+            ProfileAction.CancelAccountSwitch -> setState { copy(pendingSwitchAccountId = null) }
+            is ProfileAction.FallBackToPinGate -> setState { copy(pendingSwitchAccountId = action.id) }
             ProfileAction.OpenSessionsDialog -> setState { copy(showSessionsDialog = true) }
             ProfileAction.DismissSessionsDialog -> setState { copy(showSessionsDialog = false) }
             ProfileAction.TogglePushNotifications ->
@@ -121,15 +151,32 @@ class ProfileViewModel(
     }
 
     /**
-     * P2.2: a real switch, not a cosmetic UI-state flag. Updates local state immediately (so the
-     * switcher row reflects the tap without waiting on I/O), then persists the choice to
-     * [activeAccountSource] (survives process death, P2.1) and [ProfileRepository.setActiveAccount]
-     * (flips the DAO's exclusive `isActive` row, P1.1/P1.2) — both writes drive downstream
-     * re-queries: `ActiveAccountSource.activeAccountId` is what `SavedTracksViewModel` collects to
-     * re-scope Journeys/Expenses to the new persona.
+     * P2.3: gates the switch behind biometric or PIN confirmation instead of committing
+     * immediately. A no-op if [accountId] is already the active persona (avoids prompting for a
+     * switch to the same account, e.g. a stray re-tap of the already-selected chip).
      */
-    private fun switchAccount(accountId: String) {
-        setState { copy(selectedAccountId = accountId) }
+    private fun requestAccountSwitch(accountId: String) {
+        if (accountId == currentState.selectedAccountId) return
+        viewModelScope.launch {
+            if (demoSettingsRepository.settings.first().biometricGuardEnabled) {
+                emitEffect(ProfileEffect.RequestBiometricGate(accountId))
+            } else {
+                setState { copy(pendingSwitchAccountId = accountId) }
+            }
+        }
+    }
+
+    /**
+     * P2.2/P2.3: the real switch, not a cosmetic UI-state flag — called only after
+     * [requestAccountSwitch]'s gate succeeds. Updates local state immediately (so the switcher row
+     * reflects the tap without waiting on I/O), then persists the choice to [activeAccountSource]
+     * (survives process death, P2.1) and [ProfileRepository.setActiveAccount] (flips the DAO's
+     * exclusive `isActive` row, P1.1/P1.2) — both writes drive downstream re-queries:
+     * `ActiveAccountSource.activeAccountId` is what `SavedTracksViewModel` collects to re-scope
+     * Journeys/Expenses to the new persona.
+     */
+    private fun commitAccountSwitch(accountId: String) {
+        setState { copy(selectedAccountId = accountId, pendingSwitchAccountId = null) }
         viewModelScope.launch {
             activeAccountSource.setActiveAccountId(accountId)
             repository.setActiveAccount(accountId)

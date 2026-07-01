@@ -1,6 +1,8 @@
 package com.mileway
 
 import com.mileway.core.data.model.db.SavedTrack
+import com.mileway.core.data.settings.DemoSettings
+import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
 import com.mileway.feature.profile.repository.FakeProfileRepository
 import com.mileway.feature.profile.repository.MockAccountRepository
@@ -8,6 +10,9 @@ import com.mileway.feature.profile.viewmodel.ProfileAction
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import com.mileway.feature.tracking.repository.SavedTrackRepository
 import com.mileway.feature.tracking.viewmodel.SavedTracksViewModel
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -22,10 +27,17 @@ import kotlin.test.assertTrue
  * process death (reusing P2.1's store) and (2) drive a re-query of account-scoped data, proven
  * here end-to-end through [SavedTracksViewModel] re-scoping Journeys/Expenses by
  * `started_by_account_id`.
+ *
+ * P2.3 gates `SwitchAccount` behind a PIN/biometric confirmation (see `SwitchAccountViewModelTest`
+ * for that gate's own coverage) — these tests dispatch `CommitAccountSwitch` directly to simulate
+ * a gate that already succeeded, since re-scoping is the behavior under test here, not the gate.
  */
 class SwitchAccountReScopeTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    private fun fakeDemoSettingsRepository() =
+        mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) }
 
     private fun track(
         routeId: String,
@@ -42,7 +54,7 @@ class SwitchAccountReScopeTest {
     )
 
     @Test
-    fun `SwitchAccount persists the new active account id to ActiveAccountSource`() =
+    fun `CommitAccountSwitch persists the new active account id to ActiveAccountSource`() =
         runTest {
             val activeAccountSource = FakeActiveAccountSource(seed = "ACC-001")
             val vm =
@@ -50,22 +62,23 @@ class SwitchAccountReScopeTest {
                     FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
                     ThemeController(),
                     activeAccountSource,
+                    fakeDemoSettingsRepository(),
                 )
             advanceUntilIdle()
 
-            vm.onAction(ProfileAction.SwitchAccount("ACC-002"))
+            vm.onAction(ProfileAction.CommitAccountSwitch("ACC-002"))
             advanceUntilIdle()
 
             assertEquals("ACC-002", vm.uiState.value.selectedAccountId)
             assertEquals(
                 "ACC-002",
                 activeAccountSource.activeAccountId.first(),
-                "SwitchAccount must write through to the persisted pointer, not just local VM state",
+                "CommitAccountSwitch must write through to the persisted pointer, not just local VM state",
             )
         }
 
     @Test
-    fun `SwitchAccount flips the active flag in the Room-backed MockAccountRepository`() =
+    fun `CommitAccountSwitch flips the active flag in the Room-backed MockAccountRepository`() =
         runTest {
             val accountDao = FakeMockAccountDao()
             val mockAccountRepository = MockAccountRepository(accountDao)
@@ -74,10 +87,11 @@ class SwitchAccountReScopeTest {
                     FakeProfileRepository(mockAccountRepository),
                     ThemeController(),
                     FakeActiveAccountSource(seed = "ACC-001"),
+                    fakeDemoSettingsRepository(),
                 )
             advanceUntilIdle()
 
-            vm.onAction(ProfileAction.SwitchAccount("ACC-003"))
+            vm.onAction(ProfileAction.CommitAccountSwitch("ACC-003"))
             advanceUntilIdle()
 
             val accounts = mockAccountRepository.accounts()

@@ -1,5 +1,7 @@
 package com.mileway
 
+import com.mileway.core.data.settings.DemoSettings
+import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.AccentPalette
 import com.mileway.core.ui.theme.AppLanguage
 import com.mileway.core.ui.theme.ExperimentalFlags
@@ -11,6 +13,9 @@ import com.mileway.core.ui.theme.parseHexColor
 import com.mileway.feature.profile.repository.FakeProfileRepository
 import com.mileway.feature.profile.repository.MockAccountRepository
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -30,6 +35,7 @@ class CustomizationSettingsTest {
             FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
             tc,
             FakeActiveAccountSource(),
+            mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) },
         )
 
     // =========================================================================

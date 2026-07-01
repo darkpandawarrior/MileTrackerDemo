@@ -31,6 +31,7 @@ import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
+import com.mileway.core.data.session.PinHashSource
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.maps.MapSurface
 import com.mileway.core.platform.AnalyticsHelper
@@ -267,6 +268,9 @@ class ScreenshotGalleryTest {
             // Flow<String?>-from-relaxed-mockk null-collector trap (memory: screenshot Koin
             // needs deterministic fakes, same reason FakeVoucherDao exists above).
             single<ActiveAccountSource> { FakeActiveAccountSource() }
+            // P2.3: SwitchAccountViewModel.verify() reads this; a real in-memory fake avoids the
+            // suspend-fun-on-a-relaxed-mockk trap (memory: screenshot Koin needs deterministic fakes).
+            single<PinHashSource> { FakePinHashSource() }
             single<DemoSettingsRepository> { mockk(relaxed = true) }
             // Map screens (GeoCheckIn, LocationMap, LiveTrack, LogMiles thumbnail) inject
             // MapSurface; the real flavor surfaces need GMS / MapLibre native, so use a

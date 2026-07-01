@@ -1,9 +1,14 @@
 package com.mileway
 
+import com.mileway.core.data.settings.DemoSettings
+import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
 import com.mileway.feature.profile.repository.FakeProfileRepository
 import com.mileway.feature.profile.repository.MockAccountRepository
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -22,6 +27,9 @@ import kotlin.test.assertNull
 class ActiveAccountStoreTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    private fun fakeDemoSettingsRepository() =
+        mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) }
 
     @Test
     fun `get-set round-trip is empty until a value is persisted`() =
@@ -55,6 +63,7 @@ class ActiveAccountStoreTest {
                     FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
                     ThemeController(),
                     FakeActiveAccountSource(seed = "ACC-002"),
+                    fakeDemoSettingsRepository(),
                 )
             advanceUntilIdle()
 
@@ -73,6 +82,7 @@ class ActiveAccountStoreTest {
                     FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
                     ThemeController(),
                     FakeActiveAccountSource(seed = null),
+                    fakeDemoSettingsRepository(),
                 )
             advanceUntilIdle()
 
@@ -87,6 +97,7 @@ class ActiveAccountStoreTest {
                     FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
                     ThemeController(),
                     FakeActiveAccountSource(seed = "ACC-DELETED"),
+                    fakeDemoSettingsRepository(),
                 )
             advanceUntilIdle()
 

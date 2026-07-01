@@ -2,6 +2,7 @@ package com.mileway.feature.profile.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -75,10 +76,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mileway.core.network.model.DemoAccount
 import com.mileway.core.network.model.UserSession
 import com.mileway.core.platform.ReferralManager
+import com.mileway.core.security.BiometricGuard
 import com.mileway.core.ui.components.GridProfileTile
 import com.mileway.core.ui.components.ProfileGridItem
 import com.mileway.core.ui.components.ProfileItemStatus
@@ -91,7 +94,9 @@ import com.mileway.core.ui.theme.dataStyle
 import com.mileway.feature.profile.model.AccountAnalyticsSnapshot
 import com.mileway.feature.profile.model.ProfileHeader
 import com.mileway.feature.profile.viewmodel.ProfileAction
+import com.mileway.feature.profile.viewmodel.ProfileEffect
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import com.mileway.feature.profile.viewmodel.SwitchAccountViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -125,15 +130,43 @@ fun ProfileScreen(
     onOpenDemoSettings: () -> Unit = {},
     onOpenQr: () -> Unit = {},
     viewModel: ProfileViewModel = koinViewModel(),
+    switchAccountViewModel: SwitchAccountViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     // P1.3: surfaces the RemoveDemoAccount guard-rejection message (active/last-account block).
     LaunchedEffect(state.preferenceMessage) {
         state.preferenceMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
             viewModel.onAction(ProfileAction.ClearPreferenceMessage)
+        }
+    }
+
+    // P2.3: biometric-gate path — BiometricPrompt needs a FragmentActivity, which only this
+    // Android-only screen (not the commonMain SwitchAccountViewModel) can reach.
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is ProfileEffect.RequestBiometricGate -> {
+                    val activity = context as? FragmentActivity
+                    if (activity != null && BiometricGuard.checkAvailability(context) == BiometricGuard.Availability.Available) {
+                        BiometricGuard.showPrompt(
+                            activity = activity,
+                            title = "Confirm it's you",
+                            subtitle = "Switching persona",
+                            onSuccess = { viewModel.onAction(ProfileAction.CommitAccountSwitch(effect.accountId)) },
+                            onFailure = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() },
+                        )
+                    } else {
+                        // No usable biometric hardware/enrolment: fall back to the PIN gate rather
+                        // than silently committing the switch with no confirmation at all.
+                        switchAccountViewModel.reset()
+                        viewModel.onAction(ProfileAction.FallBackToPinGate(effect.accountId))
+                    }
+                }
+            }
         }
     }
 
@@ -223,6 +256,25 @@ fun ProfileScreen(
         AccountDetailsSheet(
             account = account,
             onDismiss = { viewModel.onAction(ProfileAction.DismissAccountDetails) },
+        )
+    }
+
+    state.pendingSwitchAccountId?.let { pendingId ->
+        val pinState by switchAccountViewModel.state.collectAsStateWithLifecycle()
+        val label = state.accounts.find { it.id == pendingId }?.displayName ?: "this persona"
+
+        LaunchedEffect(pendingId) { switchAccountViewModel.reset() }
+        LaunchedEffect(pinState.verified) {
+            if (pinState.verified) viewModel.onAction(ProfileAction.CommitAccountSwitch(pendingId))
+        }
+
+        SwitchAccountPinSheet(
+            accountLabel = label,
+            state = pinState,
+            onDigit = switchAccountViewModel::onDigitEntered,
+            onBackspace = switchAccountViewModel::onBackspace,
+            onConfirm = { switchAccountViewModel.verify(pendingId) },
+            onDismiss = { viewModel.onAction(ProfileAction.CancelAccountSwitch) },
         )
     }
 }

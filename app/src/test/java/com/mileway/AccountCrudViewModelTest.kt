@@ -1,10 +1,15 @@
 package com.mileway
 
+import com.mileway.core.data.settings.DemoSettings
+import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
 import com.mileway.feature.profile.repository.FakeProfileRepository
 import com.mileway.feature.profile.repository.MockAccountRepository
 import com.mileway.feature.profile.viewmodel.ProfileAction
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -28,6 +33,7 @@ class AccountCrudViewModelTest {
                 FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
                 ThemeController(),
                 FakeActiveAccountSource(),
+                mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) },
             )
         return vm
     }
