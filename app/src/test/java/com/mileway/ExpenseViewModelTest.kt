@@ -628,4 +628,38 @@ class ExpenseViewModelTest {
         assertEquals("", vm.state.value.rows.first { it.id == firstId }.merchantName)
         assertEquals("Uber", vm.state.value.rows.first { it.id == secondId }.merchantName)
     }
+
+    @Test
+    fun `AddDraftRow carries over category and merchant from the last row`() {
+        val vm = viewModel()
+        val firstId = vm.state.value.rows.first().id
+        vm.onAction(ExpenseAction.UpdateDraftRow(firstId) { it.copy(category = ExpenseCategory.TRAVEL, merchantName = "Uber") })
+
+        vm.onAction(ExpenseAction.AddDraftRow)
+
+        val secondRow = vm.state.value.rows[1]
+        assertEquals(ExpenseCategory.TRAVEL, secondRow.category)
+        assertEquals("Uber", secondRow.merchantName)
+        assertEquals(DraftStatus.PENDING, secondRow.status)
+        assertTrue(secondRow.id != firstId)
+    }
+
+    @Test
+    fun `ApplyCategoryToAll updates only pending rows, leaving submitted or error rows untouched`() {
+        val vm = viewModel()
+        val firstId = vm.state.value.rows.first().id
+        vm.onAction(ExpenseAction.AddDraftRow)
+        val secondId = vm.state.value.rows[1].id
+        vm.onAction(ExpenseAction.AddDraftRow)
+        val thirdId = vm.state.value.rows[2].id
+        vm.onAction(ExpenseAction.UpdateDraftRow(secondId) { it.copy(status = DraftStatus.SUCCESS) })
+        vm.onAction(ExpenseAction.UpdateDraftRow(thirdId) { it.copy(status = DraftStatus.ERROR) })
+
+        vm.onAction(ExpenseAction.ApplyCategoryToAll(ExpenseCategory.FOOD))
+
+        val rows = vm.state.value.rows
+        assertEquals(ExpenseCategory.FOOD, rows.first { it.id == firstId }.category)
+        assertNull(rows.first { it.id == secondId }.category)
+        assertNull(rows.first { it.id == thirdId }.category)
+    }
 }

@@ -128,6 +128,11 @@ sealed interface ExpenseAction {
 
     /** Applies [transform] to row [id] only, leaving every other row untouched. */
     data class UpdateDraftRow(val id: String, val transform: (ExpenseDraftRow) -> ExpenseDraftRow) : ExpenseAction
+
+    // ── P2.2: carry-over defaults + apply-category-to-all for bulk rows ────────
+
+    /** Sets [category] on every row still [DraftStatus.PENDING], leaving submitted/error rows untouched. */
+    data class ApplyCategoryToAll(val category: ExpenseCategory) : ExpenseAction
 }
 
 sealed interface ExpenseEffect {
@@ -208,6 +213,7 @@ class ExpenseViewModel(
             is ExpenseAction.DuplicateDraftRow -> duplicateDraftRow(action.id)
             is ExpenseAction.RemoveDraftRow -> removeDraftRow(action.id)
             is ExpenseAction.UpdateDraftRow -> updateDraftRow(action.id, action.transform)
+            is ExpenseAction.ApplyCategoryToAll -> applyCategoryToAll(action.category)
         }
     }
 
@@ -341,8 +347,20 @@ class ExpenseViewModel(
         return id
     }
 
+    /**
+     * P2.2: a new row carries over [ExpenseDraftRow.category]/[ExpenseDraftRow.merchantName] from
+     * the last existing row when present — most bulk-entry batches are the same merchant/category
+     * repeated (e.g. a week of daily cab receipts), so this saves re-picking both on every row.
+     */
     private fun addDraftRow() {
-        setState { copy(rows = rows + ExpenseDraftRow(id = newRowId())) }
+        val last = currentState.rows.lastOrNull()
+        val newRow =
+            ExpenseDraftRow(
+                id = newRowId(),
+                category = last?.category,
+                merchantName = last?.merchantName.orEmpty(),
+            )
+        setState { copy(rows = rows + newRow) }
     }
 
     private fun duplicateDraftRow(id: String) {
@@ -365,5 +383,14 @@ class ExpenseViewModel(
         transform: (ExpenseDraftRow) -> ExpenseDraftRow,
     ) {
         setState { copy(rows = rows.map { if (it.id == id) transform(it) else it }) }
+    }
+
+    /** Sets [category] on every row still [DraftStatus.PENDING], leaving submitted/error rows untouched. */
+    private fun applyCategoryToAll(category: ExpenseCategory) {
+        setState {
+            copy(
+                rows = rows.map { if (it.status == DraftStatus.PENDING) it.copy(category = category) else it },
+            )
+        }
     }
 }
