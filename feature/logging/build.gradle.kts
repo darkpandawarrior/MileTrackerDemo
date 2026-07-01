@@ -7,6 +7,8 @@ kotlin {
         namespace = "com.mileway.feature.logging"
         compileSdk = 37
         minSdk = 30
+        // Enable JVM host execution of commonTest so catalog/validator tests run in the gradle gate.
+        withHostTest {}
     }
 
     sourceSets {
@@ -16,6 +18,9 @@ kotlin {
             implementation(project(":core:network"))
             implementation(project(":core:ui"))
             implementation(project(":feature:tracking"))
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }

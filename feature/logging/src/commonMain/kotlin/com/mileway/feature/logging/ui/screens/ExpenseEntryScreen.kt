@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
+import com.mileway.feature.logging.catalog.ExpenseCategoryCatalog
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.viewmodel.ExpenseAction
 import com.mileway.feature.logging.viewmodel.ExpenseViewModel
@@ -90,11 +91,11 @@ fun ExpenseEntryScreen(
                 verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
                 contentPadding = PaddingValues(bottom = DesignTokens.Spacing.xl),
             ) {
-                items(ExpenseCategory.entries) { category ->
+                items(ExpenseCategoryCatalog.default()) { categoryDef ->
                     CategoryTile(
-                        category = category,
+                        category = categoryDef.category,
                         onClick = {
-                            viewModel.onAction(ExpenseAction.SelectCategory(category))
+                            viewModel.onAction(ExpenseAction.SelectCategory(categoryDef.category))
                             onCategorySelected()
                         },
                     )

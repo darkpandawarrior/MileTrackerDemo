@@ -22,6 +22,18 @@ enum class ExpenseCategory(val label: String, val icon: ImageVector) {
 
 enum class ExpenseStatus { DRAFT, PENDING, APPROVED, REJECTED }
 
+/**
+ * Per-category field requirements, sourced from [com.mileway.feature.logging.catalog.ExpenseCategoryCatalog]
+ * rather than hardcoded per-screen `when` branches. Lets a category gain a required field (receipt,
+ * cost center, GST) without a new screen.
+ */
+data class ExpenseCategoryDef(
+    val category: ExpenseCategory,
+    val requiresReceipt: Boolean = false,
+    val requiresCostCenter: Boolean = false,
+    val requiresGst: Boolean = false,
+)
+
 data class ExpenseRecord(
     val id: String,
     val category: ExpenseCategory,
