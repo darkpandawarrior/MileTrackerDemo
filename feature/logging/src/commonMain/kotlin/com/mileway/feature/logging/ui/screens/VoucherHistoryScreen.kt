@@ -14,10 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mileway.core.data.model.db.VoucherStatus
 import com.mileway.core.ui.components.StatusChip
 import com.mileway.core.ui.components.StatusTone
 import com.mileway.core.ui.components.scaffold.HistoryListScaffold
-import com.mileway.feature.logging.repository.VoucherStatus
 import com.mileway.feature.logging.ui.model.SubmittedVoucher
 import com.mileway.feature.logging.viewmodel.VOUCHER_HISTORY_TABS
 import com.mileway.feature.logging.viewmodel.VoucherHistoryAction

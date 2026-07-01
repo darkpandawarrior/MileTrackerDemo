@@ -117,6 +117,9 @@ class CreateVoucherViewModel(
                     createdAtMs = Clock.System.now().toEpochMilliseconds(),
                 ),
             )
+            // P3.2: a voucher isn't useful sitting in DRAFT forever — move it to PENDING as part
+            // of the same submit flow.
+            voucherRepository.moveToApproval(number)
             setState { copy(isSubmitting = false, submittedVoucherNumber = number, step = 3) }
         }
     }

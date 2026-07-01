@@ -1,8 +1,8 @@
 package com.mileway
 
+import com.mileway.core.data.model.db.VoucherStatus
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.repository.VoucherHistoryRepository
-import com.mileway.feature.logging.repository.VoucherStatus
 import com.mileway.feature.logging.viewmodel.VOUCHER_HISTORY_TABS
 import com.mileway.feature.logging.viewmodel.VoucherHistoryAction
 import com.mileway.feature.logging.viewmodel.VoucherHistoryViewModel

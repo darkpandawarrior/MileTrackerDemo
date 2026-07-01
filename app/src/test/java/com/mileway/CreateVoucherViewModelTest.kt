@@ -1,6 +1,7 @@
 package com.mileway
 
 import com.mileway.core.data.model.db.SavedTrack
+import com.mileway.core.data.model.db.VoucherStatus
 import com.mileway.feature.tracking.repository.SavedTrackRepository
 import com.mileway.feature.tracking.repository.VoucherRepository
 import com.mileway.feature.tracking.viewmodel.CreateVoucherAction
@@ -159,5 +160,8 @@ class CreateVoucherViewModelTest {
         assertEquals(1, saved.size)
         assertEquals("March Voucher", saved.first().title)
         assertEquals(150.0, saved.first().totalAmount, 1e-9)
+        // P3.2: submit() moves the voucher out of DRAFT into PENDING as part of the same flow —
+        // a voucher isn't useful sitting in DRAFT forever.
+        assertEquals(VoucherStatus.PENDING.label, saved.first().status)
     }
 }

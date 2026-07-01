@@ -28,4 +28,14 @@ class FakeVoucherDao : VoucherDao {
     override suspend fun insertAll(vouchers: List<VoucherEntity>) {
         this.vouchers.value = this.vouchers.value + vouchers.associateBy { it.voucherNumber }
     }
+
+    override suspend fun updateStatus(
+        voucherNumber: String,
+        status: String,
+    ) {
+        val existing = vouchers.value[voucherNumber] ?: return
+        vouchers.value = vouchers.value + (voucherNumber to existing.copy(status = status))
+    }
+
+    override suspend fun getByNumber(voucherNumber: String): VoucherEntity? = vouchers.value[voucherNumber]
 }

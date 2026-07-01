@@ -24,4 +24,14 @@ interface VoucherDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vouchers: List<VoucherEntity>)
+
+    /** P3.2: the single column a status-lifecycle transition mutates. */
+    @Query("UPDATE vouchers SET status = :status WHERE voucherNumber = :voucherNumber")
+    suspend fun updateStatus(
+        voucherNumber: String,
+        status: String,
+    )
+
+    @Query("SELECT * FROM vouchers WHERE voucherNumber = :voucherNumber LIMIT 1")
+    suspend fun getByNumber(voucherNumber: String): VoucherEntity?
 }

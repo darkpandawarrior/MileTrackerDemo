@@ -2,20 +2,12 @@ package com.mileway.feature.logging.repository
 
 import com.mileway.core.data.dao.VoucherDao
 import com.mileway.core.data.model.db.VoucherEntity
+import com.mileway.core.data.model.db.VoucherStatus
 import com.mileway.feature.logging.ui.model.SubmittedVoucher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
-
-/** The voucher lifecycle states used by [VoucherHistoryRepository] tabs (SP.1). */
-enum class VoucherStatus(val label: String) {
-    DRAFT("Draft"),
-    PENDING("Pending"),
-    APPROVED("Approved"),
-    REJECTED("Rejected"),
-    SETTLED("Settled"),
-}
 
 /**
  * P3.1: reads from the shared [VoucherDao] (`core/data`) instead of regenerating a hardcoded

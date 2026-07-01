@@ -1,10 +1,10 @@
 package com.mileway.feature.logging.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.mileway.core.data.model.db.VoucherStatus
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.repository.VoucherHistoryRepository
-import com.mileway.feature.logging.repository.VoucherStatus
 import com.mileway.feature.logging.ui.model.SubmittedVoucher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
