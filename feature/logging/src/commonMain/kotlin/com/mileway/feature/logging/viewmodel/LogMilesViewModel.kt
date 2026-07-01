@@ -2,6 +2,8 @@ package com.mileway.feature.logging.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.common.UiText
+import com.mileway.core.data.model.display.OdometerCaptureResult
+import com.mileway.core.data.model.display.OdometerPurpose
 import com.mileway.core.data.model.network.ApprovedVehicle
 import com.mileway.core.data.model.network.CoordsV2
 import com.mileway.core.data.model.network.ExpenseSubmissionResponse
@@ -62,6 +64,14 @@ data class LogMilesUiState(
     val journeyTimeMinutes: Int? = null,
     val saveAsDraft: Boolean = false,
     val recentLocations: List<LocationEntry> = emptyList(),
+    /**
+     * Step 1: odometer capture (P5.3). Gates [canProceedToStep2] on odometer capture, sourced from
+     * [com.mileway.core.data.settings.DemoSettingsRepository] — a local per-tenant-persona flag,
+     * not a server fetch (this demo is offline-first/stub-backed everywhere).
+     */
+    val odometerCaptureEnabled: Boolean = false,
+    val odometerStart: OdometerCaptureResult? = null,
+    val odometerEnd: OdometerCaptureResult? = null,
     // ── Step 2: expense details ───────────────────────────────────────────────
     val invoiceDateMillis: Long? = null,
     val logMilesNote: String = "",
@@ -76,8 +86,31 @@ data class LogMilesUiState(
     val submitted: List<SubmittedVoucher> =
         SubmittedVoucherSamples.sample(kotlin.time.Clock.System.now().toEpochMilliseconds()),
 ) {
-    /** Step 1 → Step 2 gate: at least two stops and a chosen vehicle. */
-    val canProceedToStep2: Boolean get() = stops.size >= 2 && selectedVehicle != null
+    /**
+     * Validation error for the current odometer capture, or null when capture is disabled,
+     * incomplete-but-not-yet-invalid, or complete and valid. Non-null only once both readings
+     * are present and the end reading doesn't exceed the start (P5.3 acceptance case).
+     */
+    val odometerValidationError: String?
+        get() {
+            val start = odometerStart ?: return null
+            val end = odometerEnd ?: return null
+            return if (end.reading <= start.reading) "End odometer reading must be greater than start" else null
+        }
+
+    /** True once both start and end readings are captured with no validation error. */
+    private val odometerCaptureComplete: Boolean
+        get() = odometerStart != null && odometerEnd != null && odometerValidationError == null
+
+    /**
+     * Step 1 → Step 2 gate: at least two stops and a chosen vehicle, plus a complete, valid
+     * odometer capture whenever [odometerCaptureEnabled] is on (P5.3). Behavior is unchanged
+     * when the flag is off.
+     */
+    val canProceedToStep2: Boolean
+        get() =
+            stops.size >= 2 && selectedVehicle != null &&
+                (!odometerCaptureEnabled || odometerCaptureComplete)
 
     /** Per-km rate of the selected vehicle (0 when none chosen). */
     val pricePerKm: Double get() = selectedVehicle?.vehiclePricing ?: 0.0
@@ -104,6 +137,7 @@ fun LogMilesUiState.toSubmitRequest(): LogMilesSubmitRequestV2 =
         notes = logMilesNote.ifBlank { null },
         serviceId = selectedService?.id,
         invoiceDate = invoiceDateMillis,
+        odometerDistance = odometerEnd?.reading?.let { end -> odometerStart?.reading?.let { start -> end - start } },
     )
 
 sealed interface LogMilesAction {
@@ -136,6 +170,13 @@ sealed interface LogMilesAction {
     data object ClearRecentLocations : LogMilesAction
 
     data class OverrideDistance(val km: Double) : LogMilesAction
+
+    /** Reflects the persisted `DemoSettingsRepository` flag into state (P5.3); read by the screen. */
+    data class SetOdometerCaptureEnabled(val enabled: Boolean) : LogMilesAction
+
+    /** Records a start or end odometer reading captured via [com.mileway.feature.logging.ui.sheets
+     * .OdometerCaptureSheet] (P5.3). */
+    data class CaptureOdometerReading(val result: OdometerCaptureResult) : LogMilesAction
 
     data class SetInvoiceDate(val millis: Long?) : LogMilesAction
 
@@ -249,6 +290,9 @@ class LogMilesViewModel(
                 setState { copy(distanceKm = action.km, isDistanceOverridden = true) }
                 recomputePricing()
             }
+            is LogMilesAction.SetOdometerCaptureEnabled ->
+                setState { copy(odometerCaptureEnabled = action.enabled) }
+            is LogMilesAction.CaptureOdometerReading -> captureOdometerReading(action.result)
             is LogMilesAction.SetInvoiceDate -> setState { copy(invoiceDateMillis = action.millis) }
             is LogMilesAction.SetLogMilesNote -> setState { copy(logMilesNote = action.text) }
             is LogMilesAction.SetTaggedEmployees -> setState { copy(taggedEmployees = action.names) }
@@ -352,6 +396,16 @@ class LogMilesViewModel(
         setState { copy(reimbursableAmount = distanceKm * pricePerKm) }
     }
 
+    /** Stores a captured odometer reading (P5.3) into the slot matching its [OdometerPurpose]. */
+    private fun captureOdometerReading(result: OdometerCaptureResult) {
+        setState {
+            when (result.purpose) {
+                OdometerPurpose.START -> copy(odometerStart = result)
+                OdometerPurpose.END -> copy(odometerEnd = result)
+            }
+        }
+    }
+
     /**
      * P5.1: persists the current form state via [draftRepo] instead of just appending an
      * in-memory summary. Re-saves onto [activeDraftId] when the form was opened from an existing
@@ -444,6 +498,8 @@ class LogMilesViewModel(
                 drafts = drafts,
                 submitted = submitted,
                 recentLocations = recentLocations,
+                // The capture flag mirrors a persisted setting, not per-submission form state.
+                odometerCaptureEnabled = odometerCaptureEnabled,
             )
         }
     }

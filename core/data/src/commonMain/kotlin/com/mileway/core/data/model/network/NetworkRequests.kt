@@ -257,6 +257,8 @@ data class LogMilesSubmitRequestV2(
     @SerialName("notes") val notes: String? = null,
     @SerialName("serviceId") val serviceId: Long? = null,
     @SerialName("invoiceDate") val invoiceDate: Long? = null,
+    /** end-minus-start odometer reading, in km, when odometer capture (P5.3) was completed. */
+    @SerialName("odometerDistance") val odometerDistance: Int? = null,
 )
 
 @Serializable
