@@ -9,11 +9,15 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.mileway.core.data.model.db.CurrentTrackData
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.currentTrackDataStore by preferencesDataStore(name = "current_track_session")
 
-class CurrentTrackDataStore(private val context: Context) : CurrentTrackDataSource {
+class CurrentTrackDataStore(
+    private val context: Context,
+    private val sessionRepository: SessionRepository,
+) : CurrentTrackDataSource {
     companion object {
         val KEY_TOKEN = stringPreferencesKey("token")
         val KEY_IS_TRACKING = booleanPreferencesKey("is_tracking")
@@ -37,6 +41,9 @@ class CurrentTrackDataStore(private val context: Context) : CurrentTrackDataSour
         val KEY_LAST_HW_EVENT_TIME = longPreferencesKey("last_hw_event_time")
         val KEY_WAS_PAUSED = booleanPreferencesKey("was_paused")
         val KEY_STARTED_AT = longPreferencesKey("started_at")
+        val KEY_STARTED_BY_EMPLOYEE_CODE = stringPreferencesKey("started_by_employee_code")
+        val KEY_STARTED_BY_ACCOUNT_EMAIL = stringPreferencesKey("started_by_account_email")
+        val KEY_STARTED_BY_TENANT = stringPreferencesKey("started_by_tenant")
     }
 
     override val currentTrackFlow: Flow<CurrentTrackData> =
@@ -64,10 +71,21 @@ class CurrentTrackDataStore(private val context: Context) : CurrentTrackDataSour
                 lastHardwareEventTime = prefs[KEY_LAST_HW_EVENT_TIME] ?: -1L,
                 wasEverPaused = prefs[KEY_WAS_PAUSED] ?: false,
                 startedAtTimestamp = prefs[KEY_STARTED_AT] ?: 0L,
+                startedByEmployeeCode = prefs[KEY_STARTED_BY_EMPLOYEE_CODE] ?: "",
+                startedByAccountEmail = prefs[KEY_STARTED_BY_ACCOUNT_EMAIL] ?: "demo@mileway.app",
+                startedByTenant = prefs[KEY_STARTED_BY_TENANT] ?: "DEMO",
             )
         }
 
     override suspend fun saveSession(data: CurrentTrackData) {
+        // P3.3: `data`'s started_by_* fields default to blank/demo placeholders (see
+        // CurrentTrackData) when the caller (e.g. the foreground tracking service) never set them
+        // explicitly — backfill from the real signed-in identity instead of persisting those
+        // placeholders, without overwriting an identity a caller already stamped.
+        val session = sessionRepository.sessionState.first()
+        val startedByEmployeeCode = data.startedByEmployeeCode.ifBlank { session.employeeCode.orEmpty() }
+        val startedByAccountEmail = data.startedByAccountEmail.ifBlank { session.email.orEmpty() }
+        val startedByTenant = data.startedByTenant.ifBlank { session.tenant }
         context.currentTrackDataStore.edit { prefs ->
             prefs[KEY_TOKEN] = data.token
             prefs[KEY_IS_TRACKING] = data.isTracking
@@ -91,6 +109,9 @@ class CurrentTrackDataStore(private val context: Context) : CurrentTrackDataSour
             prefs[KEY_LAST_HW_EVENT_TIME] = data.lastHardwareEventTime
             prefs[KEY_WAS_PAUSED] = data.wasEverPaused
             prefs[KEY_STARTED_AT] = data.startedAtTimestamp
+            prefs[KEY_STARTED_BY_EMPLOYEE_CODE] = startedByEmployeeCode
+            prefs[KEY_STARTED_BY_ACCOUNT_EMAIL] = startedByAccountEmail
+            prefs[KEY_STARTED_BY_TENANT] = startedByTenant
         }
     }
 

@@ -19,14 +19,14 @@ private val Context.sessionDataStore by preferencesDataStore(name = "user_sessio
  * back to login, losing their place and any pending deep link. The launcher reads [sessionState]
  * to decide whether to skip straight to the app shell.
  */
-class SessionRepository(private val context: Context) {
+class SessionRepository(private val context: Context) : SessionSource {
     private val kindKey = stringPreferencesKey("session_kind")
     private val emailKey = stringPreferencesKey("session_email")
     private val employeeCodeKey = stringPreferencesKey("session_employee_code")
     private val tenantKey = stringPreferencesKey("session_tenant")
     private val signedInAtKey = longPreferencesKey("session_signed_in_at")
 
-    val sessionState: Flow<SessionState> =
+    override val sessionState: Flow<SessionState> =
         context.sessionDataStore.data.map { prefs ->
             val kind =
                 prefs[kindKey]?.let { stored ->

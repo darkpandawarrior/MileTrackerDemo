@@ -10,11 +10,12 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.mileway.core.data.model.db.CurrentTrackData
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import okio.Path.Companion.toPath
 import platform.Foundation.NSTemporaryDirectory
 
-class CurrentTrackDataStore : CurrentTrackDataSource {
+class CurrentTrackDataStore(private val sessionRepository: SessionRepository) : CurrentTrackDataSource {
     companion object {
         val KEY_TOKEN = stringPreferencesKey("token")
         val KEY_IS_TRACKING = booleanPreferencesKey("is_tracking")
@@ -38,6 +39,9 @@ class CurrentTrackDataStore : CurrentTrackDataSource {
         val KEY_LAST_HW_EVENT_TIME = longPreferencesKey("last_hw_event_time")
         val KEY_WAS_PAUSED = booleanPreferencesKey("was_paused")
         val KEY_STARTED_AT = longPreferencesKey("started_at")
+        val KEY_STARTED_BY_EMPLOYEE_CODE = stringPreferencesKey("started_by_employee_code")
+        val KEY_STARTED_BY_ACCOUNT_EMAIL = stringPreferencesKey("started_by_account_email")
+        val KEY_STARTED_BY_TENANT = stringPreferencesKey("started_by_tenant")
     }
 
     private val store: DataStore<Preferences> =
@@ -70,10 +74,19 @@ class CurrentTrackDataStore : CurrentTrackDataSource {
                 lastHardwareEventTime = prefs[KEY_LAST_HW_EVENT_TIME] ?: -1L,
                 wasEverPaused = prefs[KEY_WAS_PAUSED] ?: false,
                 startedAtTimestamp = prefs[KEY_STARTED_AT] ?: 0L,
+                startedByEmployeeCode = prefs[KEY_STARTED_BY_EMPLOYEE_CODE] ?: "",
+                startedByAccountEmail = prefs[KEY_STARTED_BY_ACCOUNT_EMAIL] ?: "demo@mileway.app",
+                startedByTenant = prefs[KEY_STARTED_BY_TENANT] ?: "DEMO",
             )
         }
 
     override suspend fun saveSession(data: CurrentTrackData) {
+        // P3.3: backfill the started_by_* pointer from the real signed-in identity when the
+        // caller didn't stamp one explicitly — mirrors the Android actual (see its doc comment).
+        val session = sessionRepository.sessionState.first()
+        val startedByEmployeeCode = data.startedByEmployeeCode.ifBlank { session.employeeCode.orEmpty() }
+        val startedByAccountEmail = data.startedByAccountEmail.ifBlank { session.email.orEmpty() }
+        val startedByTenant = data.startedByTenant.ifBlank { session.tenant }
         store.edit { prefs ->
             prefs[KEY_TOKEN] = data.token
             prefs[KEY_IS_TRACKING] = data.isTracking
@@ -97,6 +110,9 @@ class CurrentTrackDataStore : CurrentTrackDataSource {
             prefs[KEY_LAST_HW_EVENT_TIME] = data.lastHardwareEventTime
             prefs[KEY_WAS_PAUSED] = data.wasEverPaused
             prefs[KEY_STARTED_AT] = data.startedAtTimestamp
+            prefs[KEY_STARTED_BY_EMPLOYEE_CODE] = startedByEmployeeCode
+            prefs[KEY_STARTED_BY_ACCOUNT_EMAIL] = startedByAccountEmail
+            prefs[KEY_STARTED_BY_TENANT] = startedByTenant
         }
     }
 

@@ -14,6 +14,7 @@ import com.mileway.core.data.session.CurrentTrackDataStore
 import com.mileway.core.data.session.PinHashSource
 import com.mileway.core.data.session.PinHashStore
 import com.mileway.core.data.session.SessionRepository
+import com.mileway.core.data.session.SessionSource
 import com.mileway.core.data.settings.AgentSessionStore
 import com.mileway.core.data.settings.AgentSessionStoreImpl
 import com.mileway.core.data.settings.DemoSettingsRepository
@@ -36,9 +37,10 @@ val coreDataModule =
         single { get<MilewayDatabase>().draftExpenseDao() }
         single { get<MilewayDatabase>().voucherDao() }
         single { get<MilewayDatabase>().mockAccountDao() }
-        single { CurrentTrackDataStore(androidContext()) }
-        single<CurrentTrackDataSource> { get<CurrentTrackDataStore>() }
         single { SessionRepository(androidContext()) }
+        single<SessionSource> { get<SessionRepository>() }
+        single { CurrentTrackDataStore(androidContext(), get()) }
+        single<CurrentTrackDataSource> { get<CurrentTrackDataStore>() }
         single { ActiveAccountStore(androidContext()) }
         single<ActiveAccountSource> { get<ActiveAccountStore>() }
         single { PinHashStore(androidContext()) }

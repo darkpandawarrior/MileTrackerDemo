@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.mileway.core.data.session.CurrentTrackDataStore
+import com.mileway.core.data.session.SessionRepository
 import com.mileway.feature.tracking.TrackMilesActivity
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
@@ -66,7 +67,7 @@ class LocationTrackingBootReceiver : BroadcastReceiver() {
     }
 
     private suspend fun checkAndRestore(context: Context) {
-        val dataStore = CurrentTrackDataStore(context)
+        val dataStore = CurrentTrackDataStore(context, SessionRepository(context))
         val session = dataStore.currentTrackFlow.first()
         val action =
             BootRestorePolicy.decide(

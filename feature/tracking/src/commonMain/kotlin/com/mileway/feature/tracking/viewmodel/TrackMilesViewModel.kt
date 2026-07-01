@@ -6,6 +6,8 @@ import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.display.TrackingSystemFlags
 import com.mileway.core.data.model.network.ApprovedVehicle
 import com.mileway.core.data.model.state.TrackMilesPluginConfig
+import com.mileway.core.data.session.SessionSource
+import com.mileway.core.data.session.SessionState
 import com.mileway.core.platform.LocationNameResolver
 import com.mileway.core.platform.OfflineLocationNameResolver
 import com.mileway.core.platform.PlaceName
@@ -25,6 +27,8 @@ import com.mileway.feature.tracking.ui.sheets.JourneyGuideStep
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -128,6 +132,11 @@ data class TrackMilesUiState(
         get() = if (selectedVehicle == null) JourneyGuideStep.VEHICLE else JourneyGuideStep.TRACKING
 }
 
+/** P3.3: default [SessionSource] for JVM tests (and Koin graphs) that omit a real one — always signed-out. */
+object NoSessionSource : SessionSource {
+    override val sessionState = flowOf(SessionState())
+}
+
 class TrackMilesViewModel(
     private val configManager: TrackingConfigManager,
     private val vehicleRepo: VehiclePricingRepository,
@@ -145,6 +154,10 @@ class TrackMilesViewModel(
     private val locationNameResolver: LocationNameResolver = OfflineLocationNameResolver(),
     // P-C.5: bridge from app-startup reconciliation to this ViewModel. Null in JVM tests.
     private val reconciliationHolder: ReconciliationResultHolder? = null,
+    // P3.3: signed-in identity source for stamping a new trip's started_by_* ownership pointer.
+    // Defaulted to an always-signed-out source so JVM tests can omit it; Koin injects the real
+    // SessionRepository (androidMain/iosMain) in production.
+    private val sessionSource: SessionSource = NoSessionSource,
 ) : BaseViewModel<TrackMilesUiState, TrackMilesEffect, TrackMilesAction>(TrackMilesUiState()) {
     /** Backwards-compatible alias; screens read [state]. */
     val uiState: StateFlow<TrackMilesUiState> = state
@@ -445,6 +458,10 @@ class TrackMilesViewModel(
         val mon = dt.month.name.take(3).let { it[0].uppercase() + it.substring(1).lowercase() }
         val hhmm = "${dt.hour.toString().padStart(2, '0')}:${dt.minute.toString().padStart(2, '0')}"
         viewModelScope.launch {
+            // P3.3: stamp the real signed-in identity's ownership pointer instead of a hardcoded
+            // "EMP001" literal, so cross-account isolation (AccountBinding) has something real to
+            // match against.
+            val session = sessionSource.sessionState.first()
             val track =
                 SavedTrack(
                     routeId = routeId,
@@ -456,7 +473,10 @@ class TrackMilesViewModel(
                     distance = 0.0, duration = 0L,
                     selectedVehicleType = vehicle.vehicleKey ?: "",
                     vehiclePricing = vehicle.vehiclePricing ?: 0.0,
-                    createdAt = now, startedAtTimestamp = now, startedByEmployeeCode = "EMP001",
+                    createdAt = now, startedAtTimestamp = now,
+                    startedByEmployeeCode = session.employeeCode ?: "EMP001",
+                    startedByAccountEmail = session.email.orEmpty(),
+                    startedByTenant = session.tenant,
                 )
             trackRepo.insert(track)
             setState {

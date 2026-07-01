@@ -13,7 +13,7 @@ import platform.Foundation.NSTemporaryDirectory
 import kotlin.time.Clock
 
 /** iOS mirror of the app-wide sign-in session (see the androidMain doc). */
-class SessionRepository {
+class SessionRepository : SessionSource {
     private val kindKey = stringPreferencesKey("session_kind")
     private val emailKey = stringPreferencesKey("session_email")
     private val employeeCodeKey = stringPreferencesKey("session_employee_code")
@@ -25,7 +25,7 @@ class SessionRepository {
             produceFile = { (NSTemporaryDirectory() + "user_session.preferences_pb").toPath() },
         )
 
-    val sessionState: Flow<SessionState> =
+    override val sessionState: Flow<SessionState> =
         store.data.map { prefs ->
             val kind =
                 prefs[kindKey]?.let { stored ->
