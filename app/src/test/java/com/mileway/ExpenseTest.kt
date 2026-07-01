@@ -1,9 +1,11 @@
 package com.mileway
 
+import com.mileway.core.data.model.db.DraftExpenseEntity
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
 import com.mileway.feature.logging.repository.ExpenseRepository
+import com.mileway.feature.logging.repository.PERSISTED_DRAFT_RECORD_ID
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -178,5 +180,103 @@ class ExpenseTest {
                 )
             repo.insert(withReceipt)
             assertEquals("content://media/picked/1", repo.getById("EXP-NEW-3")?.receiptImagePath)
+        }
+
+    @Test
+    fun `saveDraft persists to the dao and unions it into getAll`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            val repository = ExpenseRepository(dao)
+            val before = repository.getAll().size
+            val draft =
+                DraftExpenseEntity(
+                    categoryName = ExpenseCategory.TRAVEL.name,
+                    amountText = "450.0",
+                    merchantName = "Uber: Airport",
+                    note = "",
+                    receiptImagePath = null,
+                    updatedAt = 123L,
+                )
+            repository.saveDraft(draft)
+            assertEquals(before + 1, repository.getAll().size)
+            val unioned = repository.getById(PERSISTED_DRAFT_RECORD_ID)
+            assertNotNull(unioned)
+            assertEquals(ExpenseStatus.DRAFT, unioned.status)
+            assertEquals("Uber: Airport", unioned.merchantName)
+            assertEquals(450.0, unioned.amountRupees)
+            assertEquals(draft, dao.getDraft())
+        }
+
+    @Test
+    fun `saveDraft twice replaces the unioned record instead of duplicating it`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            val repository = ExpenseRepository(dao)
+            val before = repository.getAll().size
+            repository.saveDraft(
+                DraftExpenseEntity(categoryName = null, amountText = "10", merchantName = "A", note = "", receiptImagePath = null, updatedAt = 1L),
+            )
+            repository.saveDraft(
+                DraftExpenseEntity(categoryName = null, amountText = "20", merchantName = "B", note = "", receiptImagePath = null, updatedAt = 2L),
+            )
+            assertEquals(before + 1, repository.getAll().size)
+            assertEquals("B", repository.getById(PERSISTED_DRAFT_RECORD_ID)?.merchantName)
+        }
+
+    @Test
+    fun `loadDraft returns what saveDraft persisted, surviving a fresh repository instance (kill+relaunch)`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            val repository = ExpenseRepository(dao)
+            val draft =
+                DraftExpenseEntity(
+                    categoryName = ExpenseCategory.FOOD.name,
+                    amountText = "199.0",
+                    merchantName = "Cafe Coffee Day",
+                    note = "team snacks",
+                    receiptImagePath = null,
+                    updatedAt = 42L,
+                )
+            repository.saveDraft(draft)
+
+            // Simulate app relaunch: a brand-new repository instance backed by the same dao.
+            val relaunched = ExpenseRepository(dao)
+            assertEquals(draft, relaunched.loadDraft())
+        }
+
+    @Test
+    fun `clearDraft removes the persisted draft and the unioned record`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            val repository = ExpenseRepository(dao)
+            val before = repository.getAll().size
+            repository.saveDraft(
+                DraftExpenseEntity(categoryName = null, amountText = "10", merchantName = "A", note = "", receiptImagePath = null, updatedAt = 1L),
+            )
+            repository.clearDraft()
+            assertEquals(before, repository.getAll().size)
+            assertNull(repository.getById(PERSISTED_DRAFT_RECORD_ID))
+            assertNull(repository.loadDraft())
+        }
+
+    @Test
+    fun `loadDraft returns null when no draft was ever saved`() =
+        runTest {
+            val repository = ExpenseRepository(FakeDraftExpenseDao())
+            assertNull(repository.loadDraft())
+        }
+
+    @Test
+    fun `saveDraft and clearDraft are no-ops on a repository with no dao`() =
+        runTest {
+            // Default constructor (no draftDao) — matches every other ExpenseRepositoryTest in
+            // this file; must not throw even though there's nowhere to persist to.
+            val before = repo.getAll().size
+            repo.saveDraft(
+                DraftExpenseEntity(categoryName = null, amountText = "1", merchantName = "X", note = "", receiptImagePath = null, updatedAt = 0L),
+            )
+            assertEquals(before + 1, repo.getAll().size)
+            repo.clearDraft()
+            assertEquals(before, repo.getAll().size)
         }
 }

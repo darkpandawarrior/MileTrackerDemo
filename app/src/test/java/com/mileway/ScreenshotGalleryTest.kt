@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.mileway.core.data.dao.AgentDao
+import com.mileway.core.data.dao.DraftExpenseDao
 import com.mileway.core.data.dao.HardwareEventDao
 import com.mileway.core.data.settings.AgentSessionStore
 import com.mileway.feature.agent.analytics.AgentAnalyticsStore
@@ -239,6 +240,7 @@ class ScreenshotGalleryTest {
             single<LogMilesDraftDao> { mockk(relaxed = true) }
             single<LogMilesFrequentRouteDao> { mockk(relaxed = true) }
             single<TripAttachmentDao> { mockk(relaxed = true) }
+            single<DraftExpenseDao> { mockk(relaxed = true) }
             single<MediaLibraryDao> { mediaLibraryDao }
             single<AgentDao> { FakeAgentDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,9 +27,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +57,8 @@ fun ExpenseEntryScreen(
     modifier: Modifier = Modifier,
     viewModel: ExpenseViewModel = koinViewModel(),
 ) {
+    val ui by viewModel.state.collectAsState()
+
     Scaffold(
         topBar = {
             DepthAwareTopBar(
@@ -77,6 +84,18 @@ fun ExpenseEntryScreen(
         ) {
             Spacer(Modifier.height(DesignTokens.Spacing.l))
 
+            ui.resumableDraft?.let { draft ->
+                ResumeDraftCard(
+                    merchantName = draft.merchantName,
+                    onResume = {
+                        viewModel.onAction(ExpenseAction.ResumeDraft)
+                        onCategorySelected()
+                    },
+                    onDiscard = { viewModel.onAction(ExpenseAction.DiscardDraft) },
+                )
+                Spacer(Modifier.height(DesignTokens.Spacing.l))
+            }
+
             Text(
                 text = "What type of expense is this?",
                 style = MaterialTheme.typography.titleMedium,
@@ -100,6 +119,44 @@ fun ExpenseEntryScreen(
                         },
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * P1.5: offers to resume a Room-persisted draft found on entry (kill+relaunch survived). Never
+ * blocks starting a fresh expense — dismissing keeps the draft persisted, discarding clears it.
+ */
+@Composable
+private fun ResumeDraftCard(
+    merchantName: String,
+    onResume: () -> Unit,
+    onDiscard: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = DesignTokens.Shape.roundedMd,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(DesignTokens.Spacing.l)) {
+            Text(
+                text = "Resume draft?",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(DesignTokens.Spacing.s))
+            Text(
+                text = if (merchantName.isNotBlank()) "You have an unsaved expense for \"$merchantName\"" else "You have an unsaved expense in progress",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(DesignTokens.Spacing.m))
+            Row(horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.s)) {
+                OutlinedButton(onClick = onResume) { Text("Resume") }
+                TextButton(onClick = onDiscard) { Text("Discard") }
             }
         }
     }

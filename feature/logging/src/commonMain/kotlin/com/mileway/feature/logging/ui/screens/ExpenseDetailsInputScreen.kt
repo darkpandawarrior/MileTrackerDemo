@@ -30,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -96,7 +97,7 @@ fun ExpenseDetailsInputScreen(
         },
         bottomBar = {
             Surface(shadowElevation = 8.dp) {
-                Box(
+                Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -108,6 +109,13 @@ fun ExpenseDetailsInputScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Submit Expense")
+                    }
+                    Spacer(Modifier.height(DesignTokens.Spacing.s))
+                    OutlinedButton(
+                        onClick = { viewModel.onAction(ExpenseAction.SaveDraft) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Save Draft")
                     }
                 }
             }

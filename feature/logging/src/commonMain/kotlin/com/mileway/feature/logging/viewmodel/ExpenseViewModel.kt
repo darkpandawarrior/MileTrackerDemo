@@ -2,6 +2,7 @@ package com.mileway.feature.logging.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.common.UiText
+import com.mileway.core.data.model.db.DraftExpenseEntity
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.catalog.ExpenseCategoryCatalog
@@ -42,6 +43,8 @@ data class ExpenseUiState(
     val lastSubmittedId: String = "",
     val lastSubmittedAmount: Double = 0.0,
     val detailState: ScreenState<ExpenseRecord> = ScreenState.Empty,
+    /** P1.5: a persisted draft exists from a previous session — offer "Resume draft" on entry. */
+    val resumableDraft: DraftExpenseEntity? = null,
 )
 
 sealed interface ExpenseAction {
@@ -69,6 +72,18 @@ sealed interface ExpenseAction {
     data object ResetForm : ExpenseAction
 
     data class OpenDetail(val id: String) : ExpenseAction
+
+    /** P1.5: persists the current form as a draft (Room-backed, survives kill/relaunch). */
+    data object SaveDraft : ExpenseAction
+
+    /** P1.5: loads the persisted draft (if any) back into the form for editing. */
+    data object ResumeDraft : ExpenseAction
+
+    /** P1.5: dismisses the "Resume draft" offer without loading it (draft stays persisted). */
+    data object DismissResumeDraft : ExpenseAction
+
+    /** P1.5: discards the persisted draft entirely (both Room and the resumable-draft offer). */
+    data object DiscardDraft : ExpenseAction
 }
 
 sealed interface ExpenseEffect {
@@ -79,11 +94,36 @@ sealed interface ExpenseEffect {
     data object NavigateBack : ExpenseEffect
 }
 
+/** Local, offline round-trip between [ExpenseFormState] and its persisted Room shape (P1.5). */
+private fun ExpenseFormState.toDraftEntity(updatedAt: Long): DraftExpenseEntity =
+    DraftExpenseEntity(
+        categoryName = category?.name,
+        amountText = amountText,
+        merchantName = merchantName,
+        note = note,
+        receiptImagePath = receiptImagePath,
+        updatedAt = updatedAt,
+    )
+
+private fun DraftExpenseEntity.toFormState(): ExpenseFormState =
+    ExpenseFormState(
+        step = if (categoryName != null) 2 else 1,
+        category = categoryName?.let { name -> ExpenseCategory.entries.find { it.name == name } },
+        amountText = amountText,
+        merchantName = merchantName,
+        note = note,
+        receiptImagePath = receiptImagePath,
+    )
+
 class ExpenseViewModel(
     private val repository: ExpenseRepository,
 ) : BaseViewModel<ExpenseUiState, ExpenseEffect, ExpenseAction>(ExpenseUiState()) {
     init {
         refresh(ExpenseFilter.ALL, ExpenseSort.DATE, emptySet())
+        viewModelScope.launch {
+            val draft = repository.loadDraft()
+            if (draft != null) setState { copy(resumableDraft = draft) }
+        }
     }
 
     override fun onAction(action: ExpenseAction) {
@@ -106,6 +146,10 @@ class ExpenseViewModel(
             ExpenseAction.ResetForm ->
                 setState { copy(form = ExpenseFormState(), lastSubmittedId = "", lastSubmittedAmount = 0.0) }
             is ExpenseAction.OpenDetail -> openDetail(action.id)
+            ExpenseAction.SaveDraft -> saveDraft()
+            ExpenseAction.ResumeDraft -> resumeDraft()
+            ExpenseAction.DismissResumeDraft -> setState { copy(resumableDraft = null) }
+            ExpenseAction.DiscardDraft -> discardDraft()
         }
     }
 
@@ -160,7 +204,10 @@ class ExpenseViewModel(
             )
         viewModelScope.launch {
             repository.insert(record)
-            setState { copy(lastSubmittedId = id, lastSubmittedAmount = amount) }
+            // A submitted expense is no longer "in-flight" — clear the draft it was saved from
+            // (if any), so relaunching the app doesn't re-offer a resume for an already-submitted form.
+            repository.clearDraft()
+            setState { copy(lastSubmittedId = id, lastSubmittedAmount = amount, resumableDraft = null) }
             emitEffect(ExpenseEffect.NavigateToSuccess(id))
         }
     }
@@ -168,5 +215,26 @@ class ExpenseViewModel(
     private fun openDetail(id: String) {
         val record = repository.getById(id)
         setState { copy(detailState = record?.let { ScreenState.Content(it) } ?: ScreenState.Empty) }
+    }
+
+    private fun saveDraft() {
+        val form = currentState.form
+        viewModelScope.launch {
+            val updatedAt = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            repository.saveDraft(form.toDraftEntity(updatedAt))
+            emitEffect(ExpenseEffect.ShowToast(UiText.of("Draft saved")))
+        }
+    }
+
+    private fun resumeDraft() {
+        val draft = currentState.resumableDraft ?: return
+        setState { copy(form = draft.toFormState(), resumableDraft = null) }
+    }
+
+    private fun discardDraft() {
+        viewModelScope.launch {
+            repository.clearDraft()
+            setState { copy(resumableDraft = null) }
+        }
     }
 }

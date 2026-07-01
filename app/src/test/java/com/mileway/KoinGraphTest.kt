@@ -2,6 +2,7 @@ package com.mileway
 
 import android.content.Context
 import com.mileway.core.data.dao.AgentDao
+import com.mileway.core.data.dao.DraftExpenseDao
 import com.mileway.core.data.dao.HardwareEventDao
 import com.mileway.core.data.settings.AgentSessionStore
 import com.mileway.feature.agent.engine.AssistantEngine
@@ -95,6 +96,7 @@ class KoinGraphTest : KoinTest {
         single<LogMilesDraftDao> { mockk(relaxed = true) }
         single<LogMilesFrequentRouteDao> { mockk(relaxed = true) }
         single<TripAttachmentDao> { mockk(relaxed = true) }
+        single<DraftExpenseDao> { mockk(relaxed = true) }
         single<MediaLibraryDao> { mockk(relaxed = true) }
         single<AgentDao> { FakeAgentDao() }
         single<AgentSessionStore> { FakeAgentSessionStore() }

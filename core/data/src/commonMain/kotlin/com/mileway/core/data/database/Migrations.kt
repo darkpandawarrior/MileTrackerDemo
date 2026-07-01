@@ -5,6 +5,30 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 6 → 7 (P1.5): single-row `draft_expenses` table so `ExpenseAction.SaveDraft`
+ * actually persists across app kill/relaunch instead of only living in `ExpenseViewModel`
+ * state. Mirrors `ExpenseFormState`'s fields (see [com.mileway.core.data.model.db.DraftExpenseEntity]).
+ */
+val MIGRATION_6_7 =
+    object : Migration(6, 7) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `draft_expenses` (
+                    `draftId`          TEXT    NOT NULL PRIMARY KEY,
+                    `categoryName`     TEXT,
+                    `amountText`       TEXT    NOT NULL,
+                    `merchantName`     TEXT    NOT NULL,
+                    `note`             TEXT    NOT NULL,
+                    `receiptImagePath` TEXT,
+                    `updatedAt`        INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 5 → 6 (P1.1): agent conversations + messages tables for persistent chat history.
  */
 val MIGRATION_5_6 =

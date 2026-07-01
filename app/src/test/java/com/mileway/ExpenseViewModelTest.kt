@@ -1,6 +1,7 @@
 package com.mileway
 
 import app.cash.turbine.test
+import com.mileway.core.data.model.db.DraftExpenseEntity
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseRecord
@@ -12,11 +13,13 @@ import com.mileway.feature.logging.viewmodel.ExpenseEffect
 import com.mileway.feature.logging.viewmodel.ExpenseFilter
 import com.mileway.feature.logging.viewmodel.ExpenseListData
 import com.mileway.feature.logging.viewmodel.ExpenseViewModel
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -176,4 +179,132 @@ class ExpenseViewModelTest {
         assertEquals("", vm.state.value.form.merchantName)
         assertEquals("", vm.state.value.lastSubmittedId)
     }
+
+    @Test
+    fun `SaveDraft persists the current form to the repository`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            val repository = ExpenseRepository(dao)
+            val vm = ExpenseViewModel(repository)
+            vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
+            vm.onAction(ExpenseAction.SetMerchant("Uber: Airport"))
+            vm.onAction(ExpenseAction.SetAmount("450.0"))
+            vm.effect.test {
+                vm.onAction(ExpenseAction.SaveDraft)
+                val effect = awaitItem()
+                assertTrue(effect is ExpenseEffect.ShowToast)
+            }
+            val persisted = dao.getDraft()
+            assertNotNull(persisted)
+            assertEquals("Uber: Airport", persisted.merchantName)
+            assertEquals("450.0", persisted.amountText)
+            assertEquals(ExpenseCategory.TRAVEL.name, persisted.categoryName)
+        }
+
+    @Test
+    fun `a persisted draft from a previous session is offered as resumableDraft on init`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            dao.upsertDraft(
+                DraftExpenseEntity(
+                    categoryName = ExpenseCategory.FOOD.name,
+                    amountText = "199.0",
+                    merchantName = "Cafe Coffee Day",
+                    note = "team snacks",
+                    receiptImagePath = null,
+                    updatedAt = 42L,
+                ),
+            )
+            val vm = ExpenseViewModel(ExpenseRepository(dao))
+            advanceUntilIdle()
+            assertEquals("Cafe Coffee Day", vm.state.value.resumableDraft?.merchantName)
+        }
+
+    @Test
+    fun `init offers no resumableDraft when nothing was ever saved`() =
+        runTest {
+            val vm = ExpenseViewModel(ExpenseRepository(FakeDraftExpenseDao()))
+            advanceUntilIdle()
+            assertNull(vm.state.value.resumableDraft)
+        }
+
+    @Test
+    fun `ResumeDraft loads the persisted draft into the form and clears the offer`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            dao.upsertDraft(
+                DraftExpenseEntity(
+                    categoryName = ExpenseCategory.ACCOMMODATION.name,
+                    amountText = "8900.0",
+                    merchantName = "Taj Hotel",
+                    note = "client visit",
+                    receiptImagePath = "content://media/picked/9",
+                    updatedAt = 100L,
+                ),
+            )
+            val vm = ExpenseViewModel(ExpenseRepository(dao))
+            advanceUntilIdle()
+            vm.onAction(ExpenseAction.ResumeDraft)
+
+            assertEquals(ExpenseCategory.ACCOMMODATION, vm.state.value.form.category)
+            assertEquals("8900.0", vm.state.value.form.amountText)
+            assertEquals("Taj Hotel", vm.state.value.form.merchantName)
+            assertEquals("client visit", vm.state.value.form.note)
+            assertEquals("content://media/picked/9", vm.state.value.form.receiptImagePath)
+            assertNull(vm.state.value.resumableDraft)
+        }
+
+    @Test
+    fun `DiscardDraft clears both the persisted draft and the resumable offer`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            dao.upsertDraft(
+                DraftExpenseEntity(categoryName = null, amountText = "10", merchantName = "A", note = "", receiptImagePath = null, updatedAt = 1L),
+            )
+            val repository = ExpenseRepository(dao)
+            val vm = ExpenseViewModel(repository)
+            advanceUntilIdle()
+            assertNotNull(vm.state.value.resumableDraft)
+
+            vm.onAction(ExpenseAction.DiscardDraft)
+            advanceUntilIdle()
+
+            assertNull(vm.state.value.resumableDraft)
+            assertEquals(null, dao.getDraft())
+        }
+
+    @Test
+    fun `DismissResumeDraft clears the offer but leaves the draft persisted`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            dao.upsertDraft(
+                DraftExpenseEntity(categoryName = null, amountText = "10", merchantName = "A", note = "", receiptImagePath = null, updatedAt = 1L),
+            )
+            val vm = ExpenseViewModel(ExpenseRepository(dao))
+            advanceUntilIdle()
+
+            vm.onAction(ExpenseAction.DismissResumeDraft)
+
+            assertNull(vm.state.value.resumableDraft)
+            assertNotNull(dao.getDraft())
+        }
+
+    @Test
+    fun `SubmitExpense clears the persisted draft on success`() =
+        runTest {
+            val dao = FakeDraftExpenseDao()
+            dao.upsertDraft(
+                DraftExpenseEntity(categoryName = null, amountText = "10", merchantName = "A", note = "", receiptImagePath = null, updatedAt = 1L),
+            )
+            val vm = ExpenseViewModel(ExpenseRepository(dao))
+            vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+            vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
+            vm.onAction(ExpenseAction.SetAmount("249.50"))
+            vm.effect.test {
+                vm.onAction(ExpenseAction.SubmitExpense)
+                awaitItem()
+            }
+            assertNull(dao.getDraft())
+            assertNull(vm.state.value.resumableDraft)
+        }
 }

@@ -20,7 +20,7 @@ val loggingModule =
     module {
         single { LogMilesServiceRepository(get()) }
         single { LogMilesDraftRepository(get()) }
-        single { ExpenseRepository() }
+        single { ExpenseRepository(get()) }
         // SP.1/SP.2/SP.3: voucher + settlement + cards-txn history (offline fakes + MVI VMs).
         single { VoucherHistoryRepository() }
         single { SettlementHistoryRepository() }

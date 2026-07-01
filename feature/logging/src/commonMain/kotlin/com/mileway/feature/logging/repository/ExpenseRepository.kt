@@ -1,5 +1,7 @@
 package com.mileway.feature.logging.repository
 
+import com.mileway.core.data.dao.DraftExpenseDao
+import com.mileway.core.data.model.db.DraftExpenseEntity
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
@@ -7,7 +9,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class ExpenseRepository {
+/**
+ * P1.5: the synthetic id given to the single persisted expense draft when it's unioned into
+ * [ExpenseRepository.getAll] as an [ExpenseRecord] with [ExpenseStatus.DRAFT] — distinct from the
+ * demo-seeded `EXP-004` DRAFT record, never collides with a submitted `EXP-NEW-*`/`EXP-0xx` id.
+ */
+const val PERSISTED_DRAFT_RECORD_ID = "EXP-DRAFT-RESUME"
+
+class ExpenseRepository(
+    private val draftDao: DraftExpenseDao? = null,
+) {
     private val baseMs = 1_700_000_000_000L
     private val dayMs = 86_400_000L
 
@@ -110,5 +121,45 @@ class ExpenseRepository {
     /** Replaces an existing record matching [ExpenseRecord.id]; a no-op if no such record exists. */
     suspend fun update(record: ExpenseRecord) {
         _recordsFlow.value = records.map { if (it.id == record.id) record else it }
+    }
+
+    /**
+     * P1.5: persists [draft] to Room (upsert, single-row table) and unions it into [getAll]/
+     * [recordsFlow] as a synthetic [PERSISTED_DRAFT_RECORD_ID] record so the list surfaces it
+     * immediately without a separate reload. A no-op when this instance was built without a
+     * [draftDao] (e.g. plain `ExpenseRepository()` in unit tests that don't cover drafts).
+     */
+    suspend fun saveDraft(draft: DraftExpenseEntity) {
+        draftDao?.upsertDraft(draft)
+        unionDraftIntoRecords(draft)
+    }
+
+    /** Loads the persisted draft (if any) directly from Room — used to offer "Resume draft" on entry. */
+    suspend fun loadDraft(): DraftExpenseEntity? = draftDao?.getDraft()
+
+    /** Clears the persisted draft, both from Room and from the unioned in-memory list. */
+    suspend fun clearDraft() {
+        draftDao?.deleteDraft()
+        _recordsFlow.value = records.filterNot { it.id == PERSISTED_DRAFT_RECORD_ID }
+    }
+
+    private fun unionDraftIntoRecords(draft: DraftExpenseEntity) {
+        val record =
+            ExpenseRecord(
+                id = PERSISTED_DRAFT_RECORD_ID,
+                category = draft.categoryName?.let { name -> ExpenseCategory.entries.find { it.name == name } } ?: ExpenseCategory.OTHER,
+                merchantName = draft.merchantName,
+                amountRupees = draft.amountText.toDoubleOrNull() ?: 0.0,
+                status = ExpenseStatus.DRAFT,
+                dateMs = draft.updatedAt,
+                note = draft.note,
+                receiptImagePath = draft.receiptImagePath,
+            )
+        _recordsFlow.value =
+            if (records.any { it.id == PERSISTED_DRAFT_RECORD_ID }) {
+                records.map { if (it.id == PERSISTED_DRAFT_RECORD_ID) record else it }
+            } else {
+                records + record
+            }
     }
 }
