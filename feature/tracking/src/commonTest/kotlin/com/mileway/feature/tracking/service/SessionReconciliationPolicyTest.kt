@@ -301,4 +301,6 @@ private class FakeReconcileDao(private val track: SavedTrack?) : SavedTrackDao {
         routeId: String,
         voucherNumber: String,
     ): Int = 0
+
+    override suspend fun markOdometerNotWorking(routeId: String): Int = 0
 }

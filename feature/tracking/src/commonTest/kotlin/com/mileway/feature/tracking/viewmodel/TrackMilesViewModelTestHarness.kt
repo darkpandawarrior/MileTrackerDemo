@@ -311,6 +311,8 @@ private class FakeSavedTrackDao : SavedTrackDao {
         routeId: String,
         voucherNumber: String,
     ): Int = 0
+
+    override suspend fun markOdometerNotWorking(routeId: String): Int = 0
 }
 
 // ── LocationDao fake ─────────────────────────────────────────────────────────

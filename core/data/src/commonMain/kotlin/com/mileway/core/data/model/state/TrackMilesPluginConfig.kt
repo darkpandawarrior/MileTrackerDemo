@@ -7,6 +7,10 @@ data class TrackMilesPluginConfig(
     val allowPauseTrackMiles: Boolean = true,
     val allowExpenseCreation: Boolean = true,
     val isOdometerMandatory: Boolean = false,
+    // P6.1: when true, an odometer-not-working fallback is allowed at submission time — the
+    // odometer requirement is satisfied without a capture and the rate is sourced from the
+    // already-computed GPS distance instead of an odometer-reading delta.
+    val calculateExpenseViaOdometer: Boolean = false,
     val odometerOcrEnabled: Boolean = false,
     val geoCheckInEnabled: Boolean = false,
     val calculateDistanceOnBackend: Boolean = false,

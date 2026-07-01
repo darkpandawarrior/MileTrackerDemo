@@ -223,4 +223,9 @@ interface SavedTrackDao {
         routeId: String,
         voucherNumber: String,
     ): Int
+
+    // P6.1: odometer-not-working fallback — records that this trip's expense was rate-sourced
+    // from GPS distance rather than an odometer-reading delta, at submission time.
+    @Query("UPDATE saved_tracks SET odometerNotWorking = 1 WHERE routeId = :routeId")
+    suspend fun markOdometerNotWorking(routeId: String): Int
 }

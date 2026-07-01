@@ -48,7 +48,7 @@ class DemoConfigManager(
         TrackMilesPluginConfig(
             isTrackMilesEnabled = true, trackMilesV2 = true, draftTrackMiles = true,
             allowPauseTrackMiles = true, allowExpenseCreation = true,
-            isOdometerMandatory = false, odometerOcrEnabled = false,
+            isOdometerMandatory = false, calculateExpenseViaOdometer = false, odometerOcrEnabled = false,
             geoCheckInEnabled = true, calculateDistanceOnBackend = false,
             autoDiscardTrackMileage = false, skipOdometer = true,
             showTrackingOverlay = true, saveTrackMilesEnabled = true,

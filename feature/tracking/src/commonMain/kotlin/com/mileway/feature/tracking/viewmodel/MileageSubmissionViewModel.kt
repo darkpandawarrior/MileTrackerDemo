@@ -7,6 +7,7 @@ import com.mileway.core.data.model.network.ExpenseSubmissionResponse
 import com.mileway.core.data.model.network.PolicyViolation
 import com.mileway.core.data.model.network.SubmissionStatus
 import com.mileway.core.data.model.network.SubmitMilesRequestK
+import com.mileway.core.data.model.state.TrackMilesPluginConfig
 import com.mileway.core.network.api.MilewayNetworkApi
 import com.mileway.core.network.model.BusinessEntity
 import com.mileway.core.network.model.Office
@@ -74,7 +75,15 @@ data class SubmissionFormUi(
     val odometerEndImageUri: String? = null,
     val odometerStartCaptureMs: Long? = null,
     val odometerEndCaptureMs: Long? = null,
+    val config: TrackMilesPluginConfig = TrackMilesPluginConfig(),
+    // P6.1: user-declared "odometer isn't working" fallback. Only meaningful (and only bypasses
+    // the odometer requirement) when config.calculateExpenseViaOdometer is true.
+    val odometerNotWorking: Boolean = false,
 ) {
+    private val odometerCaptured: Boolean get() = simulatedStartOdo != null && simulatedEndOdo != null
+
+    private val odometerFallbackActive: Boolean get() = config.calculateExpenseViaOdometer && odometerNotWorking
+
     val remainingRequirements: List<String>
         get() =
             buildList {
@@ -82,6 +91,7 @@ data class SubmissionFormUi(
                 if (officeRequired && selectedEntity == null) add("Entity selection")
                 val missingFields = fields.count { it.required && values[it.id].isNullOrBlank() }
                 if (missingFields > 0) add("Complete required fields")
+                if (config.isOdometerMandatory && !odometerCaptured && !odometerFallbackActive) add("Odometer reading")
             }
 
     val canSubmit: Boolean get() = remainingRequirements.isEmpty()
@@ -108,6 +118,10 @@ sealed interface MileageSubmissionAction {
     data class SetFormValue(val id: String, val value: String) : MileageSubmissionAction
 
     data class ToggleDraft(val enabled: Boolean) : MileageSubmissionAction
+
+    // P6.1: user declares the odometer is unreadable/broken — when config allows it, submission
+    // proceeds without an odometer capture and sources distance from GPS instead.
+    data class SetOdometerNotWorking(val enabled: Boolean) : MileageSubmissionAction
 
     data object OpenOfficePicker : MileageSubmissionAction
 
@@ -194,6 +208,7 @@ class MileageSubmissionViewModel(
                         offices = configManager.getOffices(),
                         entities = configManager.getBusinessEntities(),
                         officeRequired = configManager.isOfficeSelectionRequired(),
+                        config = configManager.getTrackMilesConfig(),
                     ),
             )
         }
@@ -213,6 +228,8 @@ class MileageSubmissionViewModel(
                 setState { copy(form = form.copy(values = form.values + (action.id to action.value))) }
             is MileageSubmissionAction.ToggleDraft ->
                 setState { copy(form = form.copy(saveAsDraft = action.enabled)) }
+            is MileageSubmissionAction.SetOdometerNotWorking ->
+                setState { copy(form = form.copy(odometerNotWorking = action.enabled)) }
             MileageSubmissionAction.OpenOfficePicker ->
                 setState { copy(form = form.copy(sheet = SubmissionSheet.OFFICE_PICKER)) }
             MileageSubmissionAction.OpenEntityPicker ->
@@ -336,17 +353,26 @@ class MileageSubmissionViewModel(
         endTime: Long,
     ) {
         setState { copy(form = form.copy(sheet = SubmissionSheet.NONE), submissionState = SubmissionUiState.Submitting) }
+        val odometerFallbackActive = currentState.form.config.calculateExpenseViaOdometer && currentState.form.odometerNotWorking
         viewModelScope.launch {
             persistPendingAttachments(routeId)
+            if (odometerFallbackActive) {
+                trackRepository.markOdometerNotWorking(routeId)
+            }
             runCatching {
                 api.submitMiles(
                     SubmitMilesRequestK(
                         token = routeId,
                         vehicleType = vehicleKey,
+                        // P6.1: distance always sourced from the already-computed GPS distanceKm
+                        // param here; when the odometer fallback is active this is the rate
+                        // source (rather than an odometer-reading delta), tagged for audit below.
                         distance = distanceKm,
                         startTime = startTime,
                         endTime = endTime,
                         submissionTime = Clock.System.now().toEpochMilliseconds(),
+                        odometerNotWorking = odometerFallbackActive,
+                        notes = if (odometerFallbackActive) ODOMETER_NOT_WORKING_REMARK else null,
                     ),
                 )
             }.onSuccess { response ->
@@ -404,5 +430,11 @@ class MileageSubmissionViewModel(
         currentState.pendingOdoEnd?.let { (uri, ocr) ->
             attachmentRepository.setOdometerEnd(routeId, uri, ocr)
         }
+    }
+
+    companion object {
+        // P6.1: audit-trail marker recorded on the submission request when distance is sourced
+        // from GPS instead of an odometer-reading delta, because the odometer wasn't usable.
+        const val ODOMETER_NOT_WORKING_REMARK = "ODOMETER_NOT_WORKING"
     }
 }
