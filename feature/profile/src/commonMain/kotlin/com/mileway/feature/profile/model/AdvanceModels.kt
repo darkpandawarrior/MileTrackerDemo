@@ -2,6 +2,8 @@ package com.mileway.feature.profile.model
 
 enum class AdvanceStatus { PENDING, UNDER_REVIEW, APPROVED, DISBURSED, REJECTED }
 
+enum class AdvanceMode { CASH, CARD_LINKED }
+
 data class AdvanceRecord(
     val id: String,
     val amountRupees: Double,

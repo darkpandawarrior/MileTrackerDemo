@@ -16,12 +16,15 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.HourglassBottom
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,6 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -48,6 +53,8 @@ import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
 import com.mileway.core.ui.theme.MilewayColors
 import com.mileway.core.ui.theme.dataStyle
+import com.mileway.feature.profile.model.AdvanceMode
+import com.mileway.feature.profile.model.CorporateCard
 import com.mileway.feature.profile.viewmodel.AdvanceAction
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -80,12 +87,12 @@ fun AskAdvanceFormScreen(
         topBar = {
             DepthAwareTopBar(
                 title = "Request Advance",
-                subtitle = "Step ${form.step} of 3",
+                subtitle = "Step ${form.step + 1} of 4",
                 depth = NavigationDepth.LEVEL_1,
                 navigationIcon = {
                     IconButton(onClick = {
                         when (form.step) {
-                            1 -> onBack()
+                            0 -> onBack()
                             else -> viewModel.onAction(AdvanceAction.GoToStep(form.step - 1))
                         }
                     }) {
@@ -105,6 +112,7 @@ fun AskAdvanceFormScreen(
                 ) {
                     val enabled =
                         when (form.step) {
+                            0 -> form.mode == AdvanceMode.CASH || form.selectedCardId != null
                             1 -> form.amountText.isNotBlank() && form.purpose.isNotBlank() && form.requiredByDate.isNotBlank()
                             2 -> true
                             3 -> form.declarationChecked
@@ -142,6 +150,41 @@ fun AskAdvanceFormScreen(
             Spacer(Modifier.height(DesignTokens.Spacing.s))
 
             when (form.step) {
+                0 -> {
+                    Text("How would you like to receive this advance?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+
+                    AdvanceModeOption(
+                        icon = Icons.Filled.Payments,
+                        title = "Cash",
+                        description = "Disbursed directly, settle with expense claims later.",
+                        selected = form.mode == AdvanceMode.CASH,
+                        onSelect = { viewModel.onAction(AdvanceAction.SetMode(AdvanceMode.CASH)) },
+                    )
+
+                    AdvanceModeOption(
+                        icon = Icons.Filled.CreditCard,
+                        title = "Card-linked",
+                        description = "Spend directly on a linked corporate card, no cash handling.",
+                        selected = form.mode == AdvanceMode.CARD_LINKED,
+                        onSelect = { viewModel.onAction(AdvanceAction.SetMode(AdvanceMode.CARD_LINKED)) },
+                    )
+
+                    if (form.mode == AdvanceMode.CARD_LINKED) {
+                        Text(
+                            "Select a linked card",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        ui.cards.forEach { card ->
+                            AdvanceCardOption(
+                                card = card,
+                                selected = form.selectedCardId == card.id,
+                                onSelect = { viewModel.onAction(AdvanceAction.SelectCard(card.id)) },
+                            )
+                        }
+                    }
+                }
+
                 1 -> {
                     Text("Amount & Purpose", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 
@@ -251,6 +294,87 @@ fun AskAdvanceFormScreen(
             }
 
             Spacer(Modifier.height(DesignTokens.Spacing.xxl))
+        }
+    }
+}
+
+@Composable
+private fun AdvanceModeOption(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .selectable(selected = selected, onClick = onSelect),
+        color =
+            if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            },
+        shape = DesignTokens.Shape.roundedMd,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(DesignTokens.Spacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
+        ) {
+            RadioButton(selected = selected, onClick = onSelect)
+            Icon(imageVector = icon, contentDescription = null)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdvanceCardOption(
+    card: CorporateCard,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .selectable(selected = selected, onClick = onSelect),
+        color =
+            if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            },
+        shape = DesignTokens.Shape.roundedMd,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(DesignTokens.Spacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
+        ) {
+            RadioButton(selected = selected, onClick = onSelect)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "${card.cardType.name.replaceFirstChar { it.uppercase() }} •••• ${card.lastFourDigits}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    card.holderName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

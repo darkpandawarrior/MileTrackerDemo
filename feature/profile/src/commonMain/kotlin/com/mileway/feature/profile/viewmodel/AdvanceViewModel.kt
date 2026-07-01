@@ -3,6 +3,7 @@ package com.mileway.feature.profile.viewmodel
 import com.mileway.core.common.UiText
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
+import com.mileway.feature.profile.model.AdvanceMode
 import com.mileway.feature.profile.model.AdvanceRecord
 import com.mileway.feature.profile.model.AdvanceStatus
 import com.mileway.feature.profile.model.CardStatus
@@ -17,7 +18,9 @@ data class AdvanceListData(
 )
 
 data class AdvanceFormState(
-    val step: Int = 1,
+    val step: Int = 0,
+    val mode: AdvanceMode = AdvanceMode.CASH,
+    val selectedCardId: String? = null,
     val amountText: String = "",
     val purpose: String = "",
     val requiredByDate: String = "",
@@ -37,6 +40,10 @@ sealed interface AdvanceAction {
     data object Refresh : AdvanceAction
 
     data class SetTab(val tab: AdvanceTabFilter) : AdvanceAction
+
+    data class SetMode(val mode: AdvanceMode) : AdvanceAction
+
+    data class SelectCard(val cardId: String) : AdvanceAction
 
     data class SetAmount(val text: String) : AdvanceAction
 
@@ -85,6 +92,8 @@ class AdvanceViewModel(
                     )
                 }
             is AdvanceAction.SetTab -> setTab(action.tab)
+            is AdvanceAction.SetMode -> setMode(action.mode)
+            is AdvanceAction.SelectCard -> setState { copy(form = form.copy(selectedCardId = action.cardId)) }
             is AdvanceAction.SetAmount -> setState { copy(form = form.copy(amountText = action.text)) }
             is AdvanceAction.SetPurpose -> setState { copy(form = form.copy(purpose = action.text)) }
             is AdvanceAction.SetRequiredByDate -> setState { copy(form = form.copy(requiredByDate = action.date)) }
@@ -113,6 +122,18 @@ class AdvanceViewModel(
         val recordsState: ScreenState<List<AdvanceRecord>> =
             if (filtered.isEmpty()) ScreenState.Empty else ScreenState.Content(filtered)
         setState { copy(list = AdvanceListData(recordsState, tab)) }
+    }
+
+    private fun setMode(mode: AdvanceMode) {
+        setState {
+            copy(
+                form =
+                    form.copy(
+                        mode = mode,
+                        selectedCardId = if (mode == AdvanceMode.CASH) null else form.selectedCardId,
+                    ),
+            )
+        }
     }
 
     private fun submitAdvance() {
