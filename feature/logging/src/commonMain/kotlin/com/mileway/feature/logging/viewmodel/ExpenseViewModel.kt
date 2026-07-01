@@ -37,6 +37,8 @@ data class ExpenseFormState(
     val note: String = "",
     /** Local URI/path of an optional attached receipt photo (P1.4); null when none was attached. */
     val receiptImagePath: String? = null,
+    /** P1.7: selected project/cost-center office code, only meaningful for `requiresCostCenter` categories. */
+    val officeCode: String? = null,
     val errors: Map<String, UiText> = emptyMap(),
 )
 
@@ -73,6 +75,9 @@ sealed interface ExpenseAction {
 
     /** Attaches (or clears, when [path] is null) an optional local receipt photo (P1.4). */
     data class SetReceiptImage(val path: String?) : ExpenseAction
+
+    /** P1.7: sets (or clears, when [code] is null) the project/cost-center office for the form. */
+    data class SetOfficeCode(val code: String?) : ExpenseAction
 
     data object SubmitExpense : ExpenseAction
 
@@ -149,6 +154,7 @@ class ExpenseViewModel(
             is ExpenseAction.SetMerchant -> setState { copy(form = form.copy(merchantName = action.name)) }
             is ExpenseAction.SetNote -> setState { copy(form = form.copy(note = action.note)) }
             is ExpenseAction.SetReceiptImage -> setState { copy(form = form.copy(receiptImagePath = action.path)) }
+            is ExpenseAction.SetOfficeCode -> setState { copy(form = form.copy(officeCode = action.code)) }
             ExpenseAction.SubmitExpense -> submitExpense()
             ExpenseAction.ResetForm ->
                 setState {
@@ -217,6 +223,7 @@ class ExpenseViewModel(
                 dateMs = kotlin.time.Clock.System.now().toEpochMilliseconds(),
                 note = form.note,
                 receiptImagePath = form.receiptImagePath,
+                officeCode = form.officeCode,
             )
         // P1.6: same tiered policy engine as Log Miles, keyed off the expense amount.
         val submissionStatus = PolicyMockData.outcomeForExpenseAmount(amount, category.name)

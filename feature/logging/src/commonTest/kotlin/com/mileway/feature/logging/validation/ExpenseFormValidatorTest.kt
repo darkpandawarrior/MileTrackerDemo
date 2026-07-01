@@ -94,4 +94,59 @@ class ExpenseFormValidatorTest {
             errors.keys,
         )
     }
+
+    // ── P1.7: cost-center-gated categories require an officeCode ──────────────
+
+    @Test
+    fun `missing officeCode on a cost-center-gated category produces an officeCode error`() {
+        val form =
+            ExpenseFormState(
+                category = ExpenseCategory.TRAVEL,
+                amountText = "500",
+                merchantName = "Ola Cabs",
+                officeCode = null,
+            )
+        val errors = ExpenseFormValidator.validate(form, travelDef)
+        assertEquals(setOf(ExpenseFormValidator.FIELD_OFFICE_CODE), errors.keys)
+    }
+
+    @Test
+    fun `blank officeCode on a cost-center-gated category produces an officeCode error`() {
+        val form =
+            ExpenseFormState(
+                category = ExpenseCategory.TRAVEL,
+                amountText = "500",
+                merchantName = "Ola Cabs",
+                officeCode = "   ",
+            )
+        val errors = ExpenseFormValidator.validate(form, travelDef)
+        assertEquals(setOf(ExpenseFormValidator.FIELD_OFFICE_CODE), errors.keys)
+    }
+
+    @Test
+    fun `officeCode present on a cost-center-gated category has no errors`() {
+        val form =
+            ExpenseFormState(
+                category = ExpenseCategory.TRAVEL,
+                amountText = "500",
+                merchantName = "Ola Cabs",
+                officeCode = "1345",
+            )
+        val errors = ExpenseFormValidator.validate(form, travelDef)
+        assertTrue(errors.isEmpty())
+    }
+
+    @Test
+    fun `missing officeCode on a non-cost-center category is not required`() {
+        val foodDef = ExpenseCategoryCatalog.default().first { it.category == ExpenseCategory.FOOD }
+        val form =
+            ExpenseFormState(
+                category = ExpenseCategory.FOOD,
+                amountText = "500",
+                merchantName = "Cafe Coffee Day",
+                officeCode = null,
+            )
+        val errors = ExpenseFormValidator.validate(form, foodDef)
+        assertTrue(errors.isEmpty())
+    }
 }

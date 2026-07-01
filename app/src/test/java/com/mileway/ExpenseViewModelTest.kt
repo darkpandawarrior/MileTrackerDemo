@@ -161,6 +161,61 @@ class ExpenseViewModelTest {
         assertEquals(null, inserted.receiptImagePath)
     }
 
+    // ── P1.7: project/cost-center tagging via stub Office picker ───────────────
+
+    @Test
+    fun `SetOfficeCode sets then clears the form's officeCode`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SetOfficeCode("1345"))
+        assertEquals("1345", vm.state.value.form.officeCode)
+        vm.onAction(ExpenseAction.SetOfficeCode(null))
+        assertEquals(null, vm.state.value.form.officeCode)
+    }
+
+    @Test
+    fun `SubmitExpense on a cost-center-gated category without an officeCode sets a field error`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
+        vm.onAction(ExpenseAction.SetMerchant("Ola Cabs"))
+        vm.onAction(ExpenseAction.SetAmount("500"))
+        vm.onAction(ExpenseAction.SubmitExpense)
+        assertEquals("", vm.state.value.lastSubmittedId)
+        assertTrue(vm.state.value.form.errors.containsKey(ExpenseFormValidator.FIELD_OFFICE_CODE))
+    }
+
+    @Test
+    fun `SubmitExpense on a cost-center-gated category persists the selected officeCode`() = runTest {
+        val repository = ExpenseRepository()
+        val vm = ExpenseViewModel(repository)
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
+        vm.onAction(ExpenseAction.SetMerchant("Ola Cabs"))
+        vm.onAction(ExpenseAction.SetAmount("500"))
+        vm.onAction(ExpenseAction.SetOfficeCode("1345"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        val inserted = repository.getById(vm.state.value.lastSubmittedId)
+        assertNotNull(inserted)
+        assertEquals("1345", inserted.officeCode)
+    }
+
+    @Test
+    fun `SubmitExpense on a category that does not require a cost center persists a null officeCode`() = runTest {
+        val repository = ExpenseRepository()
+        val vm = ExpenseViewModel(repository)
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+        vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
+        vm.onAction(ExpenseAction.SetAmount("249.50"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        val inserted = repository.getById(vm.state.value.lastSubmittedId)
+        assertNotNull(inserted)
+        assertEquals(null, inserted.officeCode)
+    }
+
     @Test
     fun `OpenDetail resolves a known id and falls back to Empty for an unknown one`() {
         val vm = viewModel()
@@ -326,6 +381,7 @@ class ExpenseViewModelTest {
         vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
         vm.onAction(ExpenseAction.SetMerchant("Ola Cabs"))
         vm.onAction(ExpenseAction.SetAmount("7500.0"))
+        vm.onAction(ExpenseAction.SetOfficeCode("1345"))
         vm.effect.test {
             vm.onAction(ExpenseAction.SubmitExpense)
             awaitItem()
@@ -340,6 +396,7 @@ class ExpenseViewModelTest {
         vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.ACCOMMODATION))
         vm.onAction(ExpenseAction.SetMerchant("Taj Hotel"))
         vm.onAction(ExpenseAction.SetAmount("15000.0"))
+        vm.onAction(ExpenseAction.SetOfficeCode("1345"))
         vm.effect.test {
             vm.onAction(ExpenseAction.SubmitExpense)
             awaitItem()
@@ -354,6 +411,7 @@ class ExpenseViewModelTest {
         vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
         vm.onAction(ExpenseAction.SetMerchant("IndiGo Airlines"))
         vm.onAction(ExpenseAction.SetAmount("30000.0"))
+        vm.onAction(ExpenseAction.SetOfficeCode("1345"))
         vm.effect.test {
             vm.onAction(ExpenseAction.SubmitExpense)
             awaitItem()
@@ -368,6 +426,7 @@ class ExpenseViewModelTest {
         vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
         vm.onAction(ExpenseAction.SetMerchant("Ola Cabs"))
         vm.onAction(ExpenseAction.SetAmount("7500.0"))
+        vm.onAction(ExpenseAction.SetOfficeCode("1345"))
         vm.effect.test {
             vm.onAction(ExpenseAction.SubmitExpense)
             awaitItem()

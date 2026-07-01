@@ -44,6 +44,13 @@ data class ExpenseRecord(
     val note: String = "",
     /** Local URI/path of an optional attached receipt photo (P1.4); null when none was attached. */
     val receiptImagePath: String? = null,
+    /**
+     * P1.7: [com.mileway.core.network.model.Office.code] of the project/cost-center this expense
+     * is tagged against, sourced from [com.mileway.stub.PolicyMockData.offices]. Only meaningful
+     * (and only shown/required in the entry form) for categories where
+     * [ExpenseCategoryDef.requiresCostCenter] is true; null otherwise.
+     */
+    val officeCode: String? = null,
 ) {
     val requiresApproval: Boolean get() = amountRupees > 5000.0
 }

@@ -18,16 +18,16 @@ object ExpenseFormValidator {
     const val FIELD_MERCHANT_NAME = "merchantName"
     const val FIELD_AMOUNT = "amount"
     const val FIELD_CATEGORY = "category"
+    const val FIELD_OFFICE_CODE = "officeCode"
 
     /**
      * Validates [form] against [catalogDef] (the category's required-field set from
      * [com.mileway.feature.logging.catalog.ExpenseCategoryCatalog], or null when no category is
      * selected yet). Returns an empty map when the form is valid.
      *
-     * Category-conditional receipt/cost-center checks are wired here as soon as those fields land
-     * on [ExpenseFormState] (P1.4 receipt attachment, P1.7 cost-center tagging) — until then,
-     * [catalogDef] is accepted so callers don't need to change their call-site again once those
-     * fields exist.
+     * Category-conditional receipt/GST checks are wired here as soon as those fields land on
+     * [ExpenseFormState] (P1.4 receipt attachment, P1.11 GST) — until then, [catalogDef] is
+     * accepted so callers don't need to change their call-site again once those fields exist.
      */
     fun validate(
         form: ExpenseFormState,
@@ -46,6 +46,12 @@ object ExpenseFormValidator {
         val amount = form.amountText.toDoubleOrNull()
         if (amount == null || amount <= 0.0) {
             errors[FIELD_AMOUNT] = UiText.of("Enter an amount greater than 0")
+        }
+
+        // P1.7: cost-center-gated categories (TRAVEL, ACCOMMODATION, OFFICE_SUPPLIES) require a
+        // project/office selection before submit; other categories never show or require it.
+        if (catalogDef?.requiresCostCenter == true && form.officeCode.isNullOrBlank()) {
+            errors[FIELD_OFFICE_CODE] = UiText.of("Select a project/cost center")
         }
 
         return errors

@@ -26,7 +26,11 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +43,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -48,10 +55,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.mileway.core.common.asString
+import com.mileway.core.network.model.Office
 import com.mileway.core.network.model.SubmissionStatus
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
+import com.mileway.feature.logging.catalog.ExpenseCategoryCatalog
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.validation.ExpenseFormValidator
 import com.mileway.feature.logging.viewmodel.ExpenseAction
@@ -184,6 +193,19 @@ fun ExpenseDetailsInputScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // P1.7: project/cost-center tagging, gated on the category's catalog def — only
+            // TRAVEL/ACCOMMODATION/OFFICE_SUPPLIES (requiresCostCenter) show this picker.
+            val catalogDef = ExpenseCategoryCatalog.default().firstOrNull { it.category == form.category }
+            if (catalogDef?.requiresCostCenter == true) {
+                val officeError = form.errors[ExpenseFormValidator.FIELD_OFFICE_CODE]
+                OfficePickerField(
+                    selectedOfficeCode = form.officeCode,
+                    isError = officeError != null,
+                    supportingText = officeError?.asString(),
+                    onSelect = { office -> viewModel.onAction(ExpenseAction.SetOfficeCode(office.code)) },
+                )
+            }
+
             OutlinedTextField(
                 value = form.note,
                 onValueChange = { viewModel.onAction(ExpenseAction.SetNote(it)) },
@@ -222,6 +244,55 @@ fun ExpenseDetailsInputScreen(
             }
 
             Spacer(Modifier.height(DesignTokens.Spacing.xxl))
+        }
+    }
+}
+
+/**
+ * Project/cost-center picker (P1.7), sourced from [PolicyMockData.offices] — the same stub office
+ * catalog the mileage submission flow bills against. Only rendered by the caller when the selected
+ * category's [com.mileway.feature.logging.model.ExpenseCategoryDef.requiresCostCenter] is true.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OfficePickerField(
+    selectedOfficeCode: String?,
+    isError: Boolean,
+    supportingText: String?,
+    onSelect: (Office) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val offices = remember { PolicyMockData.offices() }
+    val selectedOffice = offices.firstOrNull { it.code == selectedOfficeCode }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = selectedOffice?.let { "${it.name} (${it.code})" } ?: "",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Project / Cost Center") },
+            placeholder = { Text("Select an office") },
+            isError = isError,
+            supportingText = supportingText?.let { { Text(it) } },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            offices.forEach { office ->
+                DropdownMenuItem(
+                    text = { Text("${office.name} (${office.code})") },
+                    onClick = {
+                        onSelect(office)
+                        expanded = false
+                    },
+                )
+            }
         }
     }
 }
