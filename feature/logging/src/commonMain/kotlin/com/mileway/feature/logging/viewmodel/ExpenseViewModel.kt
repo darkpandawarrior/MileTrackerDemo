@@ -66,6 +66,12 @@ data class ExpenseUiState(
     val lastSubmissionViolations: List<PolicyViolation> = emptyList(),
     /** P2.1: rows of the multi-item bulk expense entry grid. Always at least one row. */
     val rows: List<ExpenseDraftRow> = listOf(ExpenseDraftRow(id = "row-1")),
+    /**
+     * P2.3: outcome of the most recent [ExpenseAction.SubmitAllDrafts]/[ExpenseAction
+     * .RetryFailedDrafts] batch — (successRows, errorRows) as they stood right after that batch
+     * ran. Null until a batch submit has been attempted at least once this session.
+     */
+    val submissionSummary: Pair<List<ExpenseDraftRow>, List<ExpenseDraftRow>>? = null,
 )
 
 sealed interface ExpenseAction {
@@ -133,6 +139,19 @@ sealed interface ExpenseAction {
 
     /** Sets [category] on every row still [DraftStatus.PENDING], leaving submitted/error rows untouched. */
     data class ApplyCategoryToAll(val category: ExpenseCategory) : ExpenseAction
+
+    // ── P2.3: local batch submit + per-row outcome + retry-failed ──────────────
+
+    /**
+     * Validates and submits every [DraftStatus.PENDING] row as its own [ExpenseRecord]. A local,
+     * fast Room/repo write per row — unlike the reference app's throttled remote fan-out, no
+     * semaphore/concurrency limit is needed. Rows already [DraftStatus.SUCCESS] or [DraftStatus
+     * .ERROR] are left untouched (use [RetryFailedDrafts] to resubmit error rows).
+     */
+    data object SubmitAllDrafts : ExpenseAction
+
+    /** Resubmits only rows currently [DraftStatus.ERROR], leaving PENDING/SUCCESS rows untouched. */
+    data object RetryFailedDrafts : ExpenseAction
 }
 
 sealed interface ExpenseEffect {
@@ -214,6 +233,8 @@ class ExpenseViewModel(
             is ExpenseAction.RemoveDraftRow -> removeDraftRow(action.id)
             is ExpenseAction.UpdateDraftRow -> updateDraftRow(action.id, action.transform)
             is ExpenseAction.ApplyCategoryToAll -> applyCategoryToAll(action.category)
+            ExpenseAction.SubmitAllDrafts -> submitAllDrafts()
+            ExpenseAction.RetryFailedDrafts -> retryFailedDrafts()
         }
     }
 
@@ -392,5 +413,74 @@ class ExpenseViewModel(
                 rows = rows.map { if (it.status == DraftStatus.PENDING) it.copy(category = category) else it },
             )
         }
+    }
+
+    // ── P2.3: local batch submit + per-row outcome + retry-failed ──────────────
+
+    /** Reuses [ExpenseFormValidator]/[ExpenseCategoryCatalog] (P1.2/P1.1) by shaping [row] as a form. */
+    private fun ExpenseDraftRow.toFormState(): ExpenseFormState =
+        ExpenseFormState(category = category, amountText = amountText, merchantName = merchantName, note = note)
+
+    private fun ExpenseDraftRow.toRecord(): ExpenseRecord {
+        val amount = amountText.toDoubleOrNull() ?: 0.0
+        val category = category ?: ExpenseCategory.OTHER
+        return ExpenseRecord(
+            id = "EXP-BULK-${(id.hashCode() and 0x7FFF_FFFF)}-${(merchantName.hashCode() and 0x7FFF_FFFF) % 9000 + 1000}",
+            category = category,
+            merchantName = merchantName,
+            amountRupees = amount,
+            status = ExpenseStatus.PENDING,
+            dateMs = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+            note = note,
+        )
+    }
+
+    /**
+     * Validates and inserts each row in [rowIds] as its own [ExpenseRecord] via a single suspend
+     * loop (fast local Room/repo write, no throttling needed). Updates each row's [DraftStatus] to
+     * [DraftStatus.SUCCESS] on success or [DraftStatus.ERROR] on validation failure (the row card
+     * already surfaces a static "needs attention" message for [DraftStatus.ERROR], mirroring how
+     * the single-entry form surfaces [ExpenseFormValidator] errors), then publishes the resulting
+     * (successRows, errorRows) as [ExpenseUiState.submissionSummary].
+     */
+    private fun submitRows(rowIds: Set<String>) {
+        viewModelScope.launch {
+            var rows = currentState.rows
+            for (id in rowIds) {
+                val row = rows.first { it.id == id }
+                val catalogDef = ExpenseCategoryCatalog.default().firstOrNull { it.category == row.category }
+                val errors = ExpenseFormValidator.validate(row.toFormState(), catalogDef)
+                rows =
+                    if (errors.isNotEmpty()) {
+                        rows.map { if (it.id == id) it.copy(status = DraftStatus.ERROR) else it }
+                    } else {
+                        repository.insert(row.toRecord())
+                        rows.map { if (it.id == id) it.copy(status = DraftStatus.SUCCESS) else it }
+                    }
+            }
+            val successRows = rows.filter { it.id in rowIds && it.status == DraftStatus.SUCCESS }
+            val errorRows = rows.filter { it.id in rowIds && it.status == DraftStatus.ERROR }
+            setState { copy(rows = rows, submissionSummary = successRows to errorRows) }
+        }
+    }
+
+    /** Submits every row still [DraftStatus.PENDING]; a no-op batch (empty summary) when none are. */
+    private fun submitAllDrafts() {
+        val pendingIds = currentState.rows.filter { it.status == DraftStatus.PENDING }.map { it.id }.toSet()
+        if (pendingIds.isEmpty()) {
+            setState { copy(submissionSummary = emptyList<ExpenseDraftRow>() to emptyList()) }
+            return
+        }
+        submitRows(pendingIds)
+    }
+
+    /** Resubmits only rows currently [DraftStatus.ERROR]; a no-op batch when there are none. */
+    private fun retryFailedDrafts() {
+        val errorIds = currentState.rows.filter { it.status == DraftStatus.ERROR }.map { it.id }.toSet()
+        if (errorIds.isEmpty()) {
+            setState { copy(submissionSummary = emptyList<ExpenseDraftRow>() to emptyList()) }
+            return
+        }
+        submitRows(errorIds)
     }
 }
