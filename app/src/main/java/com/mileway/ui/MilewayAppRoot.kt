@@ -111,6 +111,7 @@ private data class TabSpec(
 fun MilewayAppRoot(
     deepLinkRoute: String? = null,
     themeController: ThemeController = koinInject(),
+    onSignedOut: () -> Unit = {},
 ) {
     val systemDark = isSystemInDarkTheme()
     val override by themeController.darkThemeOverride.collectAsStateWithLifecycle()
@@ -293,6 +294,7 @@ fun MilewayAppRoot(
                                     popUpTo(AppGraph.TRACK)
                                 }
                             },
+                            onSignedOut = onSignedOut,
                         )
                     }
                     // Corporate cards feature module (replaces the old profile card screens).

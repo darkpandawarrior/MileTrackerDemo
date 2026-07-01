@@ -52,13 +52,15 @@ object ProfileRoutes {
  * Notifications and About & Support reuse the Help route in this demo.
  *
  * [onOpenDebugMenu] and [onStartTripForAdvance] are callbacks supplied by the app shell so the
- * profile module itself does not need to depend on :feature:tracking.
+ * profile module itself does not need to depend on :feature:tracking. [onSignedOut] (P2.4) is
+ * supplied by the app shell so this module does not need to depend on `:app`'s `AppStage`.
  */
 fun NavGraphBuilder.profileGraph(
     navController: NavHostController,
     onOpenDebugMenu: () -> Unit = {},
     onOpenCards: () -> Unit = {},
     onStartTripForAdvance: (advanceId: String, tripId: String) -> Unit = { _, _ -> },
+    onSignedOut: () -> Unit = {},
 ) {
     composable(ProfileRoutes.HOME) {
         ProfileScreen(
@@ -73,6 +75,7 @@ fun NavGraphBuilder.profileGraph(
             onOpenDelegation = { navController.navigate(ProfileRoutes.DELEGATION) },
             onOpenDemoSettings = { navController.navigate(ProfileRoutes.DEMO_SETTINGS) },
             onOpenQr = { navController.navigate(ProfileRoutes.QR_HOME) },
+            onSignedOut = onSignedOut,
         )
     }
     composable(ProfileRoutes.DETAILS) {

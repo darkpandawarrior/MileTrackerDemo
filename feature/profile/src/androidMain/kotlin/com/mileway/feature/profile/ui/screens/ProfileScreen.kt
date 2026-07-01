@@ -115,6 +115,8 @@ import org.koin.compose.viewmodel.koinViewModel
  * @param onOpenNotifications navigate to the notifications surface (reuses the Help route here)
  * @param onOpenSettings navigate to the existing Settings route
  * @param onOpenAboutSupport navigate to the About & Support surface (reuses the Help route here)
+ * @param onSignedOut P2.4: the last persona was just signed out of; the app shell should transition
+ * back to the login screen (`LauncherActivity`'s `AppStage`), since there is no persona left to show.
  */
 @Composable
 fun ProfileScreen(
@@ -129,6 +131,7 @@ fun ProfileScreen(
     onOpenDelegation: () -> Unit = {},
     onOpenDemoSettings: () -> Unit = {},
     onOpenQr: () -> Unit = {},
+    onSignedOut: () -> Unit = {},
     viewModel: ProfileViewModel = koinViewModel(),
     switchAccountViewModel: SwitchAccountViewModel = koinViewModel(),
 ) {
@@ -166,6 +169,8 @@ fun ProfileScreen(
                         viewModel.onAction(ProfileAction.FallBackToPinGate(effect.accountId))
                     }
                 }
+
+                ProfileEffect.NavigateToLogin -> onSignedOut()
             }
         }
     }
@@ -198,6 +203,7 @@ fun ProfileScreen(
                     onSelect = { viewModel.onAction(ProfileAction.SwitchAccount(it)) },
                     onViewDetails = { viewModel.onAction(ProfileAction.ViewAccountDetails(it)) },
                     onRemove = { viewModel.onAction(ProfileAction.RemoveDemoAccount(it)) },
+                    onSignOut = { viewModel.onAction(ProfileAction.SignOut(it)) },
                     onAdd = { name, code, org -> viewModel.onAction(ProfileAction.AddDemoAccount(name, code, org)) },
                     modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
                 )
@@ -843,6 +849,7 @@ private fun PersonaSwitcherRow(
     onSelect: (String) -> Unit,
     onViewDetails: (String) -> Unit,
     onRemove: (String) -> Unit,
+    onSignOut: (String) -> Unit,
     onAdd: (displayName: String, employeeCode: String, organization: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -868,6 +875,7 @@ private fun PersonaSwitcherRow(
                     onSelect = { onSelect(persona.id) },
                     onViewDetails = { onViewDetails(persona.id) },
                     onRemove = { onRemove(persona.id) },
+                    onSignOut = { onSignOut(persona.id) },
                 )
             }
             item(key = "add_persona") {
@@ -887,7 +895,7 @@ private fun PersonaSwitcherRow(
     }
 }
 
-/** A single switchable-persona chip; long-press opens the Details/Remove overflow menu. */
+/** A single switchable-persona chip; long-press opens the Details/Remove/Sign Out overflow menu. */
 @Composable
 private fun PersonaChip(
     persona: DemoAccount,
@@ -895,6 +903,7 @@ private fun PersonaChip(
     onSelect: () -> Unit,
     onViewDetails: () -> Unit,
     onRemove: () -> Unit,
+    onSignOut: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     Box {
@@ -1001,6 +1010,13 @@ private fun PersonaChip(
                 onClick = {
                     showMenu = false
                     onRemove()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Sign Out") },
+                onClick = {
+                    showMenu = false
+                    onSignOut()
                 },
             )
         }

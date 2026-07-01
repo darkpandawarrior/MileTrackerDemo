@@ -2,6 +2,7 @@ package com.mileway.feature.profile.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.data.session.ActiveAccountSource
+import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.theme.AccentPalette
@@ -63,6 +64,15 @@ sealed interface ProfileAction {
 
     /** P1.3: dismisses the details sheet opened by [ViewAccountDetails]. */
     data object DismissAccountDetails : ProfileAction
+
+    /**
+     * P2.4: signs out of [accountId]. If other personas remain, this just removes [accountId] and
+     * switches to another one (mirrors [RemoveDemoAccount] for a non-active persona, but works even
+     * when [accountId] is the currently-active one — that's the whole point of "sign out"). If
+     * [accountId] is the last remaining persona, this clears the whole local session via
+     * [SessionRepository.signOut] and emits [ProfileEffect.NavigateToLogin] instead.
+     */
+    data class SignOut(val accountId: String) : ProfileAction
 }
 
 sealed interface ProfileEffect {
@@ -72,6 +82,15 @@ sealed interface ProfileEffect {
      * `BiometricGuard.showPrompt` and dispatches [ProfileAction.CommitAccountSwitch] on success.
      */
     data class RequestBiometricGate(val accountId: String) : ProfileEffect
+
+    /**
+     * P2.4: the last persona was just signed out of (no personas remain). `LauncherActivity`
+     * (Android-only; it owns [AppStage][com.mileway.AppStage]) reacts to this by transitioning
+     * back to the login screen. Actually driven by [SessionRepository.sessionState] flipping to
+     * signed-out — this effect is a one-shot nudge for screens that want to react immediately
+     * rather than waiting on the DataStore round-trip.
+     */
+    data object NavigateToLogin : ProfileEffect
 }
 
 /**
@@ -85,6 +104,7 @@ class ProfileViewModel(
     private val themeController: ThemeController,
     private val activeAccountSource: ActiveAccountSource,
     private val demoSettingsRepository: DemoSettingsRepository,
+    private val sessionRepository: SessionRepository,
 ) : BaseViewModel<ProfileUiState, ProfileEffect, ProfileAction>(
         repository.accounts().let { acc ->
             ProfileUiState(
@@ -147,6 +167,29 @@ class ProfileViewModel(
             is ProfileAction.RemoveDemoAccount -> removeDemoAccount(action.accountId)
             is ProfileAction.ViewAccountDetails -> viewAccountDetails(action.accountId)
             ProfileAction.DismissAccountDetails -> setState { copy(accountDetailsSheet = null) }
+            is ProfileAction.SignOut -> signOut(action.accountId)
+        }
+    }
+
+    /**
+     * P2.4: has-other-accounts vs no-other-accounts branching for signing out (no
+     * FCM-unsubscribe/server-logout half — there is no backend to call). `SessionRepository
+     * .signOut()` already existed but had zero call sites before this task.
+     */
+    private fun signOut(accountId: String) {
+        val accounts = currentState.accounts
+        val hasOtherAccounts = accounts.any { it.id != accountId }
+        viewModelScope.launch {
+            repository.removeAccount(accountId)
+            if (hasOtherAccounts) {
+                val next = accounts.first { it.id != accountId }.id
+                activeAccountSource.setActiveAccountId(next)
+                repository.setActiveAccount(next)
+                setState { copy(selectedAccountId = next) }
+            } else {
+                sessionRepository.signOut()
+                emitEffect(ProfileEffect.NavigateToLogin)
+            }
         }
     }
 

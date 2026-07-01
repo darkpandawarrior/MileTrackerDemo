@@ -1,5 +1,6 @@
 package com.mileway
 
+import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.data.settings.DemoSettings
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
@@ -34,6 +35,7 @@ class AccountCrudViewModelTest {
                 ThemeController(),
                 FakeActiveAccountSource(),
                 mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) },
+                mockk<SessionRepository>(relaxed = true),
             )
         return vm
     }

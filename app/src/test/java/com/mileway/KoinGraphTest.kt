@@ -20,6 +20,7 @@ import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
 import com.mileway.core.data.session.PinHashSource
+import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.ui.di.coreUiModule
 import com.mileway.feature.agent.di.agentModule
 import com.mileway.feature.agent.viewmodel.AgentViewModel
@@ -121,6 +122,8 @@ class KoinGraphTest : KoinTest {
         // suspend-fun-on-a-relaxed-mockk trap (memory: screenshot Koin needs deterministic fakes).
         single<PinHashSource> { FakePinHashSource() }
         single<DemoSettingsRepository> { mockk(relaxed = true) }
+        // P2.4: ProfileViewModel now depends on SessionRepository (SignOut's global-fallback path).
+        single<SessionRepository> { mockk(relaxed = true) }
         single<NotificationScheduler> { mockk(relaxed = true) }
         single<ShareSheet> { mockk(relaxed = true) }
         single<PermissionsProvider> { mockk(relaxed = true) }

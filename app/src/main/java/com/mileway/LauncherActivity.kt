@@ -105,10 +105,16 @@ private fun AppEntry(
     // A.1: once the persisted session resolves as already-signed-in, skip splash + login entirely.
     // This makes a guest session survive process recreation and lets deep links resolve for a guest
     // without bouncing back to the login screen. A signed-out user falls through to the normal flow.
+    // P2.4: the reverse transition — `ProfileViewModel.SignOut` clears the session (via
+    // `SessionRepository.signOut()`) when the last persona is signed out of; once that persisted
+    // state flips to signed-out while still in the APP stage, fall back to LOGIN. This is the
+    // durable, process-death-safe path; `MilewayAppRoot`'s `onSignedOut` above is the fast path for
+    // the live composition.
     LaunchedEffect(session) {
         val current = session
-        if (current != null && current.isSignedIn && stage != AppStage.APP) {
-            stage = AppStage.APP
+        when {
+            current != null && current.isSignedIn && stage != AppStage.APP -> stage = AppStage.APP
+            current != null && !current.isSignedIn && stage == AppStage.APP -> stage = AppStage.LOGIN
         }
     }
 
@@ -146,7 +152,14 @@ private fun AppEntry(
                             )
                         AppStage.APP ->
                             UpdateGate(config = updateConfig) {
-                                MilewayAppRoot(deepLinkRoute = initialRoute)
+                                MilewayAppRoot(
+                                    deepLinkRoute = initialRoute,
+                                    // P2.4: the last persona was just signed out of — jump back to
+                                    // login immediately rather than waiting on the DataStore
+                                    // round-trip below (the LaunchedEffect(session) below is the
+                                    // durable/process-death-safe path; this is the fast path).
+                                    onSignedOut = { stage = AppStage.LOGIN },
+                                )
                             }
                     }
                 }

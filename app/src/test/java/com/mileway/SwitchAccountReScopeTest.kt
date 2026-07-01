@@ -1,6 +1,7 @@
 package com.mileway
 
 import com.mileway.core.data.model.db.SavedTrack
+import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.data.settings.DemoSettings
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
@@ -63,6 +64,7 @@ class SwitchAccountReScopeTest {
                     ThemeController(),
                     activeAccountSource,
                     fakeDemoSettingsRepository(),
+                    mockk<SessionRepository>(relaxed = true),
                 )
             advanceUntilIdle()
 
@@ -88,6 +90,7 @@ class SwitchAccountReScopeTest {
                     ThemeController(),
                     FakeActiveAccountSource(seed = "ACC-001"),
                     fakeDemoSettingsRepository(),
+                    mockk<SessionRepository>(relaxed = true),
                 )
             advanceUntilIdle()
 

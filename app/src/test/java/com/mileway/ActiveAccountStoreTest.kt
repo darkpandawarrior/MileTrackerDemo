@@ -1,5 +1,6 @@
 package com.mileway
 
+import com.mileway.core.data.session.SessionRepository
 import com.mileway.core.data.settings.DemoSettings
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
@@ -64,6 +65,7 @@ class ActiveAccountStoreTest {
                     ThemeController(),
                     FakeActiveAccountSource(seed = "ACC-002"),
                     fakeDemoSettingsRepository(),
+                    mockk<SessionRepository>(relaxed = true),
                 )
             advanceUntilIdle()
 
@@ -83,6 +85,7 @@ class ActiveAccountStoreTest {
                     ThemeController(),
                     FakeActiveAccountSource(seed = null),
                     fakeDemoSettingsRepository(),
+                    mockk<SessionRepository>(relaxed = true),
                 )
             advanceUntilIdle()
 
@@ -98,6 +101,7 @@ class ActiveAccountStoreTest {
                     ThemeController(),
                     FakeActiveAccountSource(seed = "ACC-DELETED"),
                     fakeDemoSettingsRepository(),
+                    mockk<SessionRepository>(relaxed = true),
                 )
             advanceUntilIdle()
 
