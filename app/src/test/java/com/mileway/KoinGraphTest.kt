@@ -16,6 +16,7 @@ import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.TripAttachmentDao
 import com.mileway.core.data.library.MediaLibraryDao
+import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
 import com.mileway.core.ui.di.coreUiModule
@@ -110,6 +111,10 @@ class KoinGraphTest : KoinTest {
         single<TextToSpeech> { FakeTextToSpeech() }
         single<CurrentTrackDataStore> { mockk(relaxed = true) }
         single<CurrentTrackDataSource> { get<CurrentTrackDataStore>() }
+        // P2.1: ProfileViewModel reads this in init; a real in-memory fake avoids the
+        // Flow<String?>-from-relaxed-mockk null-collector trap (memory: screenshot Koin needs
+        // deterministic fakes).
+        single<ActiveAccountSource> { FakeActiveAccountSource() }
         single<DemoSettingsRepository> { mockk(relaxed = true) }
         single<NotificationScheduler> { mockk(relaxed = true) }
         single<ShareSheet> { mockk(relaxed = true) }

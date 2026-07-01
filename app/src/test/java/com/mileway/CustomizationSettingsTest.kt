@@ -26,7 +26,11 @@ class CustomizationSettingsTest {
 
     private fun controller() = ThemeController()
     private fun viewModel(tc: ThemeController = controller()) =
-        ProfileViewModel(FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())), tc)
+        ProfileViewModel(
+            FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
+            tc,
+            FakeActiveAccountSource(),
+        )
 
     // =========================================================================
     // 1. Palette selection, mapping to expected color set

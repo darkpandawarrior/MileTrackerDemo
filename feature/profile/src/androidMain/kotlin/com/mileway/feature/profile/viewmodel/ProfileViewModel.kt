@@ -1,6 +1,7 @@
 package com.mileway.feature.profile.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.theme.AccentPalette
 import com.mileway.core.ui.theme.AppLanguage
@@ -13,6 +14,7 @@ import com.mileway.feature.profile.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 sealed interface ProfileAction {
@@ -55,6 +57,7 @@ sealed interface ProfileEffect
 class ProfileViewModel(
     private val repository: ProfileRepository,
     private val themeController: ThemeController,
+    private val activeAccountSource: ActiveAccountSource,
 ) : BaseViewModel<ProfileUiState, ProfileEffect, ProfileAction>(
         repository.accounts().let { acc ->
             ProfileUiState(
@@ -77,15 +80,24 @@ class ProfileViewModel(
         // it stays observably in sync with adds/removes (P1.3) instead of a one-shot snapshot.
         viewModelScope.launch {
             repository.seedAccountsIfEmpty()
+            // P2.1: the persisted active-account pointer survives process death; applied once, on
+            // the first Room emission, so it wins over the constructor's synchronous
+            // `acc.firstOrNull()` seed instead of being masked by it (`stillSelected` would
+            // otherwise always be true on that first emission and this would never run).
+            val persistedActiveId = activeAccountSource.activeAccountId.first()
+            var appliedPersistedId = false
             repository.observeAccounts().collect { accounts ->
                 setState {
-                    val stillSelected = accounts.any { it.id == selectedAccountId }
-                    copy(
-                        accounts = accounts,
-                        selectedAccountId =
-                            if (stillSelected) selectedAccountId else accounts.firstOrNull()?.id.orEmpty(),
-                    )
+                    val nextSelected =
+                        when {
+                            !appliedPersistedId && persistedActiveId != null && accounts.any { it.id == persistedActiveId } ->
+                                persistedActiveId
+                            accounts.any { it.id == selectedAccountId } -> selectedAccountId
+                            else -> accounts.firstOrNull()?.id.orEmpty()
+                        }
+                    copy(accounts = accounts, selectedAccountId = nextSelected)
                 }
+                appliedPersistedId = true
             }
         }
     }

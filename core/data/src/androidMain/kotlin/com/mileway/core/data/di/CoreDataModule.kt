@@ -7,6 +7,8 @@ import com.mileway.core.data.model.display.SnapshotPublisher
 import com.mileway.core.data.outbox.RoomSubmitOutbox
 import com.mileway.core.data.outbox.SubmitOutbox
 import com.mileway.core.data.outbox.TripDraft
+import com.mileway.core.data.session.ActiveAccountSource
+import com.mileway.core.data.session.ActiveAccountStore
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
 import com.mileway.core.data.session.SessionRepository
@@ -35,6 +37,8 @@ val coreDataModule =
         single { CurrentTrackDataStore(androidContext()) }
         single<CurrentTrackDataSource> { get<CurrentTrackDataStore>() }
         single { SessionRepository(androidContext()) }
+        single { ActiveAccountStore(androidContext()) }
+        single<ActiveAccountSource> { get<ActiveAccountStore>() }
         single { DemoSettingsRepository(androidContext()) }
         single<AgentSessionStore> { AgentSessionStoreImpl(androidContext()) }
         single { Json { ignoreUnknownKeys = true } }

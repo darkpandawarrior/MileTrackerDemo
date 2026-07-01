@@ -28,6 +28,7 @@ import com.mileway.core.data.dao.VoucherDao
 import com.mileway.core.data.library.MediaLibraryDao
 import com.mileway.core.data.library.MediaLibraryEntry
 import com.mileway.core.data.model.db.SavedTrack
+import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
 import com.mileway.core.data.settings.DemoSettingsRepository
@@ -262,6 +263,10 @@ class ScreenshotGalleryTest {
             single<TextToSpeech> { FakeTextToSpeech() }
             single<CurrentTrackDataStore> { mockk(relaxed = true) }
             single<CurrentTrackDataSource> { get<CurrentTrackDataStore>() }
+            // P2.1: ProfileViewModel reads this in init; a real in-memory fake avoids the
+            // Flow<String?>-from-relaxed-mockk null-collector trap (memory: screenshot Koin
+            // needs deterministic fakes, same reason FakeVoucherDao exists above).
+            single<ActiveAccountSource> { FakeActiveAccountSource() }
             single<DemoSettingsRepository> { mockk(relaxed = true) }
             // Map screens (GeoCheckIn, LocationMap, LiveTrack, LogMiles thumbnail) inject
             // MapSurface; the real flavor surfaces need GMS / MapLibre native, so use a

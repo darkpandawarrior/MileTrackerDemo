@@ -23,7 +23,12 @@ class AccountCrudViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private fun viewModel(): ProfileViewModel {
-        val vm = ProfileViewModel(FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())), ThemeController())
+        val vm =
+            ProfileViewModel(
+                FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
+                ThemeController(),
+                FakeActiveAccountSource(),
+            )
         return vm
     }
 

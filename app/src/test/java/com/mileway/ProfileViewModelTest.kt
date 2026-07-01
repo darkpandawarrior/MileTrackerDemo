@@ -14,7 +14,12 @@ import kotlin.test.assertTrue
  */
 class ProfileViewModelTest {
 
-    private fun viewModel() = ProfileViewModel(FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())), ThemeController())
+    private fun viewModel() =
+        ProfileViewModel(
+            FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())),
+            ThemeController(),
+            FakeActiveAccountSource(),
+        )
 
     @Test
     fun `notifications default on and toggles off`() {
