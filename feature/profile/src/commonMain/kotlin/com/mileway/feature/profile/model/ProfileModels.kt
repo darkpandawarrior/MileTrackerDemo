@@ -69,7 +69,6 @@ data class ProfileUiState(
     val selectedAccountId: String = "",
     val analytics: AccountAnalyticsSnapshot,
     val preferences: PreferenceToggles = PreferenceToggles(),
-    val showSessionsDialog: Boolean = false,
     val preferenceMessage: String? = null,
     /** P1.3: the persona currently shown in [AccountDetailsSheet][com.mileway.feature.profile.ui.screens.AccountDetailsSheet], or null when dismissed. */
     val accountDetailsSheet: DemoAccount? = null,

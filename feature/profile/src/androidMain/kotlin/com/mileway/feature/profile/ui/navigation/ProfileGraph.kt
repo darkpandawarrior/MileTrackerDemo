@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.mileway.feature.profile.ui.screens.ActiveSessionsScreen
 import com.mileway.feature.profile.ui.screens.AdvanceHistoryScreen
 import com.mileway.feature.profile.ui.screens.AdvanceRequestDetailsScreen
 import com.mileway.feature.profile.ui.screens.AnalyticsDetailScreen
@@ -35,6 +36,7 @@ object ProfileRoutes {
     const val ANALYTICS_HOME = "profile/analytics"
     const val ANALYTICS_DETAIL = "profile/analytics/{category}"
     const val DELEGATION = "profile/delegation"
+    const val ACTIVE_SESSIONS = "profile/sessions"
     const val QR_HOME = "profile/qr"
     const val DEMO_SETTINGS = "profile/demo_settings"
     const val ROOT_GUARD = "profile/root_guard"
@@ -77,7 +79,13 @@ fun NavGraphBuilder.profileGraph(
             onOpenDelegation = { navController.navigate(ProfileRoutes.DELEGATION) },
             onOpenDemoSettings = { navController.navigate(ProfileRoutes.DEMO_SETTINGS) },
             onOpenQr = { navController.navigate(ProfileRoutes.QR_HOME) },
+            onOpenSessions = { navController.navigate(ProfileRoutes.ACTIVE_SESSIONS) },
             onSignedOut = onSignedOut,
+        )
+    }
+    composable(ProfileRoutes.ACTIVE_SESSIONS) {
+        ActiveSessionsScreen(
+            onBack = { navController.popBackStack() },
         )
     }
     composable(ProfileRoutes.DETAILS) {

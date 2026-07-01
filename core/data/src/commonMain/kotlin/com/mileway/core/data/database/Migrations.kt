@@ -5,6 +5,30 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 13 → 14 (PLAN_V22 P6.4): additive `sessions` table — a real, persisted store of
+ * devices the demo account is signed in on, replacing `stub.ProfileMockData.sessions()`'s bare
+ * in-memory list so `ActiveSessionsScreen`'s per-session revoke and "Sign out all other sessions"
+ * bulk action actually persist across app kill/relaunch. See
+ * [com.mileway.core.data.model.db.SessionEntity].
+ */
+val MIGRATION_13_14 =
+    object : Migration(13, 14) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `sessions` (
+                    `id`               TEXT    NOT NULL PRIMARY KEY,
+                    `deviceName`       TEXT    NOT NULL,
+                    `platform`         TEXT    NOT NULL,
+                    `lastActiveMillis` INTEGER NOT NULL,
+                    `isCurrent`        INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 12 → 13 (PLAN_V22 P6.3): additive `delegations` table — real, persisted approval
  * delegations backing `DelegationScreen`'s "My Delegations" list, replacing its
  * `mutableStateListOf` seed that reset on navigation away. This is the approval-delegation

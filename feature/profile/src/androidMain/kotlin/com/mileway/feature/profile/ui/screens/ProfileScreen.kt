@@ -79,7 +79,6 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mileway.core.network.model.DemoAccount
-import com.mileway.core.network.model.UserSession
 import com.mileway.core.platform.ReferralManager
 import com.mileway.core.security.BiometricGuard
 import com.mileway.core.ui.components.GridProfileTile
@@ -87,7 +86,6 @@ import com.mileway.core.ui.components.ProfileGridItem
 import com.mileway.core.ui.components.ProfileItemStatus
 import com.mileway.core.ui.components.ReferralCard
 import com.mileway.core.ui.components.buildReferralInvite
-import com.mileway.core.ui.components.sheet.AppActionSheet
 import com.mileway.core.ui.platform.LocalShareSheet
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.dataStyle
@@ -115,6 +113,8 @@ import org.koin.compose.viewmodel.koinViewModel
  * @param onOpenNotifications navigate to the notifications surface (reuses the Help route here)
  * @param onOpenSettings navigate to the existing Settings route
  * @param onOpenAboutSupport navigate to the About & Support surface (reuses the Help route here)
+ * @param onOpenSessions P6.4: navigate to the full [ActiveSessionsScreen][com.mileway.feature.profile.ui.screens.ActiveSessionsScreen] —
+ * promoted from the old read-only `SessionsDialog`, which this screen no longer shows.
  * @param onSignedOut P2.4: the last persona was just signed out of; the app shell should transition
  * back to the login screen (`LauncherActivity`'s `AppStage`), since there is no persona left to show.
  */
@@ -131,6 +131,7 @@ fun ProfileScreen(
     onOpenDelegation: () -> Unit = {},
     onOpenDemoSettings: () -> Unit = {},
     onOpenQr: () -> Unit = {},
+    onOpenSessions: () -> Unit = {},
     onSignedOut: () -> Unit = {},
     viewModel: ProfileViewModel = koinViewModel(),
     switchAccountViewModel: SwitchAccountViewModel = koinViewModel(),
@@ -228,7 +229,7 @@ fun ProfileScreen(
                     onOpenNotifications = onOpenNotifications,
                     onOpenSettings = onOpenSettings,
                     onOpenPreferences = onOpenPreferences,
-                    onOpenSessions = { viewModel.onAction(ProfileAction.OpenSessionsDialog) },
+                    onOpenSessions = onOpenSessions,
                     onOpenAboutSupport = onOpenAboutSupport,
                     onOpenAdvance = onOpenAdvance,
                     onOpenCards = onOpenCards,
@@ -249,13 +250,6 @@ fun ProfileScreen(
         }
 
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 140.dp))
-    }
-
-    if (state.showSessionsDialog) {
-        SessionsDialog(
-            sessions = state.sessions,
-            onDismiss = { viewModel.onAction(ProfileAction.DismissSessionsDialog) },
-        )
     }
 
     state.accountDetailsSheet?.let { account ->
@@ -715,68 +709,6 @@ private fun Sparkline(
             center = mapped.last(),
             style = Stroke(width = 2f),
         )
-    }
-}
-
-/** Simple list dialog of the devices this account is signed in on. */
-@Composable
-private fun SessionsDialog(
-    sessions: List<UserSession>,
-    onDismiss: () -> Unit,
-) {
-    AppActionSheet(
-        onDismiss = onDismiss,
-        title = "Active Sessions",
-    ) {
-        sessions.forEach { session ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Devices,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(DesignTokens.IconSize.navigation),
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = session.deviceName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                    )
-                    Text(
-                        text = session.platform,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (session.isCurrent) {
-                    Surface(
-                        shape = DesignTokens.Shape.chip,
-                        color = DesignTokens.StatusColors.success.copy(alpha = 0.15f),
-                    ) {
-                        Text(
-                            text = "This device",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = DesignTokens.StatusColors.success,
-                            modifier = Modifier.padding(horizontal = DesignTokens.Spacing.s, vertical = 2.dp),
-                        )
-                    }
-                }
-            }
-        }
-        OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Close") }
     }
 }
 

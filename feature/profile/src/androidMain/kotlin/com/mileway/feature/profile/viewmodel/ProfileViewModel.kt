@@ -42,10 +42,6 @@ sealed interface ProfileAction {
      */
     data class FallBackToPinGate(val id: String) : ProfileAction
 
-    data object OpenSessionsDialog : ProfileAction
-
-    data object DismissSessionsDialog : ProfileAction
-
     data object TogglePushNotifications : ProfileAction
 
     data object ToggleUsageAnalytics : ProfileAction
@@ -167,8 +163,6 @@ class ProfileViewModel(
             is ProfileAction.CommitAccountSwitch -> commitAccountSwitch(action.id)
             ProfileAction.CancelAccountSwitch -> setState { copy(pendingSwitchAccountId = null) }
             is ProfileAction.FallBackToPinGate -> setState { copy(pendingSwitchAccountId = action.id) }
-            ProfileAction.OpenSessionsDialog -> setState { copy(showSessionsDialog = true) }
-            ProfileAction.DismissSessionsDialog -> setState { copy(showSessionsDialog = false) }
             ProfileAction.TogglePushNotifications ->
                 setState { copy(preferences = preferences.copy(pushNotifications = !preferences.pushNotifications)) }
             ProfileAction.ToggleUsageAnalytics ->

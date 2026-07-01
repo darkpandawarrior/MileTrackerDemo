@@ -20,10 +20,11 @@ kotlin {
             implementation(project(":core:security"))
             // V15 RF.4: ReferralManager + ShareSheet (LocalShareSheet) types live in core:platform.
             implementation(project(":core:platform"))
+            // P6.4: ActiveSessionsRepository seeds from ProfileMockData.sessions() on first run.
+            implementation(project(":stub"))
         }
         androidMain.dependencies {
             implementation("androidx.appcompat:appcompat:1.7.0")
-            implementation(project(":stub"))
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

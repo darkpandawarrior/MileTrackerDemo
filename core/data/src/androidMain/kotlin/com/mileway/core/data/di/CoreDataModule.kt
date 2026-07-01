@@ -41,6 +41,7 @@ val coreDataModule =
         single { get<MilewayDatabase>().vehicleDetailsDao() }
         single { get<MilewayDatabase>().passportDetailsDao() }
         single { get<MilewayDatabase>().delegationDao() }
+        single { get<MilewayDatabase>().sessionDao() }
         single { SessionRepository(androidContext()) }
         single<SessionSource> { get<SessionRepository>() }
         single { CurrentTrackDataStore(androidContext(), get()) }

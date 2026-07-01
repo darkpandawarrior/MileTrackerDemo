@@ -25,6 +25,7 @@ import com.mileway.core.data.dao.LogMilesFrequentRouteDao
 import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.data.dao.PassportDetailsDao
 import com.mileway.core.data.dao.SavedTrackDao
+import com.mileway.core.data.dao.SessionDao
 import com.mileway.core.data.dao.TripAttachmentDao
 import com.mileway.core.data.dao.VehicleDetailsDao
 import com.mileway.core.data.dao.VoucherDao
@@ -101,6 +102,7 @@ import com.mileway.feature.profile.ui.screens.AdvanceHistoryScreen
 import com.mileway.feature.profile.ui.screens.AnalyticsDetailScreen
 import com.mileway.feature.profile.ui.screens.AnalyticsHomeScreen
 import com.mileway.feature.profile.ui.screens.AskAdvanceFormScreen
+import com.mileway.feature.profile.ui.screens.ActiveSessionsScreen
 import com.mileway.feature.profile.ui.screens.DelegationScreen
 import com.mileway.feature.profile.ui.screens.DemoSettingsScreen
 import com.mileway.feature.profile.ui.screens.HelpScreen
@@ -270,6 +272,8 @@ class ScreenshotGalleryTest {
             single<PassportDetailsDao> { FakePassportDetailsDao() }
             // P6.3: DelegationViewModel collects this in init(); same null-collector trap as above.
             single<DelegationDao> { FakeDelegationDao() }
+            // P6.4: ActiveSessionsViewModel collects this in init(); same null-collector trap as above.
+            single<SessionDao> { FakeSessionDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }
             single<AssistantEngine> { FakeAssistantEngine() }
             single<SpeechToText> { FakeSpeechToText() }
@@ -1032,6 +1036,16 @@ class ScreenshotGalleryTest {
             }
         }
         capture("delegation_screen")
+    }
+
+    @Test
+    fun activeSessionsScreen() {
+        composeRule.setContent {
+            MilewayTheme {
+                ActiveSessionsScreen(onBack = {})
+            }
+        }
+        capture("active_sessions_screen")
     }
 
     @Test

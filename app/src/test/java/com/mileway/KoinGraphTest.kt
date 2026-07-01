@@ -16,6 +16,7 @@ import com.mileway.core.data.dao.LogMilesFrequentRouteDao
 import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.data.dao.PassportDetailsDao
 import com.mileway.core.data.dao.SavedTrackDao
+import com.mileway.core.data.dao.SessionDao
 import com.mileway.core.data.dao.TripAttachmentDao
 import com.mileway.core.data.dao.VehicleDetailsDao
 import com.mileway.core.data.library.MediaLibraryDao
@@ -46,6 +47,7 @@ import com.mileway.feature.payments.viewmodel.CreatePaymentViewModel
 import com.mileway.feature.payments.viewmodel.PaymentsHistoryViewModel
 import com.mileway.feature.profile.di.profileModule
 import com.mileway.core.data.settings.DemoSettingsRepository
+import com.mileway.feature.profile.viewmodel.ActiveSessionsViewModel
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
 import com.mileway.feature.profile.viewmodel.DelegationViewModel
 import com.mileway.feature.profile.viewmodel.DemoSettingsViewModel
@@ -121,6 +123,8 @@ class KoinGraphTest : KoinTest {
         single<PassportDetailsDao> { FakePassportDetailsDao() }
         // P6.3: DelegationViewModel collects this in init(); same null-collector trap as above.
         single<DelegationDao> { FakeDelegationDao() }
+        // P6.4: ActiveSessionsViewModel collects this in init(); same null-collector trap as above.
+        single<SessionDao> { FakeSessionDao() }
         single<AgentSessionStore> { FakeAgentSessionStore() }
         single<AssistantEngine> { FakeAssistantEngine() }
         single<SpeechToText> { FakeSpeechToText() }
@@ -200,6 +204,7 @@ class KoinGraphTest : KoinTest {
         assertNotNull(get<SwitchAccountViewModel>())
         assertNotNull(get<PersonalDetailsViewModel>())
         assertNotNull(get<DelegationViewModel>())
+        assertNotNull(get<ActiveSessionsViewModel>())
         assertNotNull(get<CheckInViewModel>())
         assertNotNull(get<ApprovalsViewModel>())
         assertNotNull(get<PayablesViewModel>())
