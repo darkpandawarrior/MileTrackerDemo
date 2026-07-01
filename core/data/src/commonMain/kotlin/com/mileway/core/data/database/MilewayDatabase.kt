@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import com.mileway.core.data.dao.AgentDao
+import com.mileway.core.data.dao.DelegationDao
 import com.mileway.core.data.dao.DraftExpenseDao
 import com.mileway.core.data.dao.HardwareEventDao
 import com.mileway.core.data.dao.LocationDao
@@ -21,6 +22,7 @@ import com.mileway.core.data.library.MediaLibraryDao
 import com.mileway.core.data.library.MediaLibraryEntry
 import com.mileway.core.data.model.db.AgentConversationEntity
 import com.mileway.core.data.model.db.AgentMessageEntity
+import com.mileway.core.data.model.db.DelegationEntity
 import com.mileway.core.data.model.db.DraftExpenseEntity
 import com.mileway.core.data.model.db.HardwareEvent
 import com.mileway.core.data.model.db.LocationData
@@ -51,8 +53,9 @@ import com.mileway.core.data.model.db.VoucherEntity
         MockAccountEntity::class,
         VehicleDetailsEntity::class,
         PassportDetailsEntity::class,
+        DelegationEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = false,
 )
 @ConstructedBy(MilewayDatabaseConstructor::class)
@@ -84,6 +87,8 @@ abstract class MilewayDatabase : RoomDatabase() {
     abstract fun vehicleDetailsDao(): VehicleDetailsDao
 
     abstract fun passportDetailsDao(): PassportDetailsDao
+
+    abstract fun delegationDao(): DelegationDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

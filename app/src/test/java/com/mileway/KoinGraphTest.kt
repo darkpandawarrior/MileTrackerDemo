@@ -2,6 +2,7 @@ package com.mileway
 
 import android.content.Context
 import com.mileway.core.data.dao.AgentDao
+import com.mileway.core.data.dao.DelegationDao
 import com.mileway.core.data.dao.DraftExpenseDao
 import com.mileway.core.data.dao.HardwareEventDao
 import com.mileway.core.data.settings.AgentSessionStore
@@ -46,6 +47,7 @@ import com.mileway.feature.payments.viewmodel.PaymentsHistoryViewModel
 import com.mileway.feature.profile.di.profileModule
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
+import com.mileway.feature.profile.viewmodel.DelegationViewModel
 import com.mileway.feature.profile.viewmodel.DemoSettingsViewModel
 import com.mileway.feature.profile.viewmodel.PersonalDetailsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
@@ -117,6 +119,8 @@ class KoinGraphTest : KoinTest {
         // needs deterministic fakes).
         single<VehicleDetailsDao> { FakeVehicleDetailsDao() }
         single<PassportDetailsDao> { FakePassportDetailsDao() }
+        // P6.3: DelegationViewModel collects this in init(); same null-collector trap as above.
+        single<DelegationDao> { FakeDelegationDao() }
         single<AgentSessionStore> { FakeAgentSessionStore() }
         single<AssistantEngine> { FakeAssistantEngine() }
         single<SpeechToText> { FakeSpeechToText() }
@@ -195,6 +199,7 @@ class KoinGraphTest : KoinTest {
         assertNotNull(get<DemoSettingsViewModel>())
         assertNotNull(get<SwitchAccountViewModel>())
         assertNotNull(get<PersonalDetailsViewModel>())
+        assertNotNull(get<DelegationViewModel>())
         assertNotNull(get<CheckInViewModel>())
         assertNotNull(get<ApprovalsViewModel>())
         assertNotNull(get<PayablesViewModel>())

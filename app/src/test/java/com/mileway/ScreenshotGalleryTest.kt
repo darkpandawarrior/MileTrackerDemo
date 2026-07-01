@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.mileway.core.data.dao.AgentDao
+import com.mileway.core.data.dao.DelegationDao
 import com.mileway.core.data.dao.DraftExpenseDao
 import com.mileway.core.data.dao.HardwareEventDao
 import com.mileway.core.data.settings.AgentSessionStore
@@ -267,6 +268,8 @@ class ScreenshotGalleryTest {
             // needs deterministic fakes, same reason FakeVoucherDao exists above).
             single<VehicleDetailsDao> { FakeVehicleDetailsDao() }
             single<PassportDetailsDao> { FakePassportDetailsDao() }
+            // P6.3: DelegationViewModel collects this in init(); same null-collector trap as above.
+            single<DelegationDao> { FakeDelegationDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }
             single<AssistantEngine> { FakeAssistantEngine() }
             single<SpeechToText> { FakeSpeechToText() }

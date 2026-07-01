@@ -5,6 +5,31 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 12 → 13 (PLAN_V22 P6.3): additive `delegations` table — real, persisted approval
+ * delegations backing `DelegationScreen`'s "My Delegations" list, replacing its
+ * `mutableStateListOf` seed that reset on navigation away. This is the approval-delegation
+ * concept, not the account-switch/session-delegate concept (see PLAN_V22 §2's Architecture note);
+ * it does not touch `mock_accounts` or any account-switch table.
+ */
+val MIGRATION_12_13 =
+    object : Migration(12, 13) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `delegations` (
+                    `id`              TEXT    NOT NULL PRIMARY KEY,
+                    `delegateName`    TEXT    NOT NULL,
+                    `scope`           TEXT    NOT NULL,
+                    `expiresAtMillis` INTEGER NOT NULL,
+                    `isActive`        INTEGER NOT NULL,
+                    `createdAt`       INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 11 → 12 (PLAN_V22 P6.2): additive `vehicle_details` + `passport_details` singleton
  * tables backing the Profile Details screen's new Vehicle/Passport tiles. Both are single-row
  * tables (fixed primary key, same pattern as `draft_expenses`) — one vehicle and one passport per

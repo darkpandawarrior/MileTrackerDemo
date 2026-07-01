@@ -48,8 +48,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -65,7 +65,17 @@ import com.mileway.core.ui.components.sheet.ActionConfirmationBottomSheet
 import com.mileway.core.ui.components.sheet.ActionConfirmationToneType
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.MilewayColors
+import com.mileway.feature.profile.model.Delegation
+import com.mileway.feature.profile.viewmodel.DelegationViewModel
+import com.mileway.feature.profile.viewmodel.formatDelegationExpiry
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
+import org.koin.compose.viewmodel.koinViewModel
+import kotlin.time.Clock
 
 private val DELEGATION_TYPES = listOf("View Only", "Approve", "Full Access")
 
@@ -81,14 +91,6 @@ private val TEAM_MEMBERS =
         "Harish Reddy",
     )
 
-private data class DelegationEntry(
-    val id: String,
-    val name: String,
-    val scope: String,
-    val expires: String,
-    val isActive: Boolean,
-)
-
 private data class DelegatedByEntry(
     val id: String,
     val delegatorName: String,
@@ -96,30 +98,39 @@ private data class DelegatedByEntry(
     val until: String,
 )
 
-private val INITIAL_DELEGATIONS =
-    listOf(
-        DelegationEntry("D001", "Priya Sharma", "Mileage & Expense", "30 Jun 2026", true),
-        DelegationEntry("D002", "Rahul Mehra", "All categories", "15 Jul 2026", true),
-        DelegationEntry("D003", "Kavitha Rao", "Travel only", "01 Jun 2026", false),
-    )
-
+/**
+ * "Delegated To Me" (incoming coverage) has no persistence requirement in this task's scope —
+ * P6.3 only Room-backs the outgoing "My Delegations" list — so this section keeps its existing
+ * demo-fixture shape.
+ */
 private val DELEGATED_TO_ME =
     listOf(
         DelegatedByEntry("DB001", "Vikram Nair", "Travel", "Returning 20 Jun 2026"),
         DelegatedByEntry("DB002", "Sunita Pillai", "Expense & Advance", "Returning 25 Jun 2026"),
     )
 
+/** Default new-delegation expiry: 6 months out, matching the reference app's default grant window. */
+private fun defaultExpiryMillis(): Long =
+    Clock.System
+        .now()
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+        .date
+        .plus(6, DateTimeUnit.MONTH)
+        .atStartOfDayIn(TimeZone.currentSystemDefault())
+        .toEpochMilliseconds()
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DelegationScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: DelegationViewModel = koinViewModel(),
 ) {
-    val myDelegations = remember { mutableStateListOf(*INITIAL_DELEGATIONS.toTypedArray()) }
-    val toggleStates = remember { mutableStateOf(myDelegations.associate { it.id to it.isActive }) }
+    val uiState by viewModel.state.collectAsState()
+    val myDelegations = uiState.delegations
 
     var showAddSheet by remember { mutableStateOf(false) }
-    var revokeTarget by remember { mutableStateOf<DelegationEntry?>(null) }
+    var revokeTarget by remember { mutableStateOf<Delegation?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -175,16 +186,10 @@ fun DelegationScreen(
                     ) {
                         Column {
                             myDelegations.forEachIndexed { index, entry ->
-                                val active = toggleStates.value[entry.id] ?: entry.isActive
                                 DelegationRow(
                                     entry = entry,
-                                    isActive = active,
-                                    onToggle = {
-                                        toggleStates.value =
-                                            toggleStates.value.toMutableMap().also { map ->
-                                                map[entry.id] = !active
-                                            }
-                                    },
+                                    isActive = entry.isActive,
+                                    onToggle = { viewModel.setActive(entry.id, !entry.isActive) },
                                     onRevoke = { revokeTarget = entry },
                                 )
                                 if (index < myDelegations.lastIndex) {
@@ -241,25 +246,24 @@ fun DelegationScreen(
 
     if (showAddSheet) {
         ModalBottomSheet(
-            onDismissRequest = { showAddSheet = false },
+            onDismissRequest = {
+                viewModel.clearSubmitError()
+                showAddSheet = false
+            },
             sheetState = sheetState,
         ) {
             AddDelegationSheet(
+                submitError = uiState.submitError,
                 onSubmit = { name, delegationType ->
-                    val newId = "D${kotlin.time.Clock.System.now().toEpochMilliseconds() % 10_000}"
-                    myDelegations.add(
-                        DelegationEntry(
-                            id = newId,
-                            name = name,
-                            scope = delegationType,
-                            expires = "31 Dec 2026",
-                            isActive = true,
-                        ),
-                    )
-                    toggleStates.value = toggleStates.value.toMutableMap().also { it[newId] = true }
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { showAddSheet = false }
+                    viewModel.add(delegateName = name, scope = delegationType, expiresAtMillis = defaultExpiryMillis())
+                    // Only closes the sheet on a valid submit — a blank name/scope leaves
+                    // submitError set on the next recomposition and the sheet stays open.
+                    if (name.isNotBlank() && delegationType.isNotBlank()) {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion { showAddSheet = false }
+                    }
                 },
                 onDismiss = {
+                    viewModel.clearSubmitError()
                     scope.launch { sheetState.hide() }.invokeOnCompletion { showAddSheet = false }
                 },
             )
@@ -269,11 +273,11 @@ fun DelegationScreen(
     revokeTarget?.let { target ->
         ActionConfirmationBottomSheet(
             title = "Revoke Delegation",
-            description = "Remove ${target.name}'s access? This cannot be undone.",
+            description = "Remove ${target.delegateName}'s access? This cannot be undone.",
             confirmLabel = "Revoke",
             tone = ActionConfirmationToneType.Danger,
             onConfirm = {
-                myDelegations.removeAll { it.id == target.id }
+                viewModel.revoke(target.id)
                 revokeTarget = null
             },
             onDismiss = { revokeTarget = null },
@@ -284,6 +288,7 @@ fun DelegationScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddDelegationSheet(
+    submitError: String?,
     onSubmit: (name: String, delegationType: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -344,11 +349,14 @@ private fun AddDelegationSheet(
             }
         }
 
+        if (submitError != null) {
+            Text(submitError, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
+
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
             Button(
-                onClick = { if (selectedMember.isNotBlank()) onSubmit(selectedMember, selectedType) },
-                enabled = selectedMember.isNotBlank(),
+                onClick = { onSubmit(selectedMember, selectedType) },
                 modifier = Modifier.weight(1f),
             ) { Text("Submit") }
         }
@@ -384,7 +392,7 @@ private fun SectionHeader(
 
 @Composable
 private fun DelegationRow(
-    entry: DelegationEntry,
+    entry: Delegation,
     isActive: Boolean,
     onToggle: () -> Unit,
     onRevoke: () -> Unit,
@@ -405,7 +413,7 @@ private fun DelegationRow(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                entry.name.first().toString(),
+                entry.delegateName.first().toString(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -413,14 +421,18 @@ private fun DelegationRow(
         }
         Spacer(Modifier.width(DesignTokens.Spacing.m))
         Column(modifier = Modifier.weight(1f)) {
-            Text(entry.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(entry.delegateName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             Text(entry.scope, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Expires ${entry.expires}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Expires ${formatDelegationExpiry(entry.expiresAtMillis)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             if (isActive) {
                 TextButton(onClick = onRevoke, modifier = Modifier.height(28.dp)) {
