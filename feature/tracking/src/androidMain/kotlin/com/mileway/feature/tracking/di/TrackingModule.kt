@@ -43,7 +43,7 @@ val trackingModule =
         single { CurrentTrackRepository(get()) }
         single { HardwareEventRepository(get()) }
         single { TripAttachmentRepository(get()) }
-        single { VoucherRepository() }
+        single { VoucherRepository(get()) }
         single { LocationTrackingController(androidContext()) }
         single<TrackingController> { get<LocationTrackingController>() }
         single<NotificationScheduler> { AndroidNotificationScheduler(androidContext()) }

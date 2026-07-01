@@ -15,13 +15,16 @@ import kotlin.test.assertTrue
 /** SP.4 (V17): the Spends SearchProvider, scope gating, min-length, multi-entity hits, type filter. */
 class ExpensesSearchProviderTest {
 
-    private fun provider() =
-        ExpensesSearchProvider(
+    private suspend fun provider(): ExpensesSearchProvider {
+        val voucherRepo = VoucherHistoryRepository(FakeVoucherDao())
+        voucherRepo.seedIfEmpty()
+        return ExpensesSearchProvider(
             ExpenseRepository(),
-            VoucherHistoryRepository(),
+            voucherRepo,
             SettlementHistoryRepository(),
             CardsTxnHistoryRepository(),
         )
+    }
 
     @Test
     fun `returns nothing for a foreign scope`() = runTest {

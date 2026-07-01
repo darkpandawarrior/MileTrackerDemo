@@ -5,6 +5,32 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 7 → 8 (P3.1): shared `vouchers` table — the single Room-backed store both
+ * `CreateVoucherViewModel` (feature/tracking) and `VoucherHistoryViewModel` (feature/logging)
+ * bind to via Koin, replacing two disconnected in-memory stores. See
+ * [com.mileway.core.data.model.db.VoucherEntity].
+ */
+val MIGRATION_7_8 =
+    object : Migration(7, 8) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `vouchers` (
+                    `voucherNumber`        TEXT    NOT NULL PRIMARY KEY,
+                    `title`                TEXT    NOT NULL,
+                    `category`             TEXT    NOT NULL,
+                    `totalAmount`          REAL    NOT NULL,
+                    `notes`                TEXT    NOT NULL,
+                    `expenseRouteIdsJson`  TEXT    NOT NULL,
+                    `status`               TEXT    NOT NULL,
+                    `createdAtMs`          INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 6 → 7 (P1.5): single-row `draft_expenses` table so `ExpenseAction.SaveDraft`
  * actually persists across app kill/relaunch instead of only living in `ExpenseViewModel`
  * state. Mirrors `ExpenseFormState`'s fields (see [com.mileway.core.data.model.db.DraftExpenseEntity]).

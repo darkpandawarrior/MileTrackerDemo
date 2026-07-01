@@ -23,6 +23,7 @@ import com.mileway.core.data.dao.LogMilesDraftDao
 import com.mileway.core.data.dao.LogMilesFrequentRouteDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.TripAttachmentDao
+import com.mileway.core.data.dao.VoucherDao
 import com.mileway.core.data.library.MediaLibraryDao
 import com.mileway.core.data.library.MediaLibraryEntry
 import com.mileway.core.data.model.db.SavedTrack
@@ -233,6 +234,12 @@ class ScreenshotGalleryTest {
             every { dao.observeAll() } returns MutableStateFlow(entries)
         }
 
+        // P3.1: a deterministic in-memory fake (not a mockk) so VoucherHistoryScreen and
+        // CreateVoucherScreen's screenshots keep rendering the same rows they always did — a bare
+        // `mockk(relaxed = true)` would return a null-backed Flow and crash
+        // VoucherHistoryViewModel's collector (memory: screenshot Koin needs deterministic fakes).
+        private val voucherDao = FakeVoucherDao()
+
         private val fakeRoomLayer = module {
             single<SavedTrackDao> { seededDao }
             single<LocationDao> { mockk(relaxed = true) }
@@ -241,6 +248,7 @@ class ScreenshotGalleryTest {
             single<LogMilesFrequentRouteDao> { mockk(relaxed = true) }
             single<TripAttachmentDao> { mockk(relaxed = true) }
             single<DraftExpenseDao> { mockk(relaxed = true) }
+            single<VoucherDao> { voucherDao }
             single<MediaLibraryDao> { mediaLibraryDao }
             single<AgentDao> { FakeAgentDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }

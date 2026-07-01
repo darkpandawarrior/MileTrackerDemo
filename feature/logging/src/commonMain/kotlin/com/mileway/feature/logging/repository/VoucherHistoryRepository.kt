@@ -1,6 +1,11 @@
 package com.mileway.feature.logging.repository
 
+import com.mileway.core.data.dao.VoucherDao
+import com.mileway.core.data.model.db.VoucherEntity
 import com.mileway.feature.logging.ui.model.SubmittedVoucher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 
 /** The voucher lifecycle states used by [VoucherHistoryRepository] tabs (SP.1). */
@@ -13,14 +18,36 @@ enum class VoucherStatus(val label: String) {
 }
 
 /**
- * Offline fake voucher store (SP.1), a deterministic spread of [SubmittedVoucher]s across all five
- * [VoucherStatus]es so the tabbed history exercises every segment. Built relative to a [Clock]-supplied
- * `now` (no `Math.random`), in the `CardsMockData` style.
+ * P3.1: reads from the shared [VoucherDao] (`core/data`) instead of regenerating a hardcoded
+ * 8-row spec on every call — the same store `feature/tracking`'s `VoucherRepository` writes to,
+ * so a voucher submitted via Create Voucher is now observably visible here. On first run (empty
+ * table) it seeds the original 8 demo rows so existing behavior is preserved (`AgentRepository`'s
+ * `seedIfEmpty()` pattern from PLAN_V20 P1.2). [VoucherEntity] only carries the fields both
+ * screens actually write (title/category/amount/notes/route ids/status) — the extra
+ * display-only fields [SubmittedVoucher] has (`office`, `serviceTag`, `chips`,
+ * `violationCount`) are deterministic display data derived here from the entity, exactly as the
+ * old hardcoded spec derived them from an index, never persisted into unrelated columns.
  */
-class VoucherHistoryRepository(private val clock: Clock = Clock.System) {
+class VoucherHistoryRepository(private val dao: VoucherDao, private val clock: Clock = Clock.System) {
     private val dayMs = 86_400_000L
 
-    private fun all(): List<SubmittedVoucher> {
+    /** All vouchers (newest-first), or just those in [status] when non-null, as a live [Flow]. */
+    fun observeVouchers(status: VoucherStatus? = null): Flow<List<SubmittedVoucher>> =
+        dao.observeAll().map { rows ->
+            rows.mapIndexed { index, row -> row.toSubmittedVoucher(index) }
+                .filter { status == null || it.voucherState == status.label }
+        }
+
+    /** One-shot snapshot of all vouchers — used by search (SP.4), which needs a single suspend call, not a Flow. */
+    suspend fun vouchers(): List<SubmittedVoucher> = observeVouchers().first()
+
+    /** Seeds the original 8 demo vouchers if the shared table is empty (first run only). */
+    suspend fun seedIfEmpty() {
+        if (dao.count() > 0) return
+        dao.insertAll(demoSeed())
+    }
+
+    private fun demoSeed(): List<VoucherEntity> {
         val now = clock.now().toEpochMilliseconds()
         // (status, amount, daysAgo, violations) tuples → one voucher each.
         val spec =
@@ -35,25 +62,38 @@ class VoucherHistoryRepository(private val clock: Clock = Clock.System) {
                 Quad(VoucherStatus.SETTLED, 18_400.0, 28L, 0),
             )
         return spec.mapIndexed { index, q ->
-            SubmittedVoucher(
-                id = "VCH-${1000 + index}",
-                voucherState = q.status.label,
-                payment = "Self Paid",
-                chips = if (q.violations > 0) listOf("Attachments", "Violations") else listOf("Attachments"),
-                office = if (index % 2 == 0) "HQ_NORTH" else "HQ_WEST",
-                amount = q.amount,
-                serviceTag = if (index % 3 == 0) "Log Conveyance" else "log_trip",
-                expenseDateMillis = now - (q.daysAgo + 2) * dayMs,
-                expenseId = "EXP-${48700 + index}",
-                submittedOnMillis = now - q.daysAgo * dayMs,
-                violationCount = q.violations,
+            VoucherEntity(
+                voucherNumber = "VCH-${1000 + index}",
+                title = "Voucher ${1000 + index}",
+                category = "Travel",
+                totalAmount = q.amount,
+                notes = if (q.violations > 0) "$VIOLATIONS_PREFIX${q.violations}" else "",
+                expenseRouteIdsJson = VoucherEntity.encodeExpenseRouteIds(listOf("EXP-${48700 + index}")),
+                status = q.status.label,
+                createdAtMs = now - q.daysAgo * dayMs,
             )
         }
     }
 
-    /** All vouchers, or just those in [status] when non-null. */
-    fun vouchers(status: VoucherStatus? = null): List<SubmittedVoucher> =
-        all().filter { status == null || it.voucherState == status.label }.sortedByDescending { it.submittedOnMillis }
+    private fun VoucherEntity.toSubmittedVoucher(index: Int): SubmittedVoucher {
+        val expenseIds = VoucherEntity.decodeExpenseRouteIds(expenseRouteIdsJson)
+        val violationCount = notes.removePrefix(VIOLATIONS_PREFIX).toIntOrNull() ?: 0
+        return SubmittedVoucher(
+            id = voucherNumber,
+            voucherState = status,
+            payment = "Self Paid",
+            chips = if (violationCount > 0) listOf("Attachments", "Violations") else listOf("Attachments"),
+            office = if (index % 2 == 0) "HQ_NORTH" else "HQ_WEST",
+            amount = totalAmount,
+            serviceTag = if (index % 3 == 0) "Log Conveyance" else "log_trip",
+            expenseDateMillis = createdAtMs - 2 * dayMs,
+            // P3.1 (gap 17.7): a voucher can hold multiple linked trips/expenses — surface all of
+            // them rather than truncating to one, aligning history's shape with creation's.
+            expenseId = expenseIds.joinToString(",").ifEmpty { voucherNumber },
+            submittedOnMillis = createdAtMs,
+            violationCount = violationCount,
+        )
+    }
 
     private data class Quad(
         val status: VoucherStatus,
@@ -61,4 +101,8 @@ class VoucherHistoryRepository(private val clock: Clock = Clock.System) {
         val daysAgo: Long,
         val violations: Int,
     )
+
+    private companion object {
+        const val VIOLATIONS_PREFIX = "violations:"
+    }
 }

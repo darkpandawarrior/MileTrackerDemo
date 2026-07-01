@@ -51,7 +51,7 @@ val trackingModule =
         single { CurrentTrackRepository(get()) }
         single { HardwareEventRepository(get()) }
         single { TripAttachmentRepository(get()) }
-        single { VoucherRepository() }
+        single { VoucherRepository(get()) }
 
         // ── Shared utilities ──────────────────────────────────────────────────
         single { RouteAnalyzer() }

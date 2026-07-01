@@ -22,7 +22,8 @@ class CreateVoucherViewModelTest {
 
     private val dao = FakeSavedTrackDao()
     private val trackRepo = SavedTrackRepository(dao)
-    private val voucherRepo = VoucherRepository()
+    private val voucherDao = FakeVoucherDao()
+    private val voucherRepo = VoucherRepository(voucherDao)
 
     private fun viewModel() = CreateVoucherViewModel(trackRepo, voucherRepo)
 
@@ -154,8 +155,9 @@ class CreateVoucherViewModelTest {
         assertEquals(3, vm.state.value.step)
         assertNotNull(vm.state.value.submittedVoucherNumber)
         assertFalse(vm.state.value.isSubmitting)
-        assertEquals(1, voucherRepo.vouchers.size)
-        assertEquals("March Voucher", voucherRepo.vouchers.first().title)
-        assertEquals(150.0, voucherRepo.vouchers.first().totalAmount, 1e-9)
+        val saved = voucherRepo.getAll()
+        assertEquals(1, saved.size)
+        assertEquals("March Voucher", saved.first().title)
+        assertEquals(150.0, saved.first().totalAmount, 1e-9)
     }
 }

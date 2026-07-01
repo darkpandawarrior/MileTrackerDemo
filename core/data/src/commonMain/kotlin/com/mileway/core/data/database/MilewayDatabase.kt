@@ -13,6 +13,7 @@ import com.mileway.core.data.dao.LogMilesFrequentRouteDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.SubmitDraftDao
 import com.mileway.core.data.dao.TripAttachmentDao
+import com.mileway.core.data.dao.VoucherDao
 import com.mileway.core.data.library.MediaLibraryDao
 import com.mileway.core.data.library.MediaLibraryEntry
 import com.mileway.core.data.model.db.AgentConversationEntity
@@ -25,6 +26,7 @@ import com.mileway.core.data.model.db.LogMilesFrequentRouteEntity
 import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.db.SubmitDraftEntity
 import com.mileway.core.data.model.db.TripAttachmentEntity
+import com.mileway.core.data.model.db.VoucherEntity
 
 @Database(
     entities = [
@@ -39,8 +41,9 @@ import com.mileway.core.data.model.db.TripAttachmentEntity
         AgentConversationEntity::class,
         AgentMessageEntity::class,
         DraftExpenseEntity::class,
+        VoucherEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 @ConstructedBy(MilewayDatabaseConstructor::class)
@@ -64,6 +67,8 @@ abstract class MilewayDatabase : RoomDatabase() {
     abstract fun agentDao(): AgentDao
 
     abstract fun draftExpenseDao(): DraftExpenseDao
+
+    abstract fun voucherDao(): VoucherDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
