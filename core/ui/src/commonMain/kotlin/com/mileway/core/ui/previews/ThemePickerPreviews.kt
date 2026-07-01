@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.mileway.core.ui.components.theme.MilewayThemePicker
 import com.mileway.core.ui.theme.DesignTokens
-import com.mileway.core.ui.theme.MilewayTheme
 import com.mileway.core.ui.theme.MilewayThemeVariant
 
 // ---------------------------------------------------------------------------

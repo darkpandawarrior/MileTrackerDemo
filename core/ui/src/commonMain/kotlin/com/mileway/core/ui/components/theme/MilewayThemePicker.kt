@@ -31,7 +31,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mileway.core.ui.theme.DesignTokens
-import com.mileway.core.ui.theme.MilewayTheme
 import com.mileway.core.ui.theme.MilewayThemeVariant
 
 /**

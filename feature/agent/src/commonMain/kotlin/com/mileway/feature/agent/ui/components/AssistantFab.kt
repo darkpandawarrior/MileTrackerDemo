@@ -30,7 +30,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import kotlin.math.roundToInt
 
 @Composable
 fun AssistantFab(
@@ -60,38 +59,39 @@ fun AssistantFab(
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier
-            .offset { IntOffset(animatedOffsetX.roundToPx(), animatedOffsetY.roundToPx()) }
-            .size(fabSizeDp)
-            .shadow(8.dp, CircleShape)
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { isDragging = true },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        offsetX += dragAmount.x
-                        offsetY += dragAmount.y
-                    },
-                    onDragEnd = {
-                        isDragging = false
-                        if (offsetY < -dismissThresholdPx || kotlin.math.abs(offsetX) > fabSizePx * 2) {
-                            onDismissToTopbar()
-                        }
-                        offsetX = 0f
-                        offsetY = 0f
-                    },
-                    onDragCancel = {
-                        isDragging = false
-                        offsetX = 0f
-                        offsetY = 0f
-                    },
-                )
-            }
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { onOpen() })
-            }
-            .padding(4.dp),
+        modifier =
+            modifier
+                .offset { IntOffset(animatedOffsetX.roundToPx(), animatedOffsetY.roundToPx()) }
+                .size(fabSizeDp)
+                .shadow(8.dp, CircleShape)
+                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { isDragging = true },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            offsetX += dragAmount.x
+                            offsetY += dragAmount.y
+                        },
+                        onDragEnd = {
+                            isDragging = false
+                            if (offsetY < -dismissThresholdPx || kotlin.math.abs(offsetX) > fabSizePx * 2) {
+                                onDismissToTopbar()
+                            }
+                            offsetX = 0f
+                            offsetY = 0f
+                        },
+                        onDragCancel = {
+                            isDragging = false
+                            offsetX = 0f
+                            offsetY = 0f
+                        },
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { onOpen() })
+                }
+                .padding(4.dp),
     ) {
         Icon(
             Icons.Filled.AutoAwesome,

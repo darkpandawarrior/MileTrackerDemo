@@ -47,11 +47,12 @@ class AgentViewModel(
             val resumeId = repository.getResumableThread(nowMs)
             if (resumeId != null) {
                 setState { copy(activeThreadId = resumeId) }
-                messagesJob = viewModelScope.launch {
-                    repository.messagesFor(resumeId).collect { messages ->
-                        setState { copy(messages = messages) }
+                messagesJob =
+                    viewModelScope.launch {
+                        repository.messagesFor(resumeId).collect { messages ->
+                            setState { copy(messages = messages) }
+                        }
                     }
-                }
             }
         }
         viewModelScope.launch { loadAnalytics() }
@@ -99,75 +100,78 @@ class AgentViewModel(
         val isNewThread = existingThreadId == null
         val threadId = existingThreadId ?: "thread_$nowMs"
 
-        streamingJob = viewModelScope.launch {
-            analytics.recordQuestion(text.trim())
-            if (isNewThread) {
-                repository.createThread(threadId, text.trim().take(50), nowMs)
-                setState { copy(activeThreadId = threadId) }
-            }
-            repository.setActiveThread(threadId, Clock.System.now().toEpochMilliseconds())
-            repository.appendMessage(threadId, userMsgId, text.trim(), isUser = true, nowMs)
+        streamingJob =
+            viewModelScope.launch {
+                analytics.recordQuestion(text.trim())
+                if (isNewThread) {
+                    repository.createThread(threadId, text.trim().take(50), nowMs)
+                    setState { copy(activeThreadId = threadId) }
+                }
+                repository.setActiveThread(threadId, Clock.System.now().toEpochMilliseconds())
+                repository.appendMessage(threadId, userMsgId, text.trim(), isUser = true, nowMs)
 
-            var streamedText = ""
-            engine.respond(threadId, text.trim(), historySize).collect { chunk ->
-                when (chunk) {
-                    is AssistantChunk.Thinking ->
-                        setState { copy(thinkingPhrase = chunk.phrase) }
-                    is AssistantChunk.Token -> {
-                        streamedText += chunk.text
-                        setState { copy(streamedText = streamedText) }
-                    }
-                    is AssistantChunk.Done -> {
-                        val replyMs = Clock.System.now().toEpochMilliseconds()
-                        messageCounter++
-                        val replyMsgId = "msg_a_$messageCounter"
-                        val assistantMsg = AgentMessage(text = chunk.fullText, isUser = false, timestampMs = replyMs)
-                        repository.appendMessage(threadId, replyMsgId, chunk.fullText, isUser = false, replyMs)
-                        setState { copy(messages = messages + assistantMsg, isStreaming = false, streamedText = "") }
-                        emitEffect(AgentEffect.ScrollToBottom)
+                var streamedText = ""
+                engine.respond(threadId, text.trim(), historySize).collect { chunk ->
+                    when (chunk) {
+                        is AssistantChunk.Thinking ->
+                            setState { copy(thinkingPhrase = chunk.phrase) }
+                        is AssistantChunk.Token -> {
+                            streamedText += chunk.text
+                            setState { copy(streamedText = streamedText) }
+                        }
+                        is AssistantChunk.Done -> {
+                            val replyMs = Clock.System.now().toEpochMilliseconds()
+                            messageCounter++
+                            val replyMsgId = "msg_a_$messageCounter"
+                            val assistantMsg = AgentMessage(text = chunk.fullText, isUser = false, timestampMs = replyMs)
+                            repository.appendMessage(threadId, replyMsgId, chunk.fullText, isUser = false, replyMs)
+                            setState { copy(messages = messages + assistantMsg, isStreaming = false, streamedText = "") }
+                            emitEffect(AgentEffect.ScrollToBottom)
+                        }
                     }
                 }
             }
-        }
     }
 
     private fun loadConversation(conversation: AgentConversation) {
         messagesJob?.cancel()
         setState { copy(messages = emptyList(), isStreaming = false, streamedText = "", activeThreadId = conversation.id) }
-        messagesJob = viewModelScope.launch {
-            repository.setActiveThread(conversation.id, Clock.System.now().toEpochMilliseconds())
-            repository.messagesFor(conversation.id).collect { messages ->
-                setState { copy(messages = messages) }
+        messagesJob =
+            viewModelScope.launch {
+                repository.setActiveThread(conversation.id, Clock.System.now().toEpochMilliseconds())
+                repository.messagesFor(conversation.id).collect { messages ->
+                    setState { copy(messages = messages) }
+                }
             }
-        }
     }
 
     private fun startVoice() {
         sttJob?.cancel()
         setState { copy(isListening = true, voiceTranscript = "", voiceRms = 0f) }
-        sttJob = viewModelScope.launch {
-            stt.listen().collect { event ->
-                when (event) {
-                    is SpeechEvent.Partial ->
-                        setState { copy(voiceTranscript = event.text) }
-                    is SpeechEvent.Final -> {
-                        setState { copy(isListening = false, voiceTranscript = "") }
-                        val text = event.text
-                        if (text.isNotBlank()) {
-                            if (state.value.isVoiceConversationMode) {
-                                sendMessage(text)
-                            } else {
-                                emitEffect(AgentEffect.FillInput(text))
+        sttJob =
+            viewModelScope.launch {
+                stt.listen().collect { event ->
+                    when (event) {
+                        is SpeechEvent.Partial ->
+                            setState { copy(voiceTranscript = event.text) }
+                        is SpeechEvent.Final -> {
+                            setState { copy(isListening = false, voiceTranscript = "") }
+                            val text = event.text
+                            if (text.isNotBlank()) {
+                                if (state.value.isVoiceConversationMode) {
+                                    sendMessage(text)
+                                } else {
+                                    emitEffect(AgentEffect.FillInput(text))
+                                }
                             }
                         }
+                        is SpeechEvent.RmsChanged ->
+                            setState { copy(voiceRms = event.rms) }
+                        is SpeechEvent.Error ->
+                            setState { copy(isListening = false, voiceTranscript = "") }
                     }
-                    is SpeechEvent.RmsChanged ->
-                        setState { copy(voiceRms = event.rms) }
-                    is SpeechEvent.Error ->
-                        setState { copy(isListening = false, voiceTranscript = "") }
                 }
             }
-        }
     }
 
     private fun stopVoice() {
@@ -180,9 +184,10 @@ class AgentViewModel(
         viewModelScope.launch {
             val hits = analytics.getHitCounts()
             if (hits.isEmpty()) return@launch
-            val sorted = state.value.popularTab.sortedByDescending { q ->
-                hits.entries.maxOfOrNull { (k, v) -> if (q.question.lowercase().contains(k.lowercase())) v else 0 } ?: 0
-            }
+            val sorted =
+                state.value.popularTab.sortedByDescending { q ->
+                    hits.entries.maxOfOrNull { (k, v) -> if (q.question.lowercase().contains(k.lowercase())) v else 0 } ?: 0
+                }
             setState { copy(popularTab = sorted) }
         }
     }
@@ -190,20 +195,25 @@ class AgentViewModel(
     private fun exportConversation(threadId: String) {
         val messages = state.value.messages
         if (messages.isEmpty()) return
-        val transcript = buildString {
-            val title = state.value.history.firstOrNull { it.id == threadId }?.title ?: "Conversation"
-            appendLine("# $title")
-            appendLine()
-            messages.forEach { msg ->
-                val speaker = if (msg.isUser) "You" else "Mileway"
-                appendLine("**$speaker:** ${msg.text}")
+        val transcript =
+            buildString {
+                val title = state.value.history.firstOrNull { it.id == threadId }?.title ?: "Conversation"
+                appendLine("# $title")
                 appendLine()
+                messages.forEach { msg ->
+                    val speaker = if (msg.isUser) "You" else "Mileway"
+                    appendLine("**$speaker:** ${msg.text}")
+                    appendLine()
+                }
             }
-        }
         shareSheet.share(transcript, subject = "Mileway conversation transcript")
     }
 
-    private fun submitFeedback(messageId: String, rating: Int, comment: String?) {
+    private fun submitFeedback(
+        messageId: String,
+        rating: Int,
+        comment: String?,
+    ) {
         viewModelScope.launch {
             repository.persistFeedback(messageId, rating, comment)
             setState { copy(feedback = feedback + (messageId to rating)) }
@@ -222,6 +232,11 @@ class AgentViewModel(
     private fun toggleVoiceConversation() {
         val next = !state.value.isVoiceConversationMode
         setState { copy(isVoiceConversationMode = next) }
-        if (next) startVoice() else { stopVoice(); tts.stop() }
+        if (next) {
+            startVoice()
+        } else {
+            stopVoice()
+            tts.stop()
+        }
     }
 }

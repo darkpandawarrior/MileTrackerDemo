@@ -1,9 +1,14 @@
 package com.mileway.feature.agent.engine
 
 enum class Intent {
-    MILEAGE_WEEK, MILEAGE_RATE,
-    EXPENSE_REJECTION, POLICY_CAP, ADVANCE_STATUS,
-    CARD_BALANCE, PENDING_APPROVALS, TRIP_SUMMARY,
+    MILEAGE_WEEK,
+    MILEAGE_RATE,
+    EXPENSE_REJECTION,
+    POLICY_CAP,
+    ADVANCE_STATUS,
+    CARD_BALANCE,
+    PENDING_APPROVALS,
+    TRIP_SUMMARY,
     GENERIC,
 }
 
@@ -11,7 +16,16 @@ internal object IntentClassifier {
     fun classify(message: String): Intent {
         val lower = message.lowercase()
         return when {
-            lower.containsAny("km this week", "km last week", "mileage this week", "distance this week", "trips this week", "how many km", "km did i", "tracked") ->
+            lower.containsAny(
+                "km this week",
+                "km last week",
+                "mileage this week",
+                "distance this week",
+                "trips this week",
+                "how many km",
+                "km did i",
+                "tracked",
+            ) ->
                 Intent.MILEAGE_WEEK
             lower.containsAny("reimbursement rate", "per km", "rate per km", "mileage rate") ->
                 Intent.MILEAGE_RATE
@@ -31,6 +45,5 @@ internal object IntentClassifier {
         }
     }
 
-    private fun String.containsAny(vararg keywords: String): Boolean =
-        keywords.any { this.contains(it) }
+    private fun String.containsAny(vararg keywords: String): Boolean = keywords.any { this.contains(it) }
 }

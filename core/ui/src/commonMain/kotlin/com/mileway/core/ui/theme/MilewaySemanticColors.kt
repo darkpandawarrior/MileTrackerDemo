@@ -97,8 +97,9 @@ object MilewayColors {
      */
     private val isLightSurface: Boolean
         @Composable @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.surface.relativeLuminance() >
-            MaterialTheme.colorScheme.onSurface.relativeLuminance()
+        get() =
+            MaterialTheme.colorScheme.surface.relativeLuminance() >
+                MaterialTheme.colorScheme.onSurface.relativeLuminance()
 
     /** Draft / inactive / muted metadata. Tuned for both deep-dark and Daybreak surfaces. */
     val neutral: Color
@@ -123,7 +124,6 @@ object MilewayColors {
 
 /** WCAG relative luminance (sRGB), multiplatform-safe (no android.graphics). */
 private fun Color.relativeLuminance(): Float {
-    fun lin(c: Float): Float =
-        if (c <= 0.03928f) c / 12.92f else ((c + 0.055f) / 1.055f).toDouble().pow(2.4).toFloat()
+    fun lin(c: Float): Float = if (c <= 0.03928f) c / 12.92f else ((c + 0.055f) / 1.055f).toDouble().pow(2.4).toFloat()
     return 0.2126f * lin(red) + 0.7152f * lin(green) + 0.0722f * lin(blue)
 }

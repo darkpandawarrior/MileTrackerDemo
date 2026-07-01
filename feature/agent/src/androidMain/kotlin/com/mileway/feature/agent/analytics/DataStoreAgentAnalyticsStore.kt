@@ -10,7 +10,6 @@ private val Context.agentAnalyticsDs by preferencesDataStore("agent_analytics")
 private val KEY_HITS = stringPreferencesKey("intent_hits")
 
 class DataStoreAgentAnalyticsStore(private val context: Context) : AgentAnalyticsStore {
-
     override suspend fun recordQuestion(intent: String) {
         context.agentAnalyticsDs.edit { prefs ->
             val current = prefs[KEY_HITS].parseHits()
@@ -33,7 +32,9 @@ class DataStoreAgentAnalyticsStore(private val context: Context) : AgentAnalytic
                     put(k, v.toInt())
                 }
             }
-        } catch (_: Exception) { emptyMap() }
+        } catch (_: Exception) {
+            emptyMap()
+        }
     }
 
     private fun Map<String, Int>.encodeHits() = entries.joinToString(",") { "${it.key}=${it.value}" }

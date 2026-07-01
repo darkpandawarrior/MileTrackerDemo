@@ -10,11 +10,8 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -73,11 +70,12 @@ fun CrtVignette(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier.fillMaxSize()) {
         val radius = maxOf(size.width, size.height) * 0.65f
         drawRect(
-            brush = Brush.radialGradient(
-                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)),
-                center = center,
-                radius = radius,
-            ),
+            brush =
+                Brush.radialGradient(
+                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)),
+                    center = center,
+                    radius = radius,
+                ),
         )
     }
 }
@@ -97,17 +95,19 @@ fun PhosphorGlowBar(
         val h = height.toPx()
         val glow = glowSpread.toPx()
         drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    Color.Transparent,
-                    color.copy(alpha = 0.15f),
-                    color.copy(alpha = 0.6f),
-                    color.copy(alpha = 0.15f),
-                    Color.Transparent,
+            brush =
+                Brush.verticalGradient(
+                    colors =
+                        listOf(
+                            Color.Transparent,
+                            color.copy(alpha = 0.15f),
+                            color.copy(alpha = 0.6f),
+                            color.copy(alpha = 0.15f),
+                            Color.Transparent,
+                        ),
+                    startY = size.height / 2f - glow,
+                    endY = size.height / 2f + glow,
                 ),
-                startY = size.height / 2f - glow,
-                endY = size.height / 2f + glow,
-            ),
             size = Size(size.width, size.height),
         )
         drawRect(
@@ -128,27 +128,30 @@ fun PhosphorGlowBar(
 fun TerminalCursor(
     modifier: Modifier = Modifier,
     color: Color = Color(0xFF00FF41),
-    style: TextStyle = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-    ),
+    style: TextStyle =
+        TextStyle(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Normal,
+            fontSize = 14.sp,
+        ),
 ) {
     val transition = rememberInfiniteTransition(label = "cursor")
     val alpha by transition.animateFloat(
         initialValue = 1f,
         targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = keyframes {
-                durationMillis = 1000
-                1f at 0
-                1f at 450 using LinearEasing
-                0f at 500 using LinearEasing
-                0f at 950 using LinearEasing
-                1f at 1000
-            },
-            repeatMode = RepeatMode.Restart,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 1000
+                        1f at 0
+                        1f at 450 using LinearEasing
+                        0f at 500 using LinearEasing
+                        0f at 950 using LinearEasing
+                        1f at 1000
+                    },
+                repeatMode = RepeatMode.Restart,
+            ),
         label = "cursor_alpha",
     )
     Text(

@@ -49,18 +49,19 @@ fun AgentMessageBubble(
         if (message.isUser) {
             // User: right-aligned with `>` terminal prompt prefix, dark bg, green text
             Box(
-                modifier = Modifier
-                    .widthIn(max = 300.dp)
-                    .background(
-                        Color(0xFF00280E),
-                        RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp, bottomStart = 8.dp, bottomEnd = 2.dp),
-                    )
-                    .border(
-                        1.dp,
-                        TERMINAL_BORDER,
-                        RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp, bottomStart = 8.dp, bottomEnd = 2.dp),
-                    )
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .widthIn(max = 300.dp)
+                        .background(
+                            Color(0xFF00280E),
+                            RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp, bottomStart = 8.dp, bottomEnd = 2.dp),
+                        )
+                        .border(
+                            1.dp,
+                            TERMINAL_BORDER,
+                            RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp, bottomStart = 8.dp, bottomEnd = 2.dp),
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
@@ -78,18 +79,19 @@ fun AgentMessageBubble(
         } else {
             // AI: left-aligned, no bubble — terminal output style with `$` prefix
             Column(
-                modifier = Modifier
-                    .widthIn(max = 340.dp)
-                    .background(
-                        Color(0xFF010701),
-                        RoundedCornerShape(2.dp),
-                    )
-                    .border(
-                        1.dp,
-                        TERMINAL_BORDER,
-                        RoundedCornerShape(2.dp),
-                    )
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .widthIn(max = 340.dp)
+                        .background(
+                            Color(0xFF010701),
+                            RoundedCornerShape(2.dp),
+                        )
+                        .border(
+                            1.dp,
+                            TERMINAL_BORDER,
+                            RoundedCornerShape(2.dp),
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 // System prompt line
                 Text(
@@ -101,11 +103,12 @@ fun AgentMessageBubble(
                 Markdown(
                     content = message.text,
                     colors = markdownColor(text = PHOSPHOR_GREEN),
-                    typography = markdownTypography(
-                        text = TerminalType.output,
-                        paragraph = TerminalType.output,
-                        code = TerminalType.output.copy(color = PHOSPHOR_GREEN),
-                    ),
+                    typography =
+                        markdownTypography(
+                            text = TerminalType.output,
+                            paragraph = TerminalType.output,
+                            code = TerminalType.output.copy(color = PHOSPHOR_GREEN),
+                        ),
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -137,11 +140,12 @@ fun AgentStreamingBubble(
 ) {
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
         Column(
-            modifier = Modifier
-                .widthIn(max = 340.dp)
-                .background(Color(0xFF010701), RoundedCornerShape(2.dp))
-                .border(1.dp, TERMINAL_BORDER, RoundedCornerShape(2.dp))
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .widthIn(max = 340.dp)
+                    .background(Color(0xFF010701), RoundedCornerShape(2.dp))
+                    .border(1.dp, TERMINAL_BORDER, RoundedCornerShape(2.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(
                 "$ mileway_ai",
@@ -167,10 +171,11 @@ fun AgentThinkingIndicator(phrase: String) {
         modifier = Modifier.padding(vertical = 4.dp),
     ) {
         Column(
-            modifier = Modifier
-                .background(Color(0xFF010701), RoundedCornerShape(2.dp))
-                .border(1.dp, TERMINAL_BORDER, RoundedCornerShape(2.dp))
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .background(Color(0xFF010701), RoundedCornerShape(2.dp))
+                    .border(1.dp, TERMINAL_BORDER, RoundedCornerShape(2.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(
                 "$ mileway_ai",

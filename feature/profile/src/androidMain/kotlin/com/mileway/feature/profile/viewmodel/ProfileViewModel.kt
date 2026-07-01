@@ -4,7 +4,6 @@ import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.theme.AccentPalette
 import com.mileway.core.ui.theme.AppLanguage
 import com.mileway.core.ui.theme.ExperimentalFlags
-import com.mileway.core.ui.theme.MilewayTheme
 import com.mileway.core.ui.theme.MilewayThemeVariant
 import com.mileway.core.ui.theme.ThemeController
 import com.mileway.feature.profile.model.AccountAnalyticsSnapshot

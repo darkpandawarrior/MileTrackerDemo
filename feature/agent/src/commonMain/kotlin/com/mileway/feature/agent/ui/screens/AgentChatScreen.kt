@@ -2,10 +2,6 @@
 
 package com.mileway.feature.agent.ui.screens
 
-import com.mileway.feature.agent.ui.components.VoiceWaveformOverlay
-import com.mileway.feature.agent.ui.components.WaveformState
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -39,7 +35,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Schedule
@@ -72,7 +69,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -81,7 +77,6 @@ import androidx.compose.ui.unit.dp
 import com.mileway.core.ui.components.CrtVignette
 import com.mileway.core.ui.components.PhosphorDotGrid
 import com.mileway.core.ui.components.ScanlineOverlay
-import com.mileway.core.ui.components.TerminalCursor
 import com.mileway.core.ui.components.sheet.AppActionSheet
 import com.mileway.core.ui.theme.MilewayColors
 import com.mileway.core.ui.theme.TerminalType
@@ -91,6 +86,8 @@ import com.mileway.feature.agent.model.UnansweredQuestion
 import com.mileway.feature.agent.ui.components.AgentMessageBubble
 import com.mileway.feature.agent.ui.components.AgentStreamingBubble
 import com.mileway.feature.agent.ui.components.AgentThinkingIndicator
+import com.mileway.feature.agent.ui.components.VoiceWaveformOverlay
+import com.mileway.feature.agent.ui.components.WaveformState
 import com.mileway.feature.agent.viewmodel.AgentAction
 import com.mileway.feature.agent.viewmodel.AgentEffect
 import com.mileway.feature.agent.viewmodel.AgentViewModel
@@ -306,16 +303,18 @@ private fun AgentHeader(
     onDownload: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFF010701)),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF010701)),
     ) {
         Column {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
@@ -323,10 +322,11 @@ private fun AgentHeader(
                 }
                 // Terminal avatar: thin phosphor-green border ring, monogram inside
                 Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .border(width = 1.dp, color = PHOSPHOR_GREEN, shape = RoundedCornerShape(4.dp))
-                        .background(Color(0xFF00280E), RoundedCornerShape(4.dp)),
+                    modifier =
+                        Modifier
+                            .size(36.dp)
+                            .border(width = 1.dp, color = PHOSPHOR_GREEN, shape = RoundedCornerShape(4.dp))
+                            .background(Color(0xFF00280E), RoundedCornerShape(4.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -395,12 +395,13 @@ private fun ChatTab(
     voiceTranscript: String,
     popularPrompts: List<String> = QUICK_PROMPTS,
 ) {
-    val waveformState = when {
-        isListening -> WaveformState.Listening
-        isSpeaking -> WaveformState.Speaking
-        isStreaming -> WaveformState.Processing
-        else -> WaveformState.Idle
-    }
+    val waveformState =
+        when {
+            isListening -> WaveformState.Listening
+            isSpeaking -> WaveformState.Speaking
+            isStreaming -> WaveformState.Processing
+            else -> WaveformState.Idle
+        }
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
@@ -525,15 +526,16 @@ private fun ChatTab(
                 singleLine = true,
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(4.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PHOSPHOR_GREEN,
-                    unfocusedBorderColor = TERMINAL_BORDER,
-                    focusedTextColor = PHOSPHOR_GREEN,
-                    unfocusedTextColor = PHOSPHOR_GREEN,
-                    cursorColor = PHOSPHOR_GREEN,
-                    focusedContainerColor = Color(0xFF040C06),
-                    unfocusedContainerColor = Color(0xFF010701),
-                ),
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PHOSPHOR_GREEN,
+                        unfocusedBorderColor = TERMINAL_BORDER,
+                        focusedTextColor = PHOSPHOR_GREEN,
+                        unfocusedTextColor = PHOSPHOR_GREEN,
+                        cursorColor = PHOSPHOR_GREEN,
+                        focusedContainerColor = Color(0xFF040C06),
+                        unfocusedContainerColor = Color(0xFF010701),
+                    ),
             )
             IconButton(
                 onClick = onMic,
@@ -565,7 +567,6 @@ private fun ChatTab(
         }
     }
 }
-
 
 @Composable
 private fun PopularTab(

@@ -2,6 +2,7 @@ package com.mileway.feature.agent.voice
 
 interface TextToSpeech {
     suspend fun speak(text: String)
+
     fun stop()
 }
 

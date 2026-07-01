@@ -11,7 +11,6 @@ import com.mileway.core.ui.components.tracking.ActivityType
 import com.mileway.core.ui.components.tracking.GaugeMode
 import com.mileway.core.ui.components.tracking.GaugeSignal
 import com.mileway.core.ui.components.tracking.HeroTrackingCard
-import com.mileway.core.ui.theme.MilewayTheme
 import com.mileway.core.ui.theme.MilewayThemeVariant
 
 // ---------------------------------------------------------------------------

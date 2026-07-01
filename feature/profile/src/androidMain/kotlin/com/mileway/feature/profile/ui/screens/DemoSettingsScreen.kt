@@ -41,8 +41,8 @@ import com.mileway.core.security.RootDetector
 import com.mileway.core.ui.components.sheet.AppActionSheet
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
-import com.mileway.core.ui.theme.MilewayTheme
 import com.mileway.core.ui.theme.MilewayColors
+import com.mileway.core.ui.theme.MilewayTheme
 import com.mileway.feature.profile.ui.previews.LightDarkPreview
 import com.mileway.feature.profile.viewmodel.DemoSettingsAction
 import com.mileway.feature.profile.viewmodel.DemoSettingsViewModel

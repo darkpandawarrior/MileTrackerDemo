@@ -2,7 +2,6 @@ package com.mileway.feature.tracking.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.data.model.db.EventAudience
-import io.github.aakira.napier.Napier
 import com.mileway.core.data.model.db.EventType
 import com.mileway.core.data.model.db.HardwareEvent
 import com.mileway.core.data.model.db.LocationData
@@ -12,6 +11,7 @@ import com.mileway.feature.tracking.checkin.CheckInValidator.CheckInLocation
 import com.mileway.feature.tracking.repository.CurrentTrackRepository
 import com.mileway.feature.tracking.repository.HardwareEventRepository
 import com.mileway.feature.tracking.repository.LocationRepository
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 

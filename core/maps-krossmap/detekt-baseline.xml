@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>LongMethod:KrossMapSurface.kt$KrossMapSurface$@Composable override fun LiveTrackMap( routeCoords: List&lt;MapCoordinate&gt;, filteredCoords: List&lt;MapCoordinate&gt;, abnormalCoords: List&lt;MapCoordinate&gt;, startCoord: MapCoordinate?, endCoord: MapCoordinate?, currentLat: Double, currentLng: Double, bearing: Float, autoCenterEnabled: Boolean, playbackCoord: MapCoordinate?, showIssueMarkers: Boolean, showCompass: Boolean, showTraffic: Boolean, modifier: Modifier, )</ID>
     <ID>MagicNumber:KrossMapSurface.kt$KrossMapSurface$0xFF1565C0</ID>
     <ID>MagicNumber:KrossMapSurface.kt$KrossMapSurface$0xFFD32F2F</ID>
     <ID>MagicNumber:KrossMapSurface.kt$KrossMapSurface$0xFFFF9800</ID>

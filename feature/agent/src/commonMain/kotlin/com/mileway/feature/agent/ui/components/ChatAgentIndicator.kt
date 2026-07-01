@@ -41,20 +41,22 @@ fun ChatAgentIndicator(
     val sparkleScale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(800, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
         label = "sparkle_scale",
     )
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .clickable(onClick = onClick)
-            .padding(horizontal = if (mode == ChatIndicatorMode.FULL) 12.dp else 8.dp, vertical = 6.dp),
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .clickable(onClick = onClick)
+                .padding(horizontal = if (mode == ChatIndicatorMode.FULL) 12.dp else 8.dp, vertical = 6.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -64,9 +66,10 @@ fun ChatAgentIndicator(
                 Icons.Filled.AutoAwesome,
                 contentDescription = "Open AI assistant",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(16.dp)
-                    .scale(sparkleScale),
+                modifier =
+                    Modifier
+                        .size(16.dp)
+                        .scale(sparkleScale),
             )
             if (mode == ChatIndicatorMode.FULL) {
                 Text(

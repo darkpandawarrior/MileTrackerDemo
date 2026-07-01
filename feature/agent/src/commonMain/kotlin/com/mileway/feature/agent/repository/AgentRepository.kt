@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.map
 private const val SESSION_RESUME_WINDOW_MS = 5 * 60 * 1000L
 
 class AgentRepository(private val agentDao: AgentDao, private val sessionStore: AgentSessionStore) {
-
     val conversationsFlow: Flow<List<AgentConversation>> =
         agentDao.observeConversations().map { entities ->
             entities.map { entity ->
@@ -56,7 +55,11 @@ class AgentRepository(private val agentDao: AgentDao, private val sessionStore: 
             }
         }
 
-    suspend fun createThread(id: String, title: String, nowMs: Long) {
+    suspend fun createThread(
+        id: String,
+        title: String,
+        nowMs: Long,
+    ) {
         agentDao.insertConversation(
             AgentConversationEntity(id = id, title = title, lastMessageMs = nowMs, createdAtMs = nowMs),
         )
@@ -81,11 +84,18 @@ class AgentRepository(private val agentDao: AgentDao, private val sessionStore: 
         agentDao.updateLastMessageTime(conversationId, timestampMs)
     }
 
-    suspend fun updateTitle(id: String, title: String, lastMessageMs: Long) {
+    suspend fun updateTitle(
+        id: String,
+        title: String,
+        lastMessageMs: Long,
+    ) {
         agentDao.updateConversationMeta(id, title, lastMessageMs)
     }
 
-    suspend fun setActiveThread(threadId: String, nowMs: Long) {
+    suspend fun setActiveThread(
+        threadId: String,
+        nowMs: Long,
+    ) {
         sessionStore.setActiveThread(threadId, nowMs)
     }
 
@@ -94,7 +104,11 @@ class AgentRepository(private val agentDao: AgentDao, private val sessionStore: 
         return if (nowMs - lastMs <= SESSION_RESUME_WINDOW_MS) id else null
     }
 
-    suspend fun persistFeedback(messageId: String, rating: Int, comment: String?) {
+    suspend fun persistFeedback(
+        messageId: String,
+        rating: Int,
+        comment: String?,
+    ) {
         agentDao.updateFeedback(messageId, rating, comment)
     }
 

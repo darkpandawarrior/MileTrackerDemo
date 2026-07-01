@@ -52,8 +52,7 @@ val MilewayMono: TextStyle =
  * and weight. Use for any numeric value the user reads as data:
  * `Text(value, style = MaterialTheme.typography.titleMedium.dataStyle())`.
  */
-fun TextStyle.dataStyle(): TextStyle =
-    copy(fontFamily = FontFamily.Monospace, letterSpacing = 0.sp)
+fun TextStyle.dataStyle(): TextStyle = copy(fontFamily = FontFamily.Monospace, letterSpacing = 0.sp)
 
 /**
  * Fixed-size mono presets for hero counters and inline stats that want an explicit size rather
@@ -107,48 +106,53 @@ object TerminalType {
     private val TerminalFamily: FontFamily = FontFamily.Monospace
 
     /** Command-line prompt — user input prefix `> `, short commands. */
-    val prompt = TextStyle(
-        fontFamily = TerminalFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        letterSpacing = 0.4.sp,
-        lineHeight = 20.sp,
-    )
+    val prompt =
+        TextStyle(
+            fontFamily = TerminalFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            letterSpacing = 0.4.sp,
+            lineHeight = 20.sp,
+        )
 
     /** System output — AI replies, status messages. */
-    val output = TextStyle(
-        fontFamily = TerminalFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 13.sp,
-        letterSpacing = 0.3.sp,
-        lineHeight = 20.sp,
-    )
+    val output =
+        TextStyle(
+            fontFamily = TerminalFamily,
+            fontWeight = FontWeight.Normal,
+            fontSize = 13.sp,
+            letterSpacing = 0.3.sp,
+            lineHeight = 20.sp,
+        )
 
     /** Section header label — e.g. `// QUICK_ACTIONS`. Wide tracking, caps friendly. */
-    val sectionLabel = TextStyle(
-        fontFamily = TerminalFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 11.sp,
-        letterSpacing = 2.4.sp,
-        lineHeight = 16.sp,
-    )
+    val sectionLabel =
+        TextStyle(
+            fontFamily = TerminalFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            letterSpacing = 2.4.sp,
+            lineHeight = 16.sp,
+        )
 
     /** Status line — tiny one-liner status, coordinates, version strings. */
-    val statusLine = TextStyle(
-        fontFamily = TerminalFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 10.sp,
-        letterSpacing = 1.0.sp,
-        lineHeight = 14.sp,
-    )
+    val statusLine =
+        TextStyle(
+            fontFamily = TerminalFamily,
+            fontWeight = FontWeight.Normal,
+            fontSize = 10.sp,
+            letterSpacing = 1.0.sp,
+            lineHeight = 14.sp,
+        )
 
     /** App/module header — large monospaced display type. */
-    val display = TextStyle(
-        fontFamily = TerminalFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        letterSpacing = 1.5.sp,
-    )
+    val display =
+        TextStyle(
+            fontFamily = TerminalFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            letterSpacing = 1.5.sp,
+        )
 }
 
 /**

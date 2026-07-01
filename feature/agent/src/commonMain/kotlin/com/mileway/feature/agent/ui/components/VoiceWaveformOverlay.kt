@@ -42,9 +42,10 @@ fun VoiceWaveformOverlay(
     val maxHeight = 48.dp
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
@@ -52,46 +53,50 @@ fun VoiceWaveformOverlay(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             repeat(barCount) { index ->
-                val targetFraction = when (state) {
-                    WaveformState.Idle -> 0.1f
-                    WaveformState.Listening -> {
-                        val norm = (rms / 10f).coerceIn(0f, 1f)
-                        val wave = sin(index * 0.6 + rms * 0.3).toFloat() * 0.5f + 0.5f
-                        (norm * wave).coerceIn(0.05f, 1f)
+                val targetFraction =
+                    when (state) {
+                        WaveformState.Idle -> 0.1f
+                        WaveformState.Listening -> {
+                            val norm = (rms / 10f).coerceIn(0f, 1f)
+                            val wave = sin(index * 0.6 + rms * 0.3).toFloat() * 0.5f + 0.5f
+                            (norm * wave).coerceIn(0.05f, 1f)
+                        }
+                        WaveformState.Speaking -> {
+                            val wave = sin(index * 0.4 + rms * 0.5).toFloat() * 0.5f + 0.5f
+                            (wave * 0.7f).coerceIn(0.1f, 0.7f)
+                        }
+                        WaveformState.Processing -> {
+                            val pulse = sin(index * 0.3).toFloat() * 0.3f + 0.4f
+                            pulse.coerceIn(0.1f, 0.7f)
+                        }
                     }
-                    WaveformState.Speaking -> {
-                        val wave = sin(index * 0.4 + rms * 0.5).toFloat() * 0.5f + 0.5f
-                        (wave * 0.7f).coerceIn(0.1f, 0.7f)
-                    }
-                    WaveformState.Processing -> {
-                        val pulse = sin(index * 0.3).toFloat() * 0.3f + 0.4f
-                        pulse.coerceIn(0.1f, 0.7f)
-                    }
-                }
 
                 val animatedFraction by animateFloatAsState(
                     targetValue = targetFraction,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium,
-                    ),
+                    animationSpec =
+                        spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium,
+                        ),
                     label = "bar_$index",
                 )
 
                 val barHeight = baseHeight + (maxHeight - baseHeight) * animatedFraction
-                val barColor = when (state) {
-                    WaveformState.Listening -> MaterialTheme.colorScheme.primary
-                    WaveformState.Speaking -> MaterialTheme.colorScheme.secondary
-                    WaveformState.Processing -> MaterialTheme.colorScheme.tertiary
-                    WaveformState.Idle -> MaterialTheme.colorScheme.outlineVariant
-                }
+                val barColor =
+                    when (state) {
+                        WaveformState.Listening -> MaterialTheme.colorScheme.primary
+                        WaveformState.Speaking -> MaterialTheme.colorScheme.secondary
+                        WaveformState.Processing -> MaterialTheme.colorScheme.tertiary
+                        WaveformState.Idle -> MaterialTheme.colorScheme.outlineVariant
+                    }
 
                 Box(
-                    modifier = Modifier
-                        .width(3.dp)
-                        .height(barHeight)
-                        .clip(CircleShape)
-                        .background(barColor),
+                    modifier =
+                        Modifier
+                            .width(3.dp)
+                            .height(barHeight)
+                            .clip(CircleShape)
+                            .background(barColor),
                 )
             }
         }
@@ -102,10 +107,11 @@ fun VoiceWaveformOverlay(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(top = 56.dp)
-                    .fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(top = 56.dp)
+                        .fillMaxWidth(),
             )
         }
     }

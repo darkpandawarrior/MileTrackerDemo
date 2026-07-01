@@ -13,8 +13,19 @@ object AssistantFabSessionState {
     private val _isChatOpen = MutableStateFlow(false)
     val isChatOpen: StateFlow<Boolean> = _isChatOpen.asStateFlow()
 
-    fun switchToTopbar() { _mode.value = AssistantEntryMode.TOPBAR }
-    fun switchToFab() { _mode.value = AssistantEntryMode.FAB }
-    fun onChatOpen() { _isChatOpen.value = true }
-    fun onChatClose() { _isChatOpen.value = false }
+    fun switchToTopbar() {
+        _mode.value = AssistantEntryMode.TOPBAR
+    }
+
+    fun switchToFab() {
+        _mode.value = AssistantEntryMode.FAB
+    }
+
+    fun onChatOpen() {
+        _isChatOpen.value = true
+    }
+
+    fun onChatClose() {
+        _isChatOpen.value = false
+    }
 }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,7 +15,6 @@ import com.mileway.core.ui.components.topbar.TrackingStatus
 import com.mileway.core.ui.components.topbar.TrackingStatusPill
 import com.mileway.core.ui.components.topbar.TrackingTopBar
 import com.mileway.core.ui.theme.MilewayColors
-import com.mileway.core.ui.theme.MilewayTheme
 import com.mileway.core.ui.theme.MilewayThemeVariant
 
 // ---------------------------------------------------------------------------
