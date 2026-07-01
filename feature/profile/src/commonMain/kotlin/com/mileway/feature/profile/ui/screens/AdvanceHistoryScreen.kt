@@ -52,6 +52,7 @@ import com.mileway.core.ui.theme.DesignTokens.StatusColors
 import com.mileway.core.ui.theme.dataStyle
 import com.mileway.feature.profile.model.AdvanceRecord
 import com.mileway.feature.profile.model.AdvanceStatus
+import com.mileway.feature.profile.model.AdvanceType
 import com.mileway.feature.profile.viewmodel.AdvanceAction
 import com.mileway.feature.profile.viewmodel.AdvanceTabFilter
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
@@ -64,6 +65,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AdvanceHistoryScreen(
     onBack: () -> Unit,
     onRequestAdvance: () -> Unit,
+    onOpenDetail: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: AdvanceViewModel = koinViewModel(),
 ) {
@@ -157,7 +159,7 @@ fun AdvanceHistoryScreen(
                     verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.s),
                 ) {
                     items(records, key = { it.id }) { record ->
-                        AdvanceCard(record = record)
+                        AdvanceCard(record = record, onClick = { onOpenDetail(record.id) })
                     }
                     item { Spacer(Modifier.height(80.dp)) }
                 }
@@ -166,8 +168,19 @@ fun AdvanceHistoryScreen(
     }
 }
 
+internal fun AdvanceType.label(): String =
+    when (this) {
+        AdvanceType.TRAVEL -> "Travel"
+        AdvanceType.FIELD_VISIT -> "Field Visit"
+        AdvanceType.TRAINING -> "Training"
+        AdvanceType.CLIENT_ONBOARDING -> "Client Onboarding"
+    }
+
 @Composable
-private fun AdvanceCard(record: AdvanceRecord) {
+private fun AdvanceCard(
+    record: AdvanceRecord,
+    onClick: () -> Unit,
+) {
     val (statusLabel, statusColor) =
         when (record.status) {
             AdvanceStatus.PENDING -> "Pending" to StatusColors.warning
@@ -179,6 +192,7 @@ private fun AdvanceCard(record: AdvanceRecord) {
     val MONTHS = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = DesignTokens.Shape.roundedMd,
         elevation = CardDefaults.cardElevation(defaultElevation = DesignTokens.Elevation.card),
@@ -200,6 +214,14 @@ private fun AdvanceCard(record: AdvanceRecord) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(record.id, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(record.purpose, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                if (record.type != null) {
+                    Text(
+                        record.type.label(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
                 Text(
                     Instant.fromEpochMilliseconds(record.requestedDateMs).toLocalDateTime(TimeZone.currentSystemDefault()).let {
                             ldt ->

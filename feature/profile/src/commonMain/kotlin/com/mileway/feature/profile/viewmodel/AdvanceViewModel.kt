@@ -3,11 +3,15 @@ package com.mileway.feature.profile.viewmodel
 import com.mileway.core.common.UiText
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
+import com.mileway.feature.profile.model.AdvanceMode
 import com.mileway.feature.profile.model.AdvanceRecord
 import com.mileway.feature.profile.model.AdvanceStatus
+import com.mileway.feature.profile.model.AdvanceType
 import com.mileway.feature.profile.model.CardStatus
 import com.mileway.feature.profile.model.CorporateCard
 import com.mileway.feature.profile.repository.AdvanceRepository
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 enum class AdvanceTabFilter { ALL, PENDING, SETTLED }
 
@@ -17,9 +21,12 @@ data class AdvanceListData(
 )
 
 data class AdvanceFormState(
-    val step: Int = 1,
+    val step: Int = 0,
+    val mode: AdvanceMode = AdvanceMode.CASH,
+    val selectedCardId: String? = null,
     val amountText: String = "",
     val purpose: String = "",
+    val type: AdvanceType? = null,
     val requiredByDate: String = "",
     val declarationChecked: Boolean = false,
 )
@@ -31,6 +38,7 @@ data class AdvanceUiState(
     val submitted: Boolean = false,
     val lastSubmittedId: String = "",
     val lastAutoApproved: Boolean = false,
+    val detail: ScreenState<AdvanceRecord> = ScreenState.Loading,
 )
 
 sealed interface AdvanceAction {
@@ -38,9 +46,17 @@ sealed interface AdvanceAction {
 
     data class SetTab(val tab: AdvanceTabFilter) : AdvanceAction
 
+    data class LoadDetail(val advanceId: String) : AdvanceAction
+
+    data class SetMode(val mode: AdvanceMode) : AdvanceAction
+
+    data class SelectCard(val cardId: String) : AdvanceAction
+
     data class SetAmount(val text: String) : AdvanceAction
 
     data class SetPurpose(val text: String) : AdvanceAction
+
+    data class SetType(val type: AdvanceType?) : AdvanceAction
 
     data class SetRequiredByDate(val date: String) : AdvanceAction
 
@@ -53,10 +69,20 @@ sealed interface AdvanceAction {
     data object ResetForm : AdvanceAction
 
     data class ToggleCardBlock(val cardId: String) : AdvanceAction
+
+    /** "Start Trip Against This Advance" CTA on [com.mileway.feature.profile.ui.screens.AdvanceRequestDetailsScreen]. */
+    data class StartTripAgainstAdvance(val advanceId: String) : AdvanceAction
 }
 
 sealed interface AdvanceEffect {
     data class ShowToast(val message: UiText) : AdvanceEffect
+
+    /**
+     * Navigate into `feature/tracking`'s trip-start flow, carrying the advance id so the new
+     * trip can be linked back to it. [tripId] is the fresh route id the trip-start flow should
+     * use, mirroring how `SavedTracksScreen.onStartNew` mints a new route id at the nav call site.
+     */
+    data class NavigateToTripStart(val advanceId: String, val tripId: String) : AdvanceEffect
 }
 
 class AdvanceViewModel(
@@ -85,8 +111,12 @@ class AdvanceViewModel(
                     )
                 }
             is AdvanceAction.SetTab -> setTab(action.tab)
+            is AdvanceAction.LoadDetail -> loadDetail(action.advanceId)
+            is AdvanceAction.SetMode -> setMode(action.mode)
+            is AdvanceAction.SelectCard -> setState { copy(form = form.copy(selectedCardId = action.cardId)) }
             is AdvanceAction.SetAmount -> setState { copy(form = form.copy(amountText = action.text)) }
             is AdvanceAction.SetPurpose -> setState { copy(form = form.copy(purpose = action.text)) }
+            is AdvanceAction.SetType -> setState { copy(form = form.copy(type = action.type)) }
             is AdvanceAction.SetRequiredByDate -> setState { copy(form = form.copy(requiredByDate = action.date)) }
             is AdvanceAction.SetDeclaration -> setState { copy(form = form.copy(declarationChecked = action.checked)) }
             is AdvanceAction.GoToStep -> setState { copy(form = form.copy(step = action.step)) }
@@ -94,6 +124,7 @@ class AdvanceViewModel(
             AdvanceAction.ResetForm ->
                 setState { copy(form = AdvanceFormState(), submitted = false, lastSubmittedId = "", lastAutoApproved = false) }
             is AdvanceAction.ToggleCardBlock -> toggleCardBlock(action.cardId)
+            is AdvanceAction.StartTripAgainstAdvance -> startTripAgainstAdvance(action.advanceId)
         }
     }
 
@@ -113,6 +144,25 @@ class AdvanceViewModel(
         val recordsState: ScreenState<List<AdvanceRecord>> =
             if (filtered.isEmpty()) ScreenState.Empty else ScreenState.Content(filtered)
         setState { copy(list = AdvanceListData(recordsState, tab)) }
+    }
+
+    private fun loadDetail(advanceId: String) {
+        val record = repository.advanceRecords.find { it.id == advanceId }
+        val detailState: ScreenState<AdvanceRecord> =
+            if (record != null) ScreenState.Content(record) else ScreenState.Empty
+        setState { copy(detail = detailState) }
+    }
+
+    private fun setMode(mode: AdvanceMode) {
+        setState {
+            copy(
+                form =
+                    form.copy(
+                        mode = mode,
+                        selectedCardId = if (mode == AdvanceMode.CASH) null else form.selectedCardId,
+                    ),
+            )
+        }
     }
 
     private fun submitAdvance() {
@@ -144,4 +194,10 @@ class AdvanceViewModel(
     fun getCardById(id: String) = repository.getCardById(id)
 
     fun getTransactionsForCard(cardId: String) = repository.getTransactionsForCard(cardId)
+
+    @OptIn(ExperimentalUuidApi::class)
+    private fun startTripAgainstAdvance(advanceId: String) {
+        val tripId = Uuid.random().toString()
+        emitEffect(AdvanceEffect.NavigateToTripStart(advanceId = advanceId, tripId = tripId))
+    }
 }

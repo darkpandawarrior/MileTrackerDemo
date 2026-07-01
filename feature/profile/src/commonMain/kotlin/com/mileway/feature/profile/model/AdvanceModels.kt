@@ -2,13 +2,36 @@ package com.mileway.feature.profile.model
 
 enum class AdvanceStatus { PENDING, UNDER_REVIEW, APPROVED, DISBURSED, REJECTED }
 
+enum class AdvanceMode { CASH, CARD_LINKED }
+
+enum class AdvanceType { TRAVEL, FIELD_VISIT, TRAINING, CLIENT_ONBOARDING }
+
 data class AdvanceRecord(
     val id: String,
     val amountRupees: Double,
     val purpose: String,
+    val type: AdvanceType? = null,
     val status: AdvanceStatus,
     val requestedDateMs: Long,
     val requiredByDate: String,
+    val approverChain: List<ApproverStep> = emptyList(),
+    val timeline: List<TimelineEntry> = emptyList(),
+    val declineReason: String? = null,
+    /** Trip (Mileway's own tracking-flow route id) started against this advance, if any. */
+    val linkedTripId: String? = null,
+)
+
+enum class ApproverStepStatus { PENDING, APPROVED, REJECTED }
+
+data class ApproverStep(
+    val name: String,
+    val stageLabel: String,
+    val status: ApproverStepStatus,
+)
+
+data class TimelineEntry(
+    val label: String,
+    val dateMs: Long,
 )
 
 enum class CardType { VISA, MASTERCARD }
