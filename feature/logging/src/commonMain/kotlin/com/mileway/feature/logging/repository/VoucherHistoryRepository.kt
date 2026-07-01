@@ -1,6 +1,7 @@
 package com.mileway.feature.logging.repository
 
 import com.mileway.core.data.dao.VoucherDao
+import com.mileway.core.data.model.db.VoucherCategory
 import com.mileway.core.data.model.db.VoucherEntity
 import com.mileway.core.data.model.db.VoucherStatus
 import com.mileway.feature.logging.ui.model.SubmittedVoucher
@@ -57,7 +58,7 @@ class VoucherHistoryRepository(private val dao: VoucherDao, private val clock: C
             VoucherEntity(
                 voucherNumber = "VCH-${1000 + index}",
                 title = "Voucher ${1000 + index}",
-                category = "Travel",
+                category = VoucherCategory.MILEAGE,
                 totalAmount = q.amount,
                 notes = if (q.violations > 0) "$VIOLATIONS_PREFIX${q.violations}" else "",
                 expenseRouteIdsJson = VoucherEntity.encodeExpenseRouteIds(listOf("EXP-${48700 + index}")),

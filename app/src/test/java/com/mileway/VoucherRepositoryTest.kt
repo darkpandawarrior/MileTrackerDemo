@@ -1,5 +1,6 @@
 package com.mileway
 
+import com.mileway.core.data.model.db.VoucherCategory
 import com.mileway.core.data.model.db.VoucherStatus
 import com.mileway.feature.tracking.repository.VoucherRecord
 import com.mileway.feature.tracking.repository.VoucherRepository
@@ -20,7 +21,7 @@ class VoucherRepositoryTest {
         VoucherRecord(
             voucherNumber = number,
             title = "Test Voucher",
-            category = "Travel",
+            category = VoucherCategory.MILEAGE,
             totalAmount = 100.0,
             notes = "",
             expenseRouteIds = listOf("T1"),

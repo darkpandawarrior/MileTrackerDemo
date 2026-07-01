@@ -43,7 +43,7 @@ import com.mileway.core.data.model.db.VoucherEntity
         DraftExpenseEntity::class,
         VoucherEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = false,
 )
 @ConstructedBy(MilewayDatabaseConstructor::class)

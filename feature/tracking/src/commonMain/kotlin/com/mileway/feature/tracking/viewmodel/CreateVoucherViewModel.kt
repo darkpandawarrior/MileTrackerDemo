@@ -1,6 +1,7 @@
 package com.mileway.feature.tracking.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.mileway.core.data.model.db.VoucherCategory
 import com.mileway.core.data.model.display.TrackDisplayData
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.feature.tracking.repository.SavedTrackRepository
@@ -17,7 +18,7 @@ data class CreateVoucherUiState(
     val expenses: List<TrackDisplayData> = emptyList(),
     val selectedTokens: Set<String> = emptySet(),
     val title: String = "",
-    val category: String = "Travel",
+    val category: VoucherCategory = VoucherCategory.MILEAGE,
     val notes: String = "",
     val isSubmitting: Boolean = false,
     val submittedVoucherNumber: String? = null,
@@ -33,7 +34,7 @@ sealed interface CreateVoucherAction {
 
     data class SetTitle(val value: String) : CreateVoucherAction
 
-    data class SetCategory(val value: String) : CreateVoucherAction
+    data class SetCategory(val value: VoucherCategory) : CreateVoucherAction
 
     data class SetNotes(val value: String) : CreateVoucherAction
 

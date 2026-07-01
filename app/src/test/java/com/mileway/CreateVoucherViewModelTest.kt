@@ -1,6 +1,7 @@
 package com.mileway
 
 import com.mileway.core.data.model.db.SavedTrack
+import com.mileway.core.data.model.db.VoucherCategory
 import com.mileway.core.data.model.db.VoucherStatus
 import com.mileway.feature.tracking.repository.SavedTrackRepository
 import com.mileway.feature.tracking.repository.VoucherRepository
@@ -120,9 +121,9 @@ class CreateVoucherViewModelTest {
     fun `SetTitle and SetCategory update form fields`() = runTest {
         val vm = viewModel()
         vm.onAction(CreateVoucherAction.SetTitle("Q4 2026"))
-        vm.onAction(CreateVoucherAction.SetCategory("Fuel"))
+        vm.onAction(CreateVoucherAction.SetCategory(VoucherCategory.FUEL))
         assertEquals("Q4 2026", vm.state.value.title)
-        assertEquals("Fuel", vm.state.value.category)
+        assertEquals(VoucherCategory.FUEL, vm.state.value.category)
     }
 
     @Test

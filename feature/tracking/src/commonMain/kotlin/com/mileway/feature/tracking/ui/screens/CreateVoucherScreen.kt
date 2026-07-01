@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mileway.core.common.formatDecimal
+import com.mileway.core.data.model.db.VoucherCategory
 import com.mileway.core.data.model.display.TrackDisplayData
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
@@ -64,8 +65,6 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
-
-private val CATEGORIES = listOf("Travel", "Fuel", "Maintenance", "Other")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -291,7 +290,7 @@ private fun StepVoucherDetails(
             onExpandedChange = { categoryExpanded = it },
         ) {
             OutlinedTextField(
-                value = uiState.category,
+                value = uiState.category.label,
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Expense Category") },
@@ -302,9 +301,9 @@ private fun StepVoucherDetails(
                 expanded = categoryExpanded,
                 onDismissRequest = { categoryExpanded = false },
             ) {
-                CATEGORIES.forEach { cat ->
+                VoucherCategory.entries.forEach { cat ->
                     DropdownMenuItem(
-                        text = { Text(cat) },
+                        text = { Text(cat.label) },
                         onClick = {
                             viewModel.onAction(CreateVoucherAction.SetCategory(cat))
                             categoryExpanded = false
@@ -379,7 +378,7 @@ private fun StepConfirmation(
         Card {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SummaryRow("Title", uiState.title)
-                SummaryRow("Category", uiState.category)
+                SummaryRow("Category", uiState.category.label)
                 SummaryRow("Total", "₹${viewModel.totalAmount.formatDecimal(2)}")
                 SummaryRow("Expenses", "${uiState.selectedTokens.size} selected")
                 if (uiState.notes.isNotBlank()) SummaryRow("Notes", uiState.notes)

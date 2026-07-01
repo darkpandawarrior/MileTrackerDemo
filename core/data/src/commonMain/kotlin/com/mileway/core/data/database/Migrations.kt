@@ -5,6 +5,22 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 9 → 10 (P3.4): `vouchers.category` becomes the typed [com.mileway.core.data.model.db
+ * .VoucherCategory] enum instead of a free-text `String` — but the underlying column is still
+ * `TEXT` storing the exact same label values (`"Travel"`/`"Fuel"`/`"Maintenance"`/`"Other"`) via
+ * [com.mileway.core.data.model.db.VoucherCategoryConverters], so no column type or existing row
+ * data actually changes. This migration is a documented no-op version bump only, matching the
+ * project rule that any entity-shape change to an already-shipped table gets an explicit
+ * `Migration(N, N + 1)` object rather than relying on `exportSchema`/destructive fallback.
+ */
+val MIGRATION_9_10 =
+    object : Migration(9, 10) {
+        override fun migrate(connection: SQLiteConnection) {
+            // No-op: the `category` column's on-disk type/values are unchanged (see class doc).
+        }
+    }
+
+/**
  * Migration 8 → 9 (P3.3): additive `claimedByVoucherNumber` column on `saved_tracks` — the
  * already-claimed guard so the same completed trip can't fund two separate vouchers (the reference app's
  * server-side equivalent: `remainingVoucherCountForTrip`). Null means "unclaimed"; existing rows

@@ -1,13 +1,14 @@
 package com.mileway.feature.tracking.repository
 
 import com.mileway.core.data.dao.VoucherDao
+import com.mileway.core.data.model.db.VoucherCategory
 import com.mileway.core.data.model.db.VoucherEntity
 import com.mileway.core.data.model.db.VoucherStatus
 
 data class VoucherRecord(
     val voucherNumber: String,
     val title: String,
-    val category: String,
+    val category: VoucherCategory,
     val totalAmount: Double,
     val notes: String,
     val expenseRouteIds: List<String>,
