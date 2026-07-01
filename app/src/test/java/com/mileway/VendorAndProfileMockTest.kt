@@ -2,6 +2,7 @@ package com.mileway
 
 import com.mileway.core.network.model.TrackingContextType
 import com.mileway.feature.profile.repository.FakeProfileRepository
+import com.mileway.feature.profile.repository.MockAccountRepository
 import com.mileway.stub.DemoMockData
 import com.mileway.stub.ProfileMockData
 import com.mileway.stub.VendorMockData
@@ -143,7 +144,7 @@ class VendorAndProfileMockTest {
 
     @Test
     fun `fake profile repository serves the mock profile surfaces`() {
-        val repository = FakeProfileRepository()
+        val repository = FakeProfileRepository(MockAccountRepository(FakeMockAccountDao()))
         assertEquals(ProfileMockData.primaryProfile(), repository.richProfile())
         assertEquals(ProfileMockData.completion(), repository.completion())
         assertEquals(ProfileMockData.sessions(), repository.sessions())

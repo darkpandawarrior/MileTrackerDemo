@@ -9,6 +9,7 @@ import com.mileway.core.ui.theme.ThemeController
 import com.mileway.core.ui.theme.ThemeDefaults
 import com.mileway.core.ui.theme.parseHexColor
 import com.mileway.feature.profile.repository.FakeProfileRepository
+import com.mileway.feature.profile.repository.MockAccountRepository
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -25,7 +26,7 @@ class CustomizationSettingsTest {
 
     private fun controller() = ThemeController()
     private fun viewModel(tc: ThemeController = controller()) =
-        ProfileViewModel(FakeProfileRepository(), tc)
+        ProfileViewModel(FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())), tc)
 
     // =========================================================================
     // 1. Palette selection, mapping to expected color set

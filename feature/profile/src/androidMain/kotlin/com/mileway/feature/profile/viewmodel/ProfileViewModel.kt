@@ -1,5 +1,6 @@
 package com.mileway.feature.profile.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.theme.AccentPalette
 import com.mileway.core.ui.theme.AppLanguage
@@ -12,6 +13,7 @@ import com.mileway.feature.profile.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 sealed interface ProfileAction {
     data class SwitchAccount(val id: String) : ProfileAction
@@ -56,6 +58,25 @@ class ProfileViewModel(
     ) {
     /** Backwards-compatible alias; screens read [state]. */
     val uiState: StateFlow<ProfileUiState> = state
+
+    init {
+        // P1.2: `accounts()` above seeds the initial render synchronously (unchanged shape);
+        // once the Room-backed store is seeded, switch the list to the live DAO-backed Flow so
+        // it stays observably in sync with adds/removes (P1.3) instead of a one-shot snapshot.
+        viewModelScope.launch {
+            repository.seedAccountsIfEmpty()
+            repository.observeAccounts().collect { accounts ->
+                setState {
+                    val stillSelected = accounts.any { it.id == selectedAccountId }
+                    copy(
+                        accounts = accounts,
+                        selectedAccountId =
+                            if (stillSelected) selectedAccountId else accounts.firstOrNull()?.id.orEmpty(),
+                    )
+                }
+            }
+        }
+    }
 
     override fun onAction(action: ProfileAction) {
         when (action) {

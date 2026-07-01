@@ -6,6 +6,8 @@ import com.mileway.core.network.model.ProfileCompletion
 import com.mileway.core.network.model.UserSession
 import com.mileway.feature.profile.model.ProfileHeader
 import com.mileway.stub.ProfileMockData
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 interface ProfileRepository {
     fun header(): ProfileHeader
@@ -19,6 +21,16 @@ interface ProfileRepository {
     /** Device sessions this account is signed in on. */
     fun sessions(): List<UserSession> = ProfileMockData.sessions()
 
-    /** Accounts the user can switch between. */
+    /**
+     * Static snapshot of switchable accounts. Kept as a default for simple test doubles;
+     * [observeAccounts] is the live, Room-backed source production code should collect from
+     * (see [MockAccountRepository]).
+     */
     fun accounts(): List<DemoAccount> = ProfileMockData.accounts()
+
+    /** Live list of accounts the user can switch between (P1.2: Room-backed, not static). */
+    fun observeAccounts(): Flow<List<DemoAccount>> = flowOf(accounts())
+
+    /** Seeds the Room-backed account store on first access; a no-op for static test doubles. */
+    suspend fun seedAccountsIfEmpty() {}
 }

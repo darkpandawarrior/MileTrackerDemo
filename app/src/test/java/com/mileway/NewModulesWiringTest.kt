@@ -1,6 +1,7 @@
 package com.mileway
 
 import android.content.Context
+import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.ui.di.coreUiModule
 import com.mileway.core.ui.theme.ThemeController
 import com.mileway.feature.events.di.eventsModule
@@ -18,6 +19,7 @@ import org.junit.Test
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
 import kotlin.test.assertNotNull
@@ -25,7 +27,8 @@ import kotlin.test.assertNotNull
 /**
  * Verifies the Koin modules added for the bottom-nav shell (theme), media capture and
  * profile features wire together without definition errors. These run without the Room
- * DB module so a mock Context is sufficient.
+ * DB module so a mock Context is sufficient; [MockAccountDao] (P1.2's `MockAccountRepository`
+ * dependency) is faked here for the same reason.
  */
 class NewModulesWiringTest : KoinTest {
 
@@ -34,7 +37,14 @@ class NewModulesWiringTest : KoinTest {
         try { stopKoin() } catch (_: Exception) {}
         startKoin {
             androidContext(mockk<Context>(relaxed = true))
-            modules(coreUiModule, mediaModule, profileModule, paymentsModule, eventsModule)
+            modules(
+                module { single<MockAccountDao> { FakeMockAccountDao() } },
+                coreUiModule,
+                mediaModule,
+                profileModule,
+                paymentsModule,
+                eventsModule,
+            )
         }
     }
 

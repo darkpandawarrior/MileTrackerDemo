@@ -21,6 +21,7 @@ import com.mileway.feature.agent.voice.TextToSpeech
 import com.mileway.core.data.dao.LocationDao
 import com.mileway.core.data.dao.LogMilesDraftDao
 import com.mileway.core.data.dao.LogMilesFrequentRouteDao
+import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.TripAttachmentDao
 import com.mileway.core.data.dao.VoucherDao
@@ -254,6 +255,7 @@ class ScreenshotGalleryTest {
             single<VoucherDao> { voucherDao }
             single<MediaLibraryDao> { mediaLibraryDao }
             single<AgentDao> { FakeAgentDao() }
+            single<MockAccountDao> { FakeMockAccountDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }
             single<AssistantEngine> { FakeAssistantEngine() }
             single<SpeechToText> { FakeSpeechToText() }

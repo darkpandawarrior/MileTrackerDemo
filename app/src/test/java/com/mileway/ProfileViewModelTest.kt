@@ -2,6 +2,7 @@ package com.mileway
 
 import com.mileway.core.ui.theme.ThemeController
 import com.mileway.feature.profile.repository.FakeProfileRepository
+import com.mileway.feature.profile.repository.MockAccountRepository
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -13,7 +14,7 @@ import kotlin.test.assertTrue
  */
 class ProfileViewModelTest {
 
-    private fun viewModel() = ProfileViewModel(FakeProfileRepository(), ThemeController())
+    private fun viewModel() = ProfileViewModel(FakeProfileRepository(MockAccountRepository(FakeMockAccountDao())), ThemeController())
 
     @Test
     fun `notifications default on and toggles off`() {

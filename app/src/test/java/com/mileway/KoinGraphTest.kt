@@ -12,6 +12,7 @@ import com.mileway.feature.agent.voice.TextToSpeech
 import com.mileway.core.data.dao.LocationDao
 import com.mileway.core.data.dao.LogMilesDraftDao
 import com.mileway.core.data.dao.LogMilesFrequentRouteDao
+import com.mileway.core.data.dao.MockAccountDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.TripAttachmentDao
 import com.mileway.core.data.library.MediaLibraryDao
@@ -102,6 +103,7 @@ class KoinGraphTest : KoinTest {
         single<DraftExpenseDao> { mockk(relaxed = true) }
         single<MediaLibraryDao> { mockk(relaxed = true) }
         single<AgentDao> { FakeAgentDao() }
+        single<MockAccountDao> { FakeMockAccountDao() }
         single<AgentSessionStore> { FakeAgentSessionStore() }
         single<AssistantEngine> { FakeAssistantEngine() }
         single<SpeechToText> { FakeSpeechToText() }
