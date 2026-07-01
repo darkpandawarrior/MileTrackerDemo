@@ -130,6 +130,68 @@ object PolicyMockData {
             else -> emptyList()
         }
 
+    // ── Expense-amount policy engine (P1.6) ───────────────────────────────────
+    //
+    // Additive: reuses the same 5-tier SubmissionStatus vocabulary as the mileage engine
+    // above, keyed off the submitted rupee amount instead of distance. Does not touch
+    // [outcomeFor]/[violationsFor] (mileage-only, `feature/tracking` depends on them unchanged).
+    //
+    // | amountRupees        | outcome               |
+    // |----------------------|-----------------------|
+    // | a < 1,000            | SUCCESS               |
+    // | 1,000 <= a < 5,000   | REIMBURSABLE_ADJUSTED |
+    // | 5,000 <= a < 10,000  | POLICY_VIOLATION      |
+    // | 10,000 <= a <= 25,000| NEEDS_APPROVAL        |
+    // | a > 25,000           | HARD_STOP             |
+
+    /** Amounts above this cannot be submitted at all (HARD_STOP), mirroring [HARD_STOP_KM]. */
+    const val EXPENSE_HARD_STOP_RUPEES = 25_000.0
+
+    /** Maps a submitted expense amount to a [SubmissionStatus] using the buckets documented above. */
+    fun outcomeForExpenseAmount(
+        amountRupees: Double,
+        category: String,
+    ): SubmissionStatus =
+        when {
+            amountRupees < 1_000.0 -> SubmissionStatus.SUCCESS
+            amountRupees < 5_000.0 -> SubmissionStatus.REIMBURSABLE_ADJUSTED
+            amountRupees < 10_000.0 -> SubmissionStatus.POLICY_VIOLATION
+            amountRupees > EXPENSE_HARD_STOP_RUPEES -> SubmissionStatus.HARD_STOP
+            else -> SubmissionStatus.NEEDS_APPROVAL
+        }
+
+    /**
+     * Violations attached to an expense submission. Only the violation statuses
+     * (POLICY_VIOLATION, HARD_STOP) carry violations; every other bucket returns an empty list —
+     * same violation-severity shape [violationsFor] uses for mileage, so both flows can share one
+     * violation-dialog family.
+     */
+    fun violationsForExpenseAmount(
+        amountRupees: Double,
+        category: String,
+    ): List<PolicyViolation> =
+        when (outcomeForExpenseAmount(amountRupees, category)) {
+            SubmissionStatus.POLICY_VIOLATION ->
+                listOf(
+                    PolicyViolation(
+                        id = "expense-amount-threshold",
+                        title = "Expense amount requires manager approval",
+                        message = "Expenses of ₹5,000 or more require manager approval before reimbursement.",
+                        severity = ViolationSeverity.VIOLATION,
+                    ),
+                )
+            SubmissionStatus.HARD_STOP ->
+                listOf(
+                    PolicyViolation(
+                        id = "expense-amount-hard-stop",
+                        title = "Expense amount hard limit exceeded",
+                        message = "Expenses above ₹${EXPENSE_HARD_STOP_RUPEES.toInt()} cannot be submitted for reimbursement.",
+                        severity = ViolationSeverity.HARDSTOP,
+                    ),
+                )
+            else -> emptyList()
+        }
+
     // ── Voucher / transaction factories ───────────────────────────────────────
 
     /**

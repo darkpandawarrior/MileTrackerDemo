@@ -48,13 +48,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.mileway.core.common.asString
+import com.mileway.core.network.model.SubmissionStatus
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
+import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.validation.ExpenseFormValidator
 import com.mileway.feature.logging.viewmodel.ExpenseAction
 import com.mileway.feature.logging.viewmodel.ExpenseEffect
 import com.mileway.feature.logging.viewmodel.ExpenseViewModel
+import com.mileway.stub.PolicyMockData
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -198,13 +201,19 @@ fun ExpenseDetailsInputScreen(
                 onRemove = { viewModel.onAction(ExpenseAction.SetReceiptImage(null)) },
             )
 
-            if ((form.amountText.toDoubleOrNull() ?: 0.0) > 5000.0) {
+            // P1.6: same tiered policy engine as Log Miles — live preview of the outcome the
+            // amount would resolve to on submit, instead of a single hardcoded literal check.
+            val liveAmount = form.amountText.toDoubleOrNull() ?: 0.0
+            val liveCategoryName = (form.category ?: ExpenseCategory.OTHER).name
+            val liveOutcome = PolicyMockData.outcomeForExpenseAmount(liveAmount, liveCategoryName)
+            if (liveOutcome != SubmissionStatus.SUCCESS) {
+                val liveViolation = PolicyMockData.violationsForExpenseAmount(liveAmount, liveCategoryName).firstOrNull()
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
                     shape = DesignTokens.Shape.roundedSm,
                 ) {
                     Text(
-                        text = "⚠ Expenses above ₹5,000 require manager approval before reimbursement.",
+                        text = "⚠ " + (liveViolation?.message ?: "This amount requires manager approval before reimbursement."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.padding(DesignTokens.Spacing.m),

@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mileway.core.common.formatDecimal
+import com.mileway.core.network.model.SubmissionStatus
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.feature.logging.viewmodel.ExpenseAction
 import com.mileway.feature.logging.viewmodel.ExpenseViewModel
@@ -45,7 +46,12 @@ fun ExpenseSuccessScreen(
     viewModel: ExpenseViewModel = koinViewModel(),
 ) {
     val ui by viewModel.state.collectAsState()
-    val requiresApproval = ui.lastSubmittedAmount > 5000.0
+    // P1.6: same tiered policy engine as Log Miles — approval banner shows for any violation
+    // status (POLICY_VIOLATION, NEEDS_APPROVAL, HARD_STOP), not just a raw amount check.
+    val requiresApproval =
+        ui.lastSubmissionStatus == SubmissionStatus.POLICY_VIOLATION ||
+            ui.lastSubmissionStatus == SubmissionStatus.NEEDS_APPROVAL ||
+            ui.lastSubmissionStatus == SubmissionStatus.HARD_STOP
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -116,7 +122,9 @@ fun ExpenseSuccessScreen(
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                         )
                         Text(
-                            text = "This expense exceeds ₹5,000 and has been sent to your manager for approval.",
+                            text =
+                                ui.lastSubmissionViolations.firstOrNull()?.message
+                                    ?: "This expense requires manager approval before reimbursement.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                             textAlign = TextAlign.Center,

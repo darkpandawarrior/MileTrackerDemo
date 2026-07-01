@@ -2,6 +2,7 @@ package com.mileway
 
 import app.cash.turbine.test
 import com.mileway.core.data.model.db.DraftExpenseEntity
+import com.mileway.core.network.model.SubmissionStatus
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseRecord
@@ -288,6 +289,93 @@ class ExpenseViewModelTest {
             assertNull(vm.state.value.resumableDraft)
             assertNotNull(dao.getDraft())
         }
+
+    // ── P1.6: tiered policy engine (PolicyMockData.outcomeForExpenseAmount) ────
+
+    @Test
+    fun `SubmitExpense below 1000 resolves to SUCCESS with no violations`() = runTest {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+        vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
+        vm.onAction(ExpenseAction.SetAmount("249.50"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        assertEquals(SubmissionStatus.SUCCESS, vm.state.value.lastSubmissionStatus)
+        assertTrue(vm.state.value.lastSubmissionViolations.isEmpty())
+    }
+
+    @Test
+    fun `SubmitExpense between 1000 and 5000 resolves to REIMBURSABLE_ADJUSTED`() = runTest {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+        vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
+        vm.onAction(ExpenseAction.SetAmount("1500.0"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        assertEquals(SubmissionStatus.REIMBURSABLE_ADJUSTED, vm.state.value.lastSubmissionStatus)
+        assertTrue(vm.state.value.lastSubmissionViolations.isEmpty())
+    }
+
+    @Test
+    fun `SubmitExpense between 5000 and 10000 resolves to POLICY_VIOLATION with a violation`() = runTest {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
+        vm.onAction(ExpenseAction.SetMerchant("Ola Cabs"))
+        vm.onAction(ExpenseAction.SetAmount("7500.0"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        assertEquals(SubmissionStatus.POLICY_VIOLATION, vm.state.value.lastSubmissionStatus)
+        assertEquals(1, vm.state.value.lastSubmissionViolations.size)
+    }
+
+    @Test
+    fun `SubmitExpense between 10000 and 25000 resolves to NEEDS_APPROVAL with no violations`() = runTest {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.ACCOMMODATION))
+        vm.onAction(ExpenseAction.SetMerchant("Taj Hotel"))
+        vm.onAction(ExpenseAction.SetAmount("15000.0"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        assertEquals(SubmissionStatus.NEEDS_APPROVAL, vm.state.value.lastSubmissionStatus)
+        assertTrue(vm.state.value.lastSubmissionViolations.isEmpty())
+    }
+
+    @Test
+    fun `SubmitExpense above 25000 resolves to HARD_STOP with a hardstop violation`() = runTest {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
+        vm.onAction(ExpenseAction.SetMerchant("IndiGo Airlines"))
+        vm.onAction(ExpenseAction.SetAmount("30000.0"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        assertEquals(SubmissionStatus.HARD_STOP, vm.state.value.lastSubmissionStatus)
+        assertEquals(1, vm.state.value.lastSubmissionViolations.size)
+    }
+
+    @Test
+    fun `ResetForm clears the last submission status and violations`() = runTest {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.TRAVEL))
+        vm.onAction(ExpenseAction.SetMerchant("Ola Cabs"))
+        vm.onAction(ExpenseAction.SetAmount("7500.0"))
+        vm.effect.test {
+            vm.onAction(ExpenseAction.SubmitExpense)
+            awaitItem()
+        }
+        vm.onAction(ExpenseAction.ResetForm)
+        assertEquals(SubmissionStatus.SUCCESS, vm.state.value.lastSubmissionStatus)
+        assertTrue(vm.state.value.lastSubmissionViolations.isEmpty())
+    }
 
     @Test
     fun `SubmitExpense clears the persisted draft on success`() =

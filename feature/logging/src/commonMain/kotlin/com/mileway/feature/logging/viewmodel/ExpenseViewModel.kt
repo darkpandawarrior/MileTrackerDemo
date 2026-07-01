@@ -3,6 +3,8 @@ package com.mileway.feature.logging.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.mileway.core.common.UiText
 import com.mileway.core.data.model.db.DraftExpenseEntity
+import com.mileway.core.network.model.PolicyViolation
+import com.mileway.core.network.model.SubmissionStatus
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
 import com.mileway.feature.logging.catalog.ExpenseCategoryCatalog
@@ -11,6 +13,7 @@ import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
 import com.mileway.feature.logging.repository.ExpenseRepository
 import com.mileway.feature.logging.validation.ExpenseFormValidator
+import com.mileway.stub.PolicyMockData
 import kotlinx.coroutines.launch
 
 enum class ExpenseFilter { ALL, DRAFTS, PENDING, SETTLED }
@@ -45,6 +48,10 @@ data class ExpenseUiState(
     val detailState: ScreenState<ExpenseRecord> = ScreenState.Empty,
     /** P1.5: a persisted draft exists from a previous session — offer "Resume draft" on entry. */
     val resumableDraft: DraftExpenseEntity? = null,
+    /** P1.6: [PolicyMockData]'s tiered outcome for the last submitted amount (SUCCESS by default). */
+    val lastSubmissionStatus: SubmissionStatus = SubmissionStatus.SUCCESS,
+    /** P1.6: violations attached to the last submission, mirroring the mileage submission shape. */
+    val lastSubmissionViolations: List<PolicyViolation> = emptyList(),
 )
 
 sealed interface ExpenseAction {
@@ -144,7 +151,15 @@ class ExpenseViewModel(
             is ExpenseAction.SetReceiptImage -> setState { copy(form = form.copy(receiptImagePath = action.path)) }
             ExpenseAction.SubmitExpense -> submitExpense()
             ExpenseAction.ResetForm ->
-                setState { copy(form = ExpenseFormState(), lastSubmittedId = "", lastSubmittedAmount = 0.0) }
+                setState {
+                    copy(
+                        form = ExpenseFormState(),
+                        lastSubmittedId = "",
+                        lastSubmittedAmount = 0.0,
+                        lastSubmissionStatus = SubmissionStatus.SUCCESS,
+                        lastSubmissionViolations = emptyList(),
+                    )
+                }
             is ExpenseAction.OpenDetail -> openDetail(action.id)
             ExpenseAction.SaveDraft -> saveDraft()
             ExpenseAction.ResumeDraft -> resumeDraft()
@@ -190,11 +205,12 @@ class ExpenseViewModel(
             return
         }
         val amount = form.amountText.toDoubleOrNull() ?: 0.0
+        val category = form.category ?: ExpenseCategory.OTHER
         val id = "EXP-NEW-${(form.merchantName.hashCode() and 0x7FFF_FFFF) % 9000 + 1000}"
         val record =
             ExpenseRecord(
                 id = id,
-                category = form.category ?: ExpenseCategory.OTHER,
+                category = category,
                 merchantName = form.merchantName,
                 amountRupees = amount,
                 status = ExpenseStatus.PENDING,
@@ -202,12 +218,23 @@ class ExpenseViewModel(
                 note = form.note,
                 receiptImagePath = form.receiptImagePath,
             )
+        // P1.6: same tiered policy engine as Log Miles, keyed off the expense amount.
+        val submissionStatus = PolicyMockData.outcomeForExpenseAmount(amount, category.name)
+        val violations = PolicyMockData.violationsForExpenseAmount(amount, category.name)
         viewModelScope.launch {
             repository.insert(record)
             // A submitted expense is no longer "in-flight" — clear the draft it was saved from
             // (if any), so relaunching the app doesn't re-offer a resume for an already-submitted form.
             repository.clearDraft()
-            setState { copy(lastSubmittedId = id, lastSubmittedAmount = amount, resumableDraft = null) }
+            setState {
+                copy(
+                    lastSubmittedId = id,
+                    lastSubmittedAmount = amount,
+                    lastSubmissionStatus = submissionStatus,
+                    lastSubmissionViolations = violations,
+                    resumableDraft = null,
+                )
+            }
             emitEffect(ExpenseEffect.NavigateToSuccess(id))
         }
     }

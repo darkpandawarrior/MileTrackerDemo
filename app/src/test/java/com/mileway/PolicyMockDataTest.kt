@@ -211,6 +211,76 @@ class PolicyMockDataTest {
         assertTrue(declaration.requiresAcknowledgement)
     }
 
+    // ── Expense-amount policy engine (P1.6) ───────────────────────────────────
+
+    @Test
+    fun `expense outcome buckets map amounts to documented statuses`() {
+        assertEquals(SubmissionStatus.SUCCESS, PolicyMockData.outcomeForExpenseAmount(0.0, "FOOD"))
+        assertEquals(SubmissionStatus.SUCCESS, PolicyMockData.outcomeForExpenseAmount(999.99, "FOOD"))
+        assertEquals(SubmissionStatus.REIMBURSABLE_ADJUSTED, PolicyMockData.outcomeForExpenseAmount(1_000.0, "FOOD"))
+        assertEquals(SubmissionStatus.REIMBURSABLE_ADJUSTED, PolicyMockData.outcomeForExpenseAmount(4_999.99, "FOOD"))
+        assertEquals(SubmissionStatus.POLICY_VIOLATION, PolicyMockData.outcomeForExpenseAmount(5_000.0, "FOOD"))
+        assertEquals(SubmissionStatus.POLICY_VIOLATION, PolicyMockData.outcomeForExpenseAmount(9_999.99, "FOOD"))
+        assertEquals(SubmissionStatus.NEEDS_APPROVAL, PolicyMockData.outcomeForExpenseAmount(10_000.0, "FOOD"))
+        assertEquals(SubmissionStatus.NEEDS_APPROVAL, PolicyMockData.outcomeForExpenseAmount(25_000.0, "FOOD"))
+        assertEquals(SubmissionStatus.HARD_STOP, PolicyMockData.outcomeForExpenseAmount(25_000.01, "FOOD"))
+        assertEquals(SubmissionStatus.HARD_STOP, PolicyMockData.outcomeForExpenseAmount(100_000.0, "FOOD"))
+    }
+
+    @Test
+    fun `negative expense amount falls into success bucket`() {
+        assertEquals(SubmissionStatus.SUCCESS, PolicyMockData.outcomeForExpenseAmount(-1.0, "FOOD"))
+    }
+
+    @Test
+    fun `expense violations populated only for violation statuses`() {
+        val samples = listOf(0.0, 999.99, 1_000.0, 4_999.99, 5_000.0, 9_999.99, 10_000.0, 25_000.0, 25_000.01, 99_999.0)
+        for (amount in samples) {
+            val status = PolicyMockData.outcomeForExpenseAmount(amount, "TRAVEL")
+            val violations = PolicyMockData.violationsForExpenseAmount(amount, "TRAVEL")
+            val isViolationStatus =
+                status == SubmissionStatus.POLICY_VIOLATION || status == SubmissionStatus.HARD_STOP
+            assertEquals(
+                isViolationStatus,
+                violations.isNotEmpty(),
+                "amount=$amount status=$status should ${if (isViolationStatus) "" else "not "}carry violations"
+            )
+        }
+    }
+
+    @Test
+    fun `expense policy violation bucket carries amount-threshold violation`() {
+        val violations = PolicyMockData.violationsForExpenseAmount(7_500.0, "TRAVEL")
+        assertEquals(1, violations.size)
+        assertEquals("expense-amount-threshold", violations.first().id)
+        assertEquals(ViolationSeverity.VIOLATION, violations.first().severity)
+        assertTrue(violations.first().title.isNotBlank())
+        assertTrue(violations.first().message.isNotBlank())
+    }
+
+    @Test
+    fun `expense hard stop bucket carries hardstop severity violation`() {
+        val violations = PolicyMockData.violationsForExpenseAmount(30_000.0, "TRAVEL")
+        assertEquals(1, violations.size)
+        assertEquals("expense-amount-hard-stop", violations.first().id)
+        assertEquals(ViolationSeverity.HARDSTOP, violations.first().severity)
+    }
+
+    @Test
+    fun `expense outcome does not depend on category`() {
+        assertEquals(
+            PolicyMockData.outcomeForExpenseAmount(7_500.0, "FOOD"),
+            PolicyMockData.outcomeForExpenseAmount(7_500.0, "TRAVEL")
+        )
+    }
+
+    @Test
+    fun `mileage outcomeFor is unaffected by the expense-amount engine`() {
+        // Guards against P1.6 accidentally changing the mileage-only function's behaviour,
+        // since feature/tracking depends on it unchanged.
+        assertEquals(SubmissionStatus.POLICY_VIOLATION, PolicyMockData.outcomeFor(12.4))
+    }
+
     // ── Response enrichment ───────────────────────────────────────────────────
 
     @Test

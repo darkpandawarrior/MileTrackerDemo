@@ -18,6 +18,8 @@ kotlin {
             implementation(project(":core:network"))
             implementation(project(":core:ui"))
             implementation(project(":feature:tracking"))
+            // P1.6: reuses PolicyMockData's tiered policy engine for expense-amount validation.
+            implementation(project(":stub"))
             // P1.4: renders an optional local receipt photo on the entry form + detail screen.
             implementation(libs.coil3.compose)
         }
