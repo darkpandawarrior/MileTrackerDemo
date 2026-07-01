@@ -10,6 +10,7 @@ import com.mileway.core.data.model.network.LogMilesSubmitRequestV2
 import com.mileway.core.data.model.network.SubmissionStatus
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.feature.logging.repository.LogMilesDraftRepository
+import com.mileway.feature.logging.repository.LogMilesDraftRepository.Companion.toDraftEntity
 import com.mileway.feature.logging.repository.LogMilesServiceRepository
 import com.mileway.feature.logging.ui.model.LocationEntry
 import com.mileway.feature.logging.ui.model.LocationStop
@@ -18,12 +19,13 @@ import com.mileway.feature.logging.ui.model.SubmittedVoucherSamples
 import com.mileway.feature.logging.ui.model.totalRouteKm
 import com.mileway.feature.logging.usecase.LogMilesSubmitUseCase
 import com.mileway.feature.tracking.repository.VehiclePricingRepository
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
- * A draft the user saved at the end of Step 1 (or that came back from the draft
- * repository). Held in memory so the History → Drafts tab works even when no Room
- * draft DAO is wired. Mirrors the minimum a draft needs to be re-opened.
+ * A draft the user saved at the end of Step 1, backed by [LogMilesDraftRepository]'s Room store
+ * (P5.1). Mirrors the minimum a draft needs to be shown in the History → Drafts tab; the full
+ * form state is rehydrated on demand via [LogMilesAction.LoadDraft].
  */
 data class LogMilesDraftUi(
     val id: String,
@@ -128,6 +130,9 @@ sealed interface LogMilesAction {
 
     data class DeleteDraft(val draftId: String) : LogMilesAction
 
+    /** Rehydrates [LogMilesUiState] from a previously saved draft (P5.1). */
+    data class LoadDraft(val draftId: String) : LogMilesAction
+
     data object Submit : LogMilesAction
 
     data object DismissViolationDialog : LogMilesAction
@@ -159,9 +164,40 @@ class LogMilesViewModel(
     /** Monotonic id source for stops added during this session. */
     private var stopIdCounter = 0L
 
+    /** The draft id currently loaded into [LogMilesUiState], if the form was opened from a draft. */
+    private var activeDraftId: String? = null
+
+    /** [LogMilesDraftEntity.createdAt] per draft id, so re-saving preserves the original creation time. */
+    private val draftCreatedAt = mutableMapOf<String, Long>()
+
     init {
         loadVehicles()
         loadServices()
+        observeDrafts()
+    }
+
+    /** Keeps [LogMilesUiState.drafts] in sync with the Room-backed [draftRepo] (P5.1). */
+    private fun observeDrafts() {
+        viewModelScope.launch {
+            draftRepo.allDrafts().collectLatest { entities ->
+                entities.forEach { draftCreatedAt[it.draftId] = it.createdAt }
+                val drafts =
+                    entities.map { e ->
+                        LogMilesDraftUi(
+                            id = e.draftId,
+                            title =
+                                LogMilesDraftRepository.decodeStops(e.locationsJson)
+                                    .firstOrNull()?.entry?.name?.substringBefore(",")
+                                    ?: "Log Miles draft",
+                            stopCount = LogMilesDraftRepository.decodeStops(e.locationsJson).size,
+                            distanceKm = e.totalDistance,
+                            vehicleName = e.selectedVehicleDisplayName,
+                            updatedAtMillis = e.updatedAt,
+                        )
+                    }
+                setState { copy(drafts = drafts) }
+            }
+        }
     }
 
     override fun onAction(action: LogMilesAction) {
@@ -200,6 +236,7 @@ class LogMilesViewModel(
             LogMilesAction.AddAttachment -> setState { copy(attachmentCount = attachmentCount + 1) }
             LogMilesAction.SaveDraft -> saveDraft()
             is LogMilesAction.DeleteDraft -> deleteDraft(action.draftId)
+            is LogMilesAction.LoadDraft -> loadDraft(action.draftId)
             LogMilesAction.Submit -> submit()
             LogMilesAction.DismissViolationDialog -> setState { copy(showViolationDialog = false) }
             LogMilesAction.ResetSubmission -> resetSubmission()
@@ -296,25 +333,56 @@ class LogMilesViewModel(
         setState { copy(reimbursableAmount = distanceKm * pricePerKm) }
     }
 
+    /**
+     * P5.1: persists the current form state via [draftRepo] instead of just appending an
+     * in-memory summary. Re-saves onto [activeDraftId] when the form was opened from an existing
+     * draft (so "save draft" from a reopened draft updates it, not create a duplicate row).
+     */
     private fun saveDraft() {
         val s = currentState
         if (s.stops.isEmpty()) return
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
-        val draft =
-            LogMilesDraftUi(
-                id = "draft-$now",
-                title = s.stops.firstOrNull()?.entry?.name?.substringBefore(",") ?: "Log Miles draft",
-                stopCount = s.stops.size,
-                distanceKm = s.distanceKm,
-                vehicleName = s.selectedVehicle?.vehicleName,
-                updatedAtMillis = now,
-            )
-        setState { copy(drafts = listOf(draft) + drafts) }
+        val draftId = activeDraftId ?: "draft-$now"
+        activeDraftId = draftId
+        val createdAt = draftCreatedAt.getOrPut(draftId) { now }
+        viewModelScope.launch {
+            runCatching { draftRepo.save(s.toDraftEntity(draftId = draftId, createdAtMillis = createdAt, nowMillis = now)) }
+        }
     }
 
     private fun deleteDraft(draftId: String) {
-        setState { copy(drafts = drafts.filterNot { d -> d.id == draftId }) }
+        if (activeDraftId == draftId) activeDraftId = null
+        draftCreatedAt.remove(draftId)
         viewModelScope.launch { runCatching { draftRepo.delete(draftId) } }
+    }
+
+    /**
+     * P5.1: rehydrates [LogMilesUiState] from a saved draft — locations JSON back into
+     * [LocationStop]s, distance recomputed via [recomputeDistance]/[totalRouteKm] rather than
+     * trusting the stored value blindly, vehicle re-resolved from the currently loaded
+     * [LogMilesUiState.vehicles] by key (the draft persists only the key/display name, not the
+     * live [com.mileway.core.data.model.network.ApprovedVehicle] with current pricing).
+     */
+    private fun loadDraft(draftId: String) {
+        viewModelScope.launch {
+            val loaded = runCatching { draftRepo.loadDraft(draftId) }.getOrNull() ?: return@launch
+            val draft = loaded.uiState
+            activeDraftId = draftId
+            // Reseed the stop id counter so subsequently-added stops don't collide with restored ids.
+            stopIdCounter = (draft.stops.maxOfOrNull { it.id } ?: -1L) + 1
+            setState {
+                copy(
+                    stops = draft.stops,
+                    isRoundTrip = draft.isRoundTrip,
+                    journeyDateMillis = draft.journeyDateMillis,
+                    invoiceDateMillis = draft.invoiceDateMillis,
+                    logMilesNote = draft.logMilesNote,
+                    taggedEmployees = draft.taggedEmployees,
+                    selectedVehicle = vehicles.firstOrNull { it.vehicleKey == loaded.vehicleKey } ?: selectedVehicle,
+                )
+            }
+            recomputeDistance()
+        }
     }
 
     /**
@@ -353,6 +421,7 @@ class LogMilesViewModel(
 
     private fun resetSubmission() {
         stopIdCounter = 0L
+        activeDraftId = null
         setState {
             LogMilesUiState(
                 vehicles = vehicles,
