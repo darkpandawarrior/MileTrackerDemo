@@ -3,10 +3,12 @@ package com.mileway.feature.logging.viewmodel
 import com.mileway.core.common.UiText
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.mvi.ScreenState
+import com.mileway.feature.logging.catalog.ExpenseCategoryCatalog
 import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
 import com.mileway.feature.logging.repository.ExpenseRepository
+import com.mileway.feature.logging.validation.ExpenseFormValidator
 
 enum class ExpenseFilter { ALL, DRAFTS, PENDING, SETTLED }
 
@@ -27,6 +29,7 @@ data class ExpenseFormState(
     val amountText: String = "",
     val merchantName: String = "",
     val note: String = "",
+    val errors: Map<String, UiText> = emptyMap(),
 )
 
 data class ExpenseUiState(
@@ -128,6 +131,12 @@ class ExpenseViewModel(
 
     private fun submitExpense() {
         val form = currentState.form
+        val catalogDef = ExpenseCategoryCatalog.default().firstOrNull { it.category == form.category }
+        val errors = ExpenseFormValidator.validate(form, catalogDef)
+        if (errors.isNotEmpty()) {
+            setState { copy(form = form.copy(errors = errors)) }
+            return
+        }
         val amount = form.amountText.toDoubleOrNull() ?: 0.0
         val id = "EXP-NEW-${(form.merchantName.hashCode() and 0x7FFF_FFFF) % 9000 + 1000}"
         setState { copy(lastSubmittedId = id, lastSubmittedAmount = amount) }

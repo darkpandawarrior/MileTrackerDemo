@@ -6,6 +6,7 @@ import com.mileway.feature.logging.model.ExpenseCategory
 import com.mileway.feature.logging.model.ExpenseRecord
 import com.mileway.feature.logging.model.ExpenseStatus
 import com.mileway.feature.logging.repository.ExpenseRepository
+import com.mileway.feature.logging.validation.ExpenseFormValidator
 import com.mileway.feature.logging.viewmodel.ExpenseAction
 import com.mileway.feature.logging.viewmodel.ExpenseEffect
 import com.mileway.feature.logging.viewmodel.ExpenseFilter
@@ -72,6 +73,7 @@ class ExpenseViewModelTest {
     @Test
     fun `SubmitExpense records the amount and navigates to success`() = runTest {
         val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
         vm.onAction(ExpenseAction.SetMerchant("Cafe Coffee Day"))
         vm.onAction(ExpenseAction.SetAmount("249.50"))
         vm.effect.test {
@@ -81,6 +83,16 @@ class ExpenseViewModelTest {
             assertEquals((effect as ExpenseEffect.NavigateToSuccess).id, vm.state.value.lastSubmittedId)
         }
         assertEquals(249.50, vm.state.value.lastSubmittedAmount)
+    }
+
+    @Test
+    fun `SubmitExpense with a blank merchant name sets a field error instead of submitting`() {
+        val vm = viewModel()
+        vm.onAction(ExpenseAction.SelectCategory(ExpenseCategory.FOOD))
+        vm.onAction(ExpenseAction.SetAmount("249.50"))
+        vm.onAction(ExpenseAction.SubmitExpense)
+        assertEquals("", vm.state.value.lastSubmittedId)
+        assertTrue(vm.state.value.form.errors.containsKey(ExpenseFormValidator.FIELD_MERCHANT_NAME))
     }
 
     @Test

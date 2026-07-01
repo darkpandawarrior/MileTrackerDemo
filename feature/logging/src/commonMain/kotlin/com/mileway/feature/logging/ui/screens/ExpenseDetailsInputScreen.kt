@@ -37,9 +37,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mileway.core.common.asString
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
+import com.mileway.feature.logging.validation.ExpenseFormValidator
 import com.mileway.feature.logging.viewmodel.ExpenseAction
 import com.mileway.feature.logging.viewmodel.ExpenseEffect
 import com.mileway.feature.logging.viewmodel.ExpenseViewModel
@@ -91,7 +93,6 @@ fun ExpenseDetailsInputScreen(
                     Button(
                         onClick = { viewModel.onAction(ExpenseAction.SubmitExpense) },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = form.amountText.isNotBlank() && form.merchantName.isNotBlank(),
                     ) {
                         Text("Submit Expense")
                     }
@@ -132,6 +133,7 @@ fun ExpenseDetailsInputScreen(
                 }
             }
 
+            val amountError = form.errors[ExpenseFormValidator.FIELD_AMOUNT]
             OutlinedTextField(
                 value = form.amountText,
                 onValueChange = { viewModel.onAction(ExpenseAction.SetAmount(it)) },
@@ -140,9 +142,12 @@ fun ExpenseDetailsInputScreen(
                 prefix = { Text("₹") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
+                isError = amountError != null,
+                supportingText = amountError?.let { { Text(it.asString()) } },
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            val merchantError = form.errors[ExpenseFormValidator.FIELD_MERCHANT_NAME]
             OutlinedTextField(
                 value = form.merchantName,
                 onValueChange = { viewModel.onAction(ExpenseAction.SetMerchant(it)) },
@@ -150,6 +155,8 @@ fun ExpenseDetailsInputScreen(
                 placeholder = { Text("e.g. Swiggy, Ola Cabs") },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 singleLine = true,
+                isError = merchantError != null,
+                supportingText = merchantError?.let { { Text(it.asString()) } },
                 modifier = Modifier.fillMaxWidth(),
             )
 
