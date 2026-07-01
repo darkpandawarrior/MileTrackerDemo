@@ -23,6 +23,16 @@ data class CreateVoucherUiState(
     val isSubmitting: Boolean = false,
     val submittedVoucherNumber: String? = null,
     val isLoading: Boolean = true,
+    val declarationAcknowledged: Boolean = false,
+)
+
+/**
+ * P3.5: mirrors the reference app's server-configured declaration content without any network call — a small
+ * stub so the confirmation copy is data-driven rather than hardcoded in the composable.
+ */
+data class VoucherDeclaration(
+    val title: String = "Declaration",
+    val message: String = "I confirm these expenses are valid and complete.",
 )
 
 sealed interface CreateVoucherAction {
@@ -39,6 +49,8 @@ sealed interface CreateVoucherAction {
     data class SetNotes(val value: String) : CreateVoucherAction
 
     data class GoToStep(val step: Int) : CreateVoucherAction
+
+    data class ToggleDeclaration(val checked: Boolean) : CreateVoucherAction
 
     data object Submit : CreateVoucherAction
 }
@@ -73,6 +85,8 @@ class CreateVoucherViewModel(
                 setState { copy(notes = action.value) }
             is CreateVoucherAction.GoToStep ->
                 setState { copy(step = action.step) }
+            is CreateVoucherAction.ToggleDeclaration ->
+                setState { copy(declarationAcknowledged = action.checked) }
             CreateVoucherAction.Submit -> submit()
         }
     }
@@ -102,6 +116,10 @@ class CreateVoucherViewModel(
 
     private fun submit() {
         val state = currentState
+        // P3.5: the declaration checkbox is now MVI state, not local Compose `remember` — gate
+        // here too, not just on the composable's Button `enabled`, so submit() is a no-op if
+        // called without it (e.g. a future non-UI caller, or a test).
+        if (!state.declarationAcknowledged) return
         setState { copy(isSubmitting = true) }
         viewModelScope.launch {
             val number = "V-${Clock.System.now().toEpochMilliseconds() % 10_000}"

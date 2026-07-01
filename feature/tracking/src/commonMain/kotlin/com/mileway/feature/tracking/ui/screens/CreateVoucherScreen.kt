@@ -61,6 +61,7 @@ import com.mileway.core.ui.theme.dataStyle
 import com.mileway.feature.tracking.viewmodel.CreateVoucherAction
 import com.mileway.feature.tracking.viewmodel.CreateVoucherUiState
 import com.mileway.feature.tracking.viewmodel.CreateVoucherViewModel
+import com.mileway.feature.tracking.viewmodel.VoucherDeclaration
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -362,9 +363,8 @@ private fun StepVoucherDetails(
 private fun StepConfirmation(
     uiState: CreateVoucherUiState,
     viewModel: CreateVoucherViewModel,
+    declaration: VoucherDeclaration = VoucherDeclaration(),
 ) {
-    var declared by remember { mutableStateOf(false) }
-
     Column(
         modifier =
             Modifier
@@ -386,9 +386,12 @@ private fun StepConfirmation(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = declared, onCheckedChange = { declared = it })
+            Checkbox(
+                checked = uiState.declarationAcknowledged,
+                onCheckedChange = { viewModel.onAction(CreateVoucherAction.ToggleDeclaration(it)) },
+            )
             Text(
-                "I confirm these expenses are valid and complete.",
+                declaration.message,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(start = 4.dp),
             )
@@ -398,7 +401,7 @@ private fun StepConfirmation(
 
         Button(
             onClick = { viewModel.onAction(CreateVoucherAction.Submit) },
-            enabled = declared && !uiState.isSubmitting,
+            enabled = uiState.declarationAcknowledged && !uiState.isSubmitting,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (uiState.isSubmitting) {

@@ -101,6 +101,7 @@ class VoucherHistoryViewModelTest {
         advanceUntilIdle()
         createVm.onAction(CreateVoucherAction.SelectAll)
         createVm.onAction(CreateVoucherAction.SetTitle("Shared Store Voucher"))
+        createVm.onAction(CreateVoucherAction.ToggleDeclaration(true))
         createVm.onAction(CreateVoucherAction.Submit)
         advanceUntilIdle()
 

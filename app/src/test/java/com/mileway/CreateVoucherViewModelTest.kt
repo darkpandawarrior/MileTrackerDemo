@@ -151,6 +151,7 @@ class CreateVoucherViewModelTest {
 
         vm.onAction(CreateVoucherAction.SelectAll)
         vm.onAction(CreateVoucherAction.SetTitle("March Voucher"))
+        vm.onAction(CreateVoucherAction.ToggleDeclaration(true))
         vm.onAction(CreateVoucherAction.Submit)
         advanceUntilIdle()
 
@@ -164,6 +165,35 @@ class CreateVoucherViewModelTest {
         // P3.2: submit() moves the voucher out of DRAFT into PENDING as part of the same flow —
         // a voucher isn't useful sitting in DRAFT forever.
         assertEquals(VoucherStatus.PENDING.label, saved.first().status)
+    }
+
+    @Test
+    fun `ToggleDeclaration updates declarationAcknowledged state`() = runTest {
+        val vm = viewModel()
+        assertFalse(vm.state.value.declarationAcknowledged)
+
+        vm.onAction(CreateVoucherAction.ToggleDeclaration(true))
+        assertTrue(vm.state.value.declarationAcknowledged)
+
+        vm.onAction(CreateVoucherAction.ToggleDeclaration(false))
+        assertFalse(vm.state.value.declarationAcknowledged)
+    }
+
+    @Test
+    fun `Submit is a no-op while declarationAcknowledged is false`() = runTest {
+        dao.preload(makeSubmittedTrack("T1", 150.0))
+        val vm = viewModel()
+        advanceUntilIdle()
+
+        vm.onAction(CreateVoucherAction.SelectAll)
+        vm.onAction(CreateVoucherAction.SetTitle("March Voucher"))
+        vm.onAction(CreateVoucherAction.Submit)
+        advanceUntilIdle()
+
+        assertEquals(0, vm.state.value.step)
+        assertFalse(vm.state.value.isSubmitting)
+        assertEquals(null, vm.state.value.submittedVoucherNumber)
+        assertTrue(voucherRepo.getAll().isEmpty())
     }
 
     @Test
@@ -184,6 +214,7 @@ class CreateVoucherViewModelTest {
         advanceUntilIdle()
 
         vm.onAction(CreateVoucherAction.SelectAll)
+        vm.onAction(CreateVoucherAction.ToggleDeclaration(true))
         vm.onAction(CreateVoucherAction.Submit)
         advanceUntilIdle()
 
