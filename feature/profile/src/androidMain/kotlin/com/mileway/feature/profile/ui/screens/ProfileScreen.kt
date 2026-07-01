@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Devices
@@ -39,13 +41,22 @@ import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -116,79 +127,102 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    LazyColumn(
-        // Top-level tab: own the background so the body renders on the theme surface
-        // (deep-dark under the Matrix default) rather than falling through to the
-        // window/canvas colour when no host Scaffold paints behind it.
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-        // Clearance for the floating bubble bar (content draws behind it).
-        contentPadding = PaddingValues(bottom = 140.dp),
-        verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.l),
-    ) {
-        item {
-            ProfileHeaderSection(
-                header = state.header,
-                role = state.profile.role,
-                gender = state.profile.gender,
-            )
+    // P1.3: surfaces the RemoveDemoAccount guard-rejection message (active/last-account block).
+    LaunchedEffect(state.preferenceMessage) {
+        state.preferenceMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.onAction(ProfileAction.ClearPreferenceMessage)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            // Top-level tab: own the background so the body renders on the theme surface
+            // (deep-dark under the Matrix default) rather than falling through to the
+            // window/canvas colour when no host Scaffold paints behind it.
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+            // Clearance for the floating bubble bar (content draws behind it).
+            contentPadding = PaddingValues(bottom = 140.dp),
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.l),
+        ) {
+            item {
+                ProfileHeaderSection(
+                    header = state.header,
+                    role = state.profile.role,
+                    gender = state.profile.gender,
+                )
+            }
+
+            item {
+                PersonaSwitcherRow(
+                    personas = state.accounts,
+                    selectedId = state.selectedAccountId,
+                    onSelect = { viewModel.onAction(ProfileAction.SwitchAccount(it)) },
+                    onViewDetails = { viewModel.onAction(ProfileAction.ViewAccountDetails(it)) },
+                    onRemove = { viewModel.onAction(ProfileAction.RemoveDemoAccount(it)) },
+                    onAdd = { name, code, org -> viewModel.onAction(ProfileAction.AddDemoAccount(name, code, org)) },
+                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                )
+            }
+
+            item {
+                DeepLinkDemoCard(
+                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                )
+            }
+
+            item {
+                ReferralCardHost(
+                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                )
+            }
+
+            item {
+                AccountTileGrid(
+                    notificationBadge = NOTIFICATION_BADGE,
+                    onOpenDetails = onOpenDetails,
+                    onOpenNotifications = onOpenNotifications,
+                    onOpenSettings = onOpenSettings,
+                    onOpenPreferences = onOpenPreferences,
+                    onOpenSessions = { viewModel.onAction(ProfileAction.OpenSessionsDialog) },
+                    onOpenAboutSupport = onOpenAboutSupport,
+                    onOpenAdvance = onOpenAdvance,
+                    onOpenCards = onOpenCards,
+                    onOpenDelegation = onOpenDelegation,
+                    onOpenDemoSettings = onOpenDemoSettings,
+                    onOpenQr = onOpenQr,
+                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                )
+            }
+
+            item {
+                AnalyticsCard(
+                    analytics = state.analytics,
+                    onClick = onOpenInsights,
+                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                )
+            }
         }
 
-        item {
-            PersonaSwitcherRow(
-                personas = state.accounts,
-                selectedId = state.selectedAccountId,
-                onSelect = { viewModel.onAction(ProfileAction.SwitchAccount(it)) },
-                modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-            )
-        }
-
-        item {
-            DeepLinkDemoCard(
-                modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-            )
-        }
-
-        item {
-            ReferralCardHost(
-                modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-            )
-        }
-
-        item {
-            AccountTileGrid(
-                notificationBadge = NOTIFICATION_BADGE,
-                onOpenDetails = onOpenDetails,
-                onOpenNotifications = onOpenNotifications,
-                onOpenSettings = onOpenSettings,
-                onOpenPreferences = onOpenPreferences,
-                onOpenSessions = { viewModel.onAction(ProfileAction.OpenSessionsDialog) },
-                onOpenAboutSupport = onOpenAboutSupport,
-                onOpenAdvance = onOpenAdvance,
-                onOpenCards = onOpenCards,
-                onOpenDelegation = onOpenDelegation,
-                onOpenDemoSettings = onOpenDemoSettings,
-                onOpenQr = onOpenQr,
-                modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-            )
-        }
-
-        item {
-            AnalyticsCard(
-                analytics = state.analytics,
-                onClick = onOpenInsights,
-                modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-            )
-        }
+        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 140.dp))
     }
 
     if (state.showSessionsDialog) {
         SessionsDialog(
             sessions = state.sessions,
             onDismiss = { viewModel.onAction(ProfileAction.DismissSessionsDialog) },
+        )
+    }
+
+    state.accountDetailsSheet?.let { account ->
+        AccountDetailsSheet(
+            account = account,
+            onDismiss = { viewModel.onAction(ProfileAction.DismissAccountDetails) },
         )
     }
 }
@@ -745,17 +779,23 @@ private fun DeepLinkDemoCard(modifier: Modifier = Modifier) {
 }
 
 /**
- * Horizontal scrolling row of persona chips. Tapping a chip switches the active account.
- * The selected chip uses a primary-container highlight; others use surface tones.
+ * Horizontal scrolling row of persona chips. Tapping a chip switches the active account;
+ * long-pressing opens an overflow menu (Details / Remove); a trailing "+" tile opens an
+ * inline add-persona form. P1.3: closes the "no CRUD affordances" gap — Mileway's own design
+ * (overflow menu + trailing tile), not a port of the reference app's `AccountCard` gradient-ring UI.
  */
 @Composable
 private fun PersonaSwitcherRow(
     personas: List<DemoAccount>,
     selectedId: String,
     onSelect: (String) -> Unit,
+    onViewDetails: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    onAdd: (displayName: String, employeeCode: String, organization: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (personas.isEmpty()) return
+    var showAddDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.xs),
@@ -770,96 +810,244 @@ private fun PersonaSwitcherRow(
             contentPadding = PaddingValues(vertical = DesignTokens.Spacing.xs),
         ) {
             items(personas, key = { it.id }) { persona ->
-                val isSelected = persona.id == selectedId
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor =
-                                if (isSelected) {
-                                    MaterialTheme.colorScheme.primaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant
-                                },
-                        ),
-                    modifier =
-                        Modifier
-                            .width(160.dp)
-                            .clickable { onSelect(persona.id) },
+                PersonaChip(
+                    persona = persona,
+                    isSelected = persona.id == selectedId,
+                    onSelect = { onSelect(persona.id) },
+                    onViewDetails = { onViewDetails(persona.id) },
+                    onRemove = { onRemove(persona.id) },
+                )
+            }
+            item(key = "add_persona") {
+                AddPersonaTile(onClick = { showAddDialog = true })
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        AddPersonaSheet(
+            onDismiss = { showAddDialog = false },
+            onAdd = { name, code, org ->
+                onAdd(name, code, org)
+                showAddDialog = false
+            },
+        )
+    }
+}
+
+/** A single switchable-persona chip; long-press opens the Details/Remove overflow menu. */
+@Composable
+private fun PersonaChip(
+    persona: DemoAccount,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    onViewDetails: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    Box {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                ),
+            modifier =
+                Modifier
+                    .width(160.dp)
+                    .combinedClickable(onClick = onSelect, onLongClick = { showMenu = true }),
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            if (isSelected) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
-                                            },
-                                        ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint =
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.onPrimary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                            Text(
-                                text = if (isSelected) "Active" else "Switch",
-                                style = MaterialTheme.typography.labelSmall,
-                                color =
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(
                                     if (isSelected) {
                                         MaterialTheme.colorScheme.primary
                                     } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
                                     },
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            )
-                        }
-                        Text(
-                            text = persona.displayName,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color =
+                                ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint =
                                 if (isSelected) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                    MaterialTheme.colorScheme.onPrimary
                                 } else {
                                     MaterialTheme.colorScheme.onSurfaceVariant
                                 },
-                            maxLines = 1,
-                        )
-                        Text(
-                            text = persona.organization.ifEmpty { persona.employeeCode },
-                            style = MaterialTheme.typography.labelSmall,
-                            color =
-                                (
-                                    if (isSelected) {
-                                        MaterialTheme.colorScheme.onPrimaryContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    }
-                                ).copy(alpha = 0.7f),
-                            maxLines = 1,
+                            modifier = Modifier.size(18.dp),
                         )
                     }
+                    Text(
+                        text = if (isSelected) "Active" else "Switch",
+                        style = MaterialTheme.typography.labelSmall,
+                        color =
+                            if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    )
                 }
+                Text(
+                    text = persona.displayName,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color =
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    maxLines = 1,
+                )
+                Text(
+                    text = persona.organization.ifEmpty { persona.employeeCode },
+                    style = MaterialTheme.typography.labelSmall,
+                    color =
+                        (
+                            if (isSelected) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        ).copy(alpha = 0.7f),
+                    maxLines = 1,
+                )
+            }
+        }
+
+        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+            DropdownMenuItem(
+                text = { Text("Details") },
+                onClick = {
+                    showMenu = false
+                    onViewDetails()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Remove") },
+                onClick = {
+                    showMenu = false
+                    onRemove()
+                },
+            )
+        }
+    }
+}
+
+/** Trailing "+" tile in the persona row; opens [AddPersonaSheet]. */
+@Composable
+private fun AddPersonaTile(onClick: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        modifier =
+            Modifier
+                .width(88.dp)
+                .height(IntrinsicPersonaChipHeight)
+                .clickable(onClick = onClick),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add persona",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "Add",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private val IntrinsicPersonaChipHeight = 92.dp
+
+/** Inline add-persona form (name, employee code, organization) opened by [AddPersonaTile]. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddPersonaSheet(
+    onDismiss: () -> Unit,
+    onAdd: (displayName: String, employeeCode: String, organization: String) -> Unit,
+) {
+    var displayName by remember { mutableStateOf("") }
+    var employeeCode by remember { mutableStateOf("") }
+    var organization by remember { mutableStateOf("") }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = DesignTokens.Spacing.xl)
+                    .padding(bottom = DesignTokens.Spacing.xl, top = DesignTokens.Spacing.xs),
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
+        ) {
+            Text(
+                text = "Add persona",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            OutlinedTextField(
+                value = displayName,
+                onValueChange = { displayName = it },
+                label = { Text("Display name *") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = employeeCode,
+                onValueChange = { employeeCode = it },
+                label = { Text("Employee code *") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = organization,
+                onValueChange = { organization = it },
+                label = { Text("Organization") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            val canAdd = displayName.isNotBlank() && employeeCode.isNotBlank()
+            Button(
+                onClick = { onAdd(displayName.trim(), employeeCode.trim(), organization.trim()) },
+                enabled = canAdd,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Text("Add", fontWeight = FontWeight.Bold)
+            }
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(8.dp)) {
+                Text("Cancel", fontWeight = FontWeight.Bold)
             }
         }
     }

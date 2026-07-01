@@ -72,6 +72,37 @@ class MockAccountRepositoryTest {
             assertEquals(true, dao.getById("ACC-002")?.isActive)
             assertEquals(listOf("ACC-002"), dao.observeAll().first().filter { it.isActive }.map { it.accountId })
         }
+
+    @Test
+    fun `add persists a new, non-active persona`() =
+        runTest {
+            val dao = FakeMockAccountDao()
+            val repository = MockAccountRepository(dao)
+            repository.seedIfEmpty()
+
+            repository.add("New Persona", "EMP999", "New Org")
+            val accounts = repository.accounts()
+
+            assertEquals(4, accounts.size)
+            val added = accounts.last()
+            assertEquals("New Persona", added.displayName)
+            assertEquals("EMP999", added.employeeCode)
+            assertEquals(false, added.isActive)
+        }
+
+    @Test
+    fun `remove deletes exactly the requested persona`() =
+        runTest {
+            val dao = FakeMockAccountDao()
+            val repository = MockAccountRepository(dao)
+            repository.seedIfEmpty()
+
+            repository.remove("ACC-002")
+            val accounts = repository.accounts()
+
+            assertEquals(2, accounts.size)
+            assertTrue(accounts.none { it.id == "ACC-002" })
+        }
 }
 
 /** In-memory fake mirroring [MockAccountDao]'s semantics — see `MockAccountDaoTest` in core:data. */

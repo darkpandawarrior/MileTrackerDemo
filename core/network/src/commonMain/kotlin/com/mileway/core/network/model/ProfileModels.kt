@@ -59,6 +59,10 @@ data class UserSession(
 
 /**
  * An account the user can switch to from the profile screen.
+ *
+ * P1.3: [isActive]/[lastLoginAtMs]/[createdAtMs] mirror `MockAccountEntity` (core/data) so
+ * `AccountDetailsSheet` can render them without reaching past this screen-facing model. Defaulted
+ * so every existing call site (including `stub.ProfileMockData`) keeps compiling unchanged.
  */
 @Serializable
 data class DemoAccount(
@@ -66,4 +70,7 @@ data class DemoAccount(
     @SerialName("displayName") val displayName: String,
     @SerialName("employeeCode") val employeeCode: String,
     @SerialName("organization") val organization: String = "",
+    @SerialName("isActive") val isActive: Boolean = false,
+    @SerialName("lastLoginAtMs") val lastLoginAtMs: Long = 0L,
+    @SerialName("createdAtMs") val createdAtMs: Long = 0L,
 )

@@ -30,6 +30,14 @@ class FakeProfileRepository(private val mockAccountRepository: MockAccountReposi
 
     override suspend fun seedAccountsIfEmpty() = mockAccountRepository.seedIfEmpty()
 
+    override suspend fun addAccount(
+        displayName: String,
+        employeeCode: String,
+        organization: String,
+    ) = mockAccountRepository.add(displayName, employeeCode, organization)
+
+    override suspend fun removeAccount(accountId: String) = mockAccountRepository.remove(accountId)
+
     override fun header(): ProfileHeader {
         val profile = DemoMockData.userConfig().profile
         return ProfileHeader(

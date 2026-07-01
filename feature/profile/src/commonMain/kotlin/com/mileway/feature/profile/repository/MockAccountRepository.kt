@@ -34,6 +34,34 @@ class MockAccountRepository(private val dao: MockAccountDao, private val clock: 
         dao.upsertAll(demoSeed(now))
     }
 
+    /**
+     * P1.3: adds a new, non-active persona (its `accountId` is generated, not caller-supplied, so
+     * the switcher row always has a stable, collision-free key). Never active on creation —
+     * callers must switch to it explicitly via [setActive].
+     */
+    suspend fun add(
+        displayName: String,
+        employeeCode: String,
+        organization: String,
+    ) {
+        val now = clock.now().toEpochMilliseconds()
+        dao.upsert(
+            MockAccountEntity(
+                accountId = "ACC-" + now.toString().takeLast(8),
+                displayName = displayName,
+                employeeCode = employeeCode,
+                organization = organization,
+                avatarSeed = displayName,
+                isActive = false,
+                lastLoginAtMs = now,
+                createdAtMs = now,
+            ),
+        )
+    }
+
+    /** Removes [accountId] outright. Guard rules (can't remove active/last) live in the ViewModel. */
+    suspend fun remove(accountId: String) = dao.delete(accountId)
+
     private fun demoSeed(nowMs: Long): List<MockAccountEntity> =
         listOf(
             MockAccountEntity(
@@ -74,5 +102,8 @@ class MockAccountRepository(private val dao: MockAccountDao, private val clock: 
             displayName = displayName,
             employeeCode = employeeCode,
             organization = organization,
+            isActive = isActive,
+            lastLoginAtMs = lastLoginAtMs,
+            createdAtMs = createdAtMs,
         )
 }

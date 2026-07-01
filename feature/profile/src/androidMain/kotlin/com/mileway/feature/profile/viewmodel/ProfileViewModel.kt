@@ -29,6 +29,18 @@ sealed interface ProfileAction {
     data class RaisePreferenceMessage(val message: String) : ProfileAction
 
     data object ClearPreferenceMessage : ProfileAction
+
+    /** P1.3: adds a new switchable persona (never active on creation). */
+    data class AddDemoAccount(val displayName: String, val employeeCode: String, val organization: String) : ProfileAction
+
+    /** P1.3: removes a persona; a no-op + [RaisePreferenceMessage] when it's active or the last remaining one. */
+    data class RemoveDemoAccount(val accountId: String) : ProfileAction
+
+    /** P1.3: opens [AccountDetailsSheet][com.mileway.feature.profile.ui.screens.AccountDetailsSheet] for a persona. */
+    data class ViewAccountDetails(val accountId: String) : ProfileAction
+
+    /** P1.3: dismisses the details sheet opened by [ViewAccountDetails]. */
+    data object DismissAccountDetails : ProfileAction
 }
 
 /** No one-shot effects; preference messages live in state. Present to satisfy the MVI contract. */
@@ -89,7 +101,38 @@ class ProfileViewModel(
                 setState { copy(preferences = preferences.copy(usageAnalytics = !preferences.usageAnalytics)) }
             is ProfileAction.RaisePreferenceMessage -> setState { copy(preferenceMessage = action.message) }
             ProfileAction.ClearPreferenceMessage -> setState { copy(preferenceMessage = null) }
+            is ProfileAction.AddDemoAccount -> addDemoAccount(action)
+            is ProfileAction.RemoveDemoAccount -> removeDemoAccount(action.accountId)
+            is ProfileAction.ViewAccountDetails -> viewAccountDetails(action.accountId)
+            ProfileAction.DismissAccountDetails -> setState { copy(accountDetailsSheet = null) }
         }
+    }
+
+    private fun addDemoAccount(action: ProfileAction.AddDemoAccount) {
+        viewModelScope.launch {
+            repository.addAccount(action.displayName, action.employeeCode, action.organization)
+        }
+    }
+
+    /**
+     * Guard mirrors the reference app's `AccountCard` disabled-delete-on-active rule plus the implicit
+     * "can't remove your only account" invariant: removing the currently-active persona or the
+     * last remaining one is a no-op with a snackbar instead of a crash-prone empty account list.
+     */
+    private fun removeDemoAccount(accountId: String) {
+        val accounts = currentState.accounts
+        val isActive = accountId == currentState.selectedAccountId
+        val isLast = accounts.size <= 1
+        when {
+            isActive -> setState { copy(preferenceMessage = "Switch to another persona before removing this one") }
+            isLast -> setState { copy(preferenceMessage = "You need at least one account") }
+            else -> viewModelScope.launch { repository.removeAccount(accountId) }
+        }
+    }
+
+    private fun viewAccountDetails(accountId: String) {
+        val account = currentState.accounts.find { it.id == accountId } ?: return
+        setState { copy(accountDetailsSheet = account) }
     }
 
     // ── Theme delegations (ThemeController owns this reactive state) ───────────

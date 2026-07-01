@@ -33,4 +33,14 @@ interface ProfileRepository {
 
     /** Seeds the Room-backed account store on first access; a no-op for static test doubles. */
     suspend fun seedAccountsIfEmpty() {}
+
+    /** P1.3: adds a new, non-active persona; a no-op for static test doubles. */
+    suspend fun addAccount(
+        displayName: String,
+        employeeCode: String,
+        organization: String,
+    ) {}
+
+    /** P1.3: removes a persona outright; a no-op for static test doubles. */
+    suspend fun removeAccount(accountId: String) {}
 }
