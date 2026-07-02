@@ -25,6 +25,8 @@ import com.mileway.core.data.model.display.TrackingState
 import com.mileway.core.data.model.display.TrackingSystemFlags
 import com.mileway.core.data.session.CurrentTrackDataStore
 import com.mileway.core.data.settings.DemoSettingsRepository
+import com.mileway.core.data.watch.SnapshotCache
+import com.mileway.core.data.watch.toWatchPayload
 import com.mileway.core.platform.MotionFusion
 import com.mileway.core.platform.MotionReading
 import com.mileway.core.platform.Vector3
@@ -92,6 +94,9 @@ class LocationTrackingService : Service() {
 
     // L.1: glanceable-surface snapshot channel; refreshed when a trip completes.
     private val snapshotPublisher: InMemorySnapshotPublisher by inject()
+
+    // P6.1: cross-process cache the widget/extension process reads without touching Room.
+    private val snapshotCache: SnapshotCache by inject()
 
     // C.2d: notification throttle — last type/time published, to drop sub-throttle same-type updates.
     private var lastNotificationType: TrackingNotificationType? = null
@@ -568,9 +573,11 @@ class LocationTrackingService : Service() {
                 clearSessionTracking()
                 // L.1: refresh the glanceable-surface snapshot now that a trip completed.
                 val completed = savedTrackDao.getCompletedTracks().first()
-                snapshotPublisher.publish(
-                    SurfaceSnapshotProducer.produce(completedTracks = completed, isTracking = false, nowEpochMs = endTime),
-                )
+                val freshSnapshot = SurfaceSnapshotProducer.produce(completedTracks = completed, isTracking = false, nowEpochMs = endTime)
+                snapshotPublisher.publish(freshSnapshot)
+                // P6.1: also persist to the cross-process cache so a cold widget/extension
+                // process (no live SnapshotPublisher subscriber) reads the same fresh trip.
+                snapshotCache.write(freshSnapshot.toWatchPayload())
             }
         }
         releaseWakeLock()

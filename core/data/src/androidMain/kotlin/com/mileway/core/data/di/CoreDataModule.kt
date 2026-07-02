@@ -21,6 +21,8 @@ import com.mileway.core.data.settings.AgentSessionStore
 import com.mileway.core.data.settings.AgentSessionStoreImpl
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.data.settings.StorageRepository
+import com.mileway.core.data.watch.SnapshotCache
+import com.mileway.core.data.watch.SnapshotCacheStore
 import kotlinx.serialization.json.Json
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -68,4 +70,7 @@ val coreDataModule =
         // L.1: in-process snapshot channel for glanceable surfaces (publish + observe).
         single { InMemorySnapshotPublisher() }
         single<SnapshotPublisher> { get<InMemorySnapshotPublisher>() }
+        // P6.1: cross-process snapshot cache for the widget/extension process.
+        single { SnapshotCacheStore(androidContext()) }
+        single<SnapshotCache> { get<SnapshotCacheStore>() }
     }
