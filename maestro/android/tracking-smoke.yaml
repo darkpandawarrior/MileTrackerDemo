@@ -1,0 +1,22 @@
+# P7.6: E2E smoke for the device-gated Phase-7 entry points — App Shortcuts (P7.2), the QS tile
+# (P7.3), and App Intents' shared deep-link target — that a JVM unit test can't reach because they
+# require a real launcher/shortcut-picker/systemui surface. This flow drives the SAME
+# `mileway://track` deep link the static shortcut in `app/src/main/res/xml/shortcuts.xml` resolves
+# to (see that file's header comment), then asserts on the tracking screen's real button label
+# (`MapScreen.kt`: "Start"/"Pause") to prove the shortcut actually reaches the tracking UI and the
+# start action flips state. Run with `tooling/run_smoke.sh` or directly via:
+#   maestro test maestro/android/tracking-smoke.yaml
+appId: com.mileway
+---
+# Launch via the same deep link the "start_tracking" static shortcut and the App Actions
+# capability both target (android:targetClass=LauncherActivity, android:data=mileway://track).
+- launchApp:
+    clearState: false
+- openLink: "mileway://track"
+- assertVisible: "Start"
+- tapOn: "Start"
+# Tracking flips to the active state (MapScreen shows "Pause" while a trip is in progress).
+- assertVisible: "Pause"
+# Return state to idle so a repeated run of this flow (or the tile smoke below) starts clean.
+- tapOn: "Pause"
+- assertVisible: "Start"

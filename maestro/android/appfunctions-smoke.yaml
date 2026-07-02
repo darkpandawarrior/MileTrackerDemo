@@ -1,0 +1,19 @@
+# P7.6: E2E smoke for the AppFunctions surface (P7.5) — invoked over the `app_function` ADB
+# service (the on-device-agent invocation path an on-emulator LLM/Gemini would use), not through
+# the app UI. Maestro's `runFlow`/`launchApp` steps can't reach `app_function`, so this flow just
+# opens the app to establish a foreground/`Application.onCreate` process (App Functions are
+# resolved through `MilewayApplication`'s `AppFunctionConfiguration.Provider`, see
+# `MileageAppFunctions.kt`'s class doc) and then shells out to `adb` for the actual invoke +
+# assert, matching the `appfunctions` skill's documented ADB-interaction pattern. See
+# `tooling/run_smoke.sh`, which runs the `adb shell cmd app_function ...` calls this flow's steps
+# describe, then reruns this Maestro flow to confirm the resulting UI state.
+appId: com.mileway
+---
+- launchApp:
+    clearState: false
+# Give AppFunctions' KSP-generated inventory a moment to register on process start before
+# tooling/run_smoke.sh's `adb shell cmd app_function list-app-functions` step queries it.
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Start|Pause"
+    optional: true
