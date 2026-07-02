@@ -28,7 +28,6 @@ kotlinx-serialization = "1.11.0"
 activity-compose = "1.13.0"
 lifecycle = "2.10.0"
 workmanager = "2.11.2"
-osmdroid = "6.1.20"
 krossmap = "1.3"
 mlkit-document-scanner = "16.0.0"
 mlkit-text-recognition = "16.0.1"
@@ -46,18 +45,13 @@ biometric = "1.1.0"
 roborazzi = "1.64.0"
 datetimeWheelPicker = "1.3.2"
 # V12 KMP storage + security
-multiplatform-settings = "1.3.0"
 napier = "2.6.1"
-security-crypto = "1.0.0"
 # V11 KMP/CMP migration (verified coords in .ralph/kmp-migration-map.md)
 coil3 = "3.5.0"
 markdownRenderer = "0.41.0"
 webviewMultiplatform = "2.0.3"
-mokoPermissions = "0.20.1"
 maplibreCompose = "0.13.0"
-compass = "3.0.2"
 ktor = "3.5.0"
-peekaboo = "0.5.2"
 jbNavigationCompose = "2.9.2"
 navigation3 = "1.1.2"
 storytale = "0.0.5-alpha01+dev24"
@@ -135,11 +129,9 @@ compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
-compose-foundation = { module = "androidx.compose.foundation:foundation" }
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 
 # Maps
-osmdroid = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
 krossmap = { module = "io.github.farimarwat:krossmap", version.ref = "krossmap" }
 
 # Location
@@ -170,9 +162,6 @@ camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = 
 camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
 
 # Image
-coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
-coil-gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
-coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
 konnection = { group = "dev.tmapps", name = "konnection", version.ref = "konnection" }
 kmpworkmanager = { module = "dev.brewkits:kmpworkmanager", version.ref = "kmpworkmanager" }
 wormaceptor-api = { module = "com.github.azikar24.WormaCeptor:api-client", version.ref = "wormaceptor" }
@@ -191,8 +180,6 @@ glance-appwidget-testing = { module = "androidx.glance:glance-appwidget-testing"
 
 # Testing
 junit = { module = "junit:junit", version = "4.13.2" }
-junit5-api = { module = "org.junit.jupiter:junit-jupiter-api", version = "6.0.3" }
-junit5-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version = "6.0.3" }
 mockk = { module = "io.mockk:mockk", version = "1.14.11" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 turbine = { module = "app.cash.turbine:turbine", version = "1.2.1" }
@@ -229,21 +216,12 @@ androidx-appfunctions-service = { module = "androidx.appfunctions:appfunctions-s
 androidx-appfunctions-compiler = { module = "androidx.appfunctions:appfunctions-compiler", version.ref = "appfunctions" }
 
 # --- V12 KMP storage + security ---
-# multiplatform-settings (russhwolf), KMP key-value store: NSUserDefaults/SharedPreferences plain,
-# KeychainSettings (iOS) / EncryptedSharedPreferences (Android) for the secure tier
-multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
-multiplatform-settings-coroutines = { module = "com.russhwolf:multiplatform-settings-coroutines", version.ref = "multiplatform-settings" }
-multiplatform-settings-serialization = { module = "com.russhwolf:multiplatform-settings-serialization", version.ref = "multiplatform-settings" }
-multiplatform-settings-test = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
-# Android backing for the secure tier: EncryptedSharedPreferences (Android-only, androidMain)
-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
 # Napier: KMP logging; replaces android.util.Log which cannot go in commonMain
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 
 # --- V11 KMP/CMP multiplatform replacements (see .ralph/kmp-migration-map.md) ---
 # Image (Coil 3, multiplatform)
 coil3-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
-coil3-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil3" }
 coil3-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil3" }
 coil3-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil3" }
 # Markdown (multiplatform)
@@ -251,24 +229,11 @@ markdown-renderer = { module = "com.mikepenz:multiplatform-markdown-renderer", v
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 # WebView (multiplatform; iOS WKWebView)
 webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-multiplatform", version.ref = "webviewMultiplatform" }
-# Permissions (moko, multiplatform)
-moko-permissions = { module = "dev.icerock.moko:permissions", version.ref = "mokoPermissions" }
-moko-permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "mokoPermissions" }
 # Maps (MapLibre, multiplatform; offline MBTiles)
 maplibre-compose = { module = "org.maplibre.compose:maplibre-compose", version.ref = "maplibreCompose" }
-# Location (Compass foreground; background via expect/actual CoreLocation)
-compass-geolocation = { module = "dev.jordond.compass:geolocation", version.ref = "compass" }
-compass-geolocation-mobile = { module = "dev.jordond.compass:geolocation-mobile", version.ref = "compass" }
 # Ktor (multiplatform networking + Logging plugin; replaces WormaCeptor)
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
-ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
-ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-# Camera + image picker (peekaboo, multiplatform)
-peekaboo-ui = { module = "io.github.onseok:peekaboo-ui", version.ref = "peekaboo" }
-peekaboo-image-picker = { module = "io.github.onseok:peekaboo-image-picker", version.ref = "peekaboo" }
 # Navigation (JetBrains multiplatform; replaces androidx navigation-compose)
 jb-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "jbNavigationCompose" }
 # compose-nav-graph (visualization spike; rides navigation3 NavKey)
@@ -294,7 +259,6 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
 # V11: multiplatform catalog (Storytale) + nav-graph visualization
