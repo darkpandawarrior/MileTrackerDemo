@@ -103,9 +103,17 @@ tasks.register("fullCheck") {
         "detekt",
         ":app:testNoGmsDebugUnitTest",
         // KMP modules name their JVM unit-test task `testAndroidHostTest`, not the variant-specific
-        // `testNoGmsDebugUnitTest`, so the :app aggregate above never ran them. This runs the
-        // commonTest engine/policy/mapper suites (feature:tracking, core:platform, core:security).
-        "testAndroidHostTest",
+        // `testNoGmsDebugUnitTest`, so the :app aggregate above never ran them. The unqualified task
+        // name doesn't resolve at the root project (Z.5a) — a broken core:data commonTest compile
+        // went undetected until the V23 merge as a result. Depend on every module that declares this
+        // task explicitly so a compile break in any of them fails the gate.
+        ":core:data:testAndroidHostTest",
+        ":core:platform:testAndroidHostTest",
+        ":core:security:testAndroidHostTest",
+        ":feature:agent:testAndroidHostTest",
+        ":feature:logging:testAndroidHostTest",
+        ":feature:profile:testAndroidHostTest",
+        ":feature:tracking:testAndroidHostTest",
         ":app:koverXmlReportNoGmsDebugCoverage",
         ":app:koverVerifyNoGmsDebugCoverage",
     )
