@@ -466,7 +466,9 @@ roadmap reflects direction rather than commitments.
 - [x] Napier structured logging across all modules
 - [x] **AI assistant / "agent" feature (V20).** Offline, retrieval-grounded chat over real local
       trip/expense/card data; Room-backed persistent history + 5-minute session resume; on-device
-      voice I/O (STT/TTS); feedback, export and local usage analytics; full `commonMain` + iOS parity.
+      voice I/O (STT/TTS); feedback, export and real-usage popular-question ranking; full
+      `commonMain` + iOS parity. (A dedicated Popular/Unanswered analytics screen and persisted
+      unanswered-question submission are still open — tracked as backlog.)
 - [x] Matrix / terminal design-language pass across the whole UI (theme tokens, topbar, screenshots)
 - [x] Renamed the project and package from MileTracker(Demo) to Mileway end-to-end
 - [x] **Multi-account depth (V22).** Room-backed multi-persona account store with a real
