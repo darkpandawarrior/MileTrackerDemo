@@ -15,6 +15,22 @@ data class ProfileHeader(
     val initials: String,
 )
 
+/**
+ * P1.4: initials derivation shared by the active-account badge ([DemoAccount.displayName]).
+ * commonMain (not androidMain) since it's pure string logic with no platform dependency — kept
+ * separate from `ProfileScreen.kt`'s androidMain-only `initialsOf`/`FakeProfileRepository`'s
+ * `initialsFrom` (both file-private, so not directly reusable here) rather than widening either.
+ */
+object AccountBadge {
+    fun initialsFor(name: String): String =
+        name.trim()
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+            .take(2)
+            .joinToString("") { it.first().uppercaseChar().toString() }
+            .ifEmpty { "?" }
+}
+
 /** A single tappable settings entry rendered as a card on the profile screen. */
 data class SettingsTile(
     val id: String,
