@@ -30,19 +30,25 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.MailOutline
+import androidx.compose.material.icons.outlined.SwitchAccount
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,6 +68,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mileway.core.network.model.DemoAccount
 import com.mileway.core.ui.components.DotsIndicator
 import com.mileway.core.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
@@ -151,6 +158,13 @@ fun LoginScreen(
     val authState by authViewModel.state.collectAsStateWithLifecycle()
     val isSigningIn = authState !is MilewayAuthState.Idle
 
+    // P7.3: "Demo mode" persona picker. Personas come from the same Room-backed, P1.1-seeded
+    // list ProfileScreen's PersonaSwitcherRow renders; picking one before signing in changes
+    // which seeded account AuthViewModel.beginSignIn marks active once the sequence completes.
+    val personas by authViewModel.personas.collectAsStateWithLifecycle()
+    val selectedPersonaId by authViewModel.selectedPersonaId.collectAsStateWithLifecycle()
+    var showPersonaPicker by remember { mutableStateOf(false) }
+
     val emailValid = email.isNotBlank()
     val passwordValid = password.isNotBlank()
     val canSubmit = emailValid && passwordValid && !isSigningIn
@@ -183,7 +197,10 @@ fun LoginScreen(
         ) {
             Spacer(Modifier.height(DesignTokens.Spacing.xl))
 
-            BrandHeader()
+            BrandHeader(
+                selectedPersona = personas.firstOrNull { it.id == selectedPersonaId },
+                onOpenPersonaPicker = { showPersonaPicker = true },
+            )
 
             Spacer(Modifier.height(DesignTokens.Spacing.xl))
 
@@ -257,6 +274,18 @@ fun LoginScreen(
 
             Spacer(Modifier.height(DesignTokens.Spacing.l))
         }
+    }
+
+    if (showPersonaPicker) {
+        DemoModePersonaPickerSheet(
+            personas = personas,
+            selectedPersonaId = selectedPersonaId,
+            onSelect = { accountId ->
+                authViewModel.selectPersona(accountId)
+                showPersonaPicker = false
+            },
+            onDismiss = { showPersonaPicker = false },
+        )
     }
 }
 
@@ -348,13 +377,21 @@ private fun SignInStepRow(
     }
 }
 
-/** App mark + name, left-aligned at the top of the screen. */
+/**
+ * App mark + name, left-aligned at the top of the screen, plus P7.3's "Demo mode" persona-picker
+ * affordance on the trailing edge — a small icon button (own design, not a port of the reference
+ * app's Corporate/Employee/Merchant portal-selection sheet) showing the currently picked persona's
+ * initial once one has been chosen.
+ */
 @Composable
-private fun BrandHeader() {
+private fun BrandHeader(
+    selectedPersona: DemoAccount?,
+    onOpenPersonaPicker: () -> Unit,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         CompassMark(modifier = Modifier.size(40.dp))
         Spacer(Modifier.width(DesignTokens.Spacing.m))
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = APP_NAME,
                 style = MaterialTheme.typography.headlineSmall,
@@ -366,6 +403,130 @@ private fun BrandHeader() {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        IconButton(onClick = onOpenPersonaPicker) {
+            if (selectedPersona != null) {
+                Surface(
+                    modifier = Modifier.size(28.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = selectedPersona.displayName.take(1).uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+            } else {
+                Icon(
+                    imageVector = Icons.Outlined.SwitchAccount,
+                    contentDescription = "Choose demo persona",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * PLAN_V22 P7.3: "Demo mode" persona picker. The reference app's portal-selection sheet
+ * (Corporate/Employee/Merchant) doesn't map onto Mileway's single-tenant design, but the
+ * underlying idea — choose which identity you're entering as before landing on the main screen —
+ * maps cleanly onto [P1.1's][com.mileway.core.data.model.db.MockAccountEntity] seeded personas.
+ * Own bottom-sheet design language (radio-selectable list, matching [AccountDetailsSheet]'s
+ * idiom), not a port of the reference app's portal-tile UI. No external navigation or Custom
+ * Tabs — Mileway has no portals to link to.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DemoModePersonaPickerSheet(
+    personas: List<DemoAccount>,
+    selectedPersonaId: String?,
+    onSelect: (accountId: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = DesignTokens.Spacing.xl)
+                .padding(bottom = DesignTokens.Spacing.xl, top = DesignTokens.Spacing.xs),
+        ) {
+            Text(
+                text = "Demo mode",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(DesignTokens.Spacing.xs))
+            Text(
+                text = "Choose which persona you're signing in as.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(DesignTokens.Spacing.l))
+
+            personas.forEach { persona ->
+                PersonaPickerRow(
+                    persona = persona,
+                    isSelected = persona.id == selectedPersonaId,
+                    onClick = { onSelect(persona.id) },
+                )
+                Spacer(Modifier.height(DesignTokens.Spacing.xs))
+            }
+        }
+    }
+}
+
+/** One selectable row in [DemoModePersonaPickerSheet]: avatar, name/organization, radio button. */
+@Composable
+private fun PersonaPickerRow(
+    persona: DemoAccount,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = DesignTokens.Shape.roundedMd,
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(DesignTokens.Spacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Person,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(DesignTokens.IconSize.actionTile),
+            )
+            Spacer(Modifier.width(DesignTokens.Spacing.m))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = persona.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (persona.organization.isNotBlank()) {
+                    Text(
+                        text = persona.organization,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            RadioButton(selected = isSelected, onClick = onClick)
         }
     }
 }

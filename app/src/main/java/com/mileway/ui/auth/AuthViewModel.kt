@@ -2,11 +2,16 @@ package com.mileway.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mileway.core.data.session.ActiveAccountSource
+import com.mileway.core.network.model.DemoAccount
+import com.mileway.feature.profile.repository.MockAccountRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -66,13 +71,46 @@ sealed interface MilewayAuthState {
  * is a no-op (the in-flight [Job] guards re-entrancy) so a double-tap can't restart the sequence
  * or overlap two runs. [reset] returns to [MilewayAuthState.Idle], used if the screen is left before
  * the sequence completes (e.g. process recreation of a fresh composition).
+ *
+ * PLAN_V22 P7.3: also drives [LoginScreen]'s "Demo mode" persona picker. [personas] exposes the
+ * same Room-backed, P1.1-seeded personas [com.mileway.feature.profile.viewmodel.ProfileViewModel]
+ * switches between; [selectPersona] records which one the reviewer picked *before* tapping Sign
+ * In. If a persona was picked, [beginSignIn] marks it active (via [MockAccountRepository.setActive]
+ * and [ActiveAccountSource.setActiveAccountId] — the same two calls
+ * [com.mileway.feature.profile.viewmodel.ProfileViewModel]'s `CommitAccountSwitch` makes) before
+ * reporting success, so that persona is what's active once the app shell loads. Picking nothing
+ * (the default, no-picker-interaction path) leaves today's behavior unchanged: whichever account
+ * was already active stays active.
  */
-class AuthViewModel : ViewModel() {
+class AuthViewModel(
+    private val mockAccountRepository: MockAccountRepository,
+    private val activeAccountSource: ActiveAccountSource,
+) : ViewModel() {
 
     private val _state = MutableStateFlow<MilewayAuthState>(MilewayAuthState.Idle)
     val state: StateFlow<MilewayAuthState> = _state.asStateFlow()
 
+    /** Live, DAO-ordered list of switchable demo personas the picker offers. */
+    val personas: StateFlow<List<DemoAccount>> =
+        mockAccountRepository
+            .observeAll()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _selectedPersonaId = MutableStateFlow<String?>(null)
+
+    /** The persona id picked from the "Demo mode" sheet, or null if the reviewer never opened it. */
+    val selectedPersonaId: StateFlow<String?> = _selectedPersonaId.asStateFlow()
+
     private var signInJob: Job? = null
+
+    init {
+        viewModelScope.launch { mockAccountRepository.seedIfEmpty() }
+    }
+
+    /** Records the picked persona; the picker sheet then dismisses itself. */
+    fun selectPersona(accountId: String) {
+        _selectedPersonaId.value = accountId
+    }
 
     /** Begins the staged sign-in sequence. No-op if a sequence is already in flight. */
     fun beginSignIn() {
@@ -85,6 +123,10 @@ class AuthViewModel : ViewModel() {
                     label = step.label,
                 )
                 delay(step.durationMs)
+            }
+            _selectedPersonaId.value?.let { accountId ->
+                mockAccountRepository.setActive(accountId)
+                activeAccountSource.setActiveAccountId(accountId)
             }
             _state.value = MilewayAuthState.Success
         }
