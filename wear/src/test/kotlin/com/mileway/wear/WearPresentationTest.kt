@@ -89,4 +89,22 @@ class WearPresentationTest {
 
         assertTrue(items.isEmpty())
     }
+
+    // ─── P2.6: toTodayDistanceLabel (tile/complication shared formatter) ───────────────────────────
+
+    @Test
+    fun `today distance label rounds to one decimal and appends the km unit`() {
+        val snapshot = SurfaceSnapshot(todayDistanceKm = 12.449)
+
+        val label = WearPresentation.toTodayDistanceLabel(snapshot)
+
+        assertEquals("12.4 km", label)
+    }
+
+    @Test
+    fun `today distance label for a zeroed snapshot is 0 point 0 km`() {
+        val label = WearPresentation.toTodayDistanceLabel(SurfaceSnapshot())
+
+        assertEquals("0.0 km", label)
+    }
 }

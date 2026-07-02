@@ -2,6 +2,7 @@ package com.mileway.wear
 
 import com.mileway.core.data.model.display.SurfaceSnapshot
 import com.mileway.feature.tracking.watch.TripSummary
+import kotlin.math.round
 
 /**
  * P2.4: pure, watchos-adjacent (JVM-testable) mapper from the shared [SurfaceSnapshot] to the
@@ -26,6 +27,18 @@ object WearPresentation {
     /** Maps [WatchFacade.recentTrips]' raw [TripSummary]s into display-ready [TripListItemUi] rows. */
     fun toTripListItems(trips: List<TripSummary>): List<TripListItemUi> = trips.map { it.toTripListItemUi() }
 
+    /**
+     * P2.6: the tile's/complication's shared today-distance label, e.g. `"12.4 km"` — one-decimal
+     * rounding, pure so [MileageTileService]/[MileageComplicationService] never hand-roll their own
+     * formatting (mirrors `MileageSummaryWidget`'s `format1` on the phone side).
+     */
+    fun toTodayDistanceLabel(snapshot: SurfaceSnapshot): String = "${formatOneDecimal(snapshot.todayDistanceKm)} km"
+
+    private fun formatOneDecimal(value: Double): String {
+        val scaled = round(value * ONE_DECIMAL_SCALE) / ONE_DECIMAL_SCALE
+        return scaled.toString()
+    }
+
     private fun TripSummary.toTripListItemUi() =
         TripListItemUi(
             id = id,
@@ -35,6 +48,7 @@ object WearPresentation {
         )
 
     private const val UNNAMED_TRIP_LABEL = "Trip"
+    private const val ONE_DECIMAL_SCALE = 10.0
 }
 
 /**
