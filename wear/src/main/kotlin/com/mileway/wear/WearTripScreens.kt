@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -109,6 +111,9 @@ private fun TripRow(
                 .clip(RoundedCornerShape(CARD_CORNER_RADIUS_DP.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainer)
                 .clickable(onClick = onClick)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = "${trip.label}, %.1f km".format(trip.km)
+                }
                 .padding(CARD_PADDING_DP.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(CARD_SPACING_DP.dp),

@@ -99,6 +99,9 @@ object DesignTokens {
 
         /** Section header icons */
         val header = 24.dp
+
+        /** P8.1: minimum touch target for any interactive icon/button (WCAG/Material a11y floor). */
+        val minTouchTarget = 48.dp
     }
 
     /**

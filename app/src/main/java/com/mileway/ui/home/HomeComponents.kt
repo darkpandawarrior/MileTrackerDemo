@@ -441,7 +441,7 @@ fun WelcomeBanner(
                         )
                     }
                 }
-                IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                IconButton(onClick = onDismiss, modifier = Modifier.size(DesignTokens.IconSize.minTouchTarget)) {
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = "Dismiss welcome banner",
@@ -753,6 +753,9 @@ fun AtAGlanceRowView(
         modifier = modifier
             .clip(DesignTokens.Shape.roundedSm)
             .clickable(onClick = onClick)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "${row.count} ${row.title}, ${row.subtitle}"
+            }
             .fillMaxWidth()
             .padding(vertical = DesignTokens.Spacing.m),
         verticalAlignment = Alignment.CenterVertically,
@@ -940,7 +943,10 @@ fun AnimatedBannerStrip(
                         modifier = Modifier.weight(1f),
                     )
                     if (banner.dismissible) {
-                        IconButton(onClick = { dismissed = true }, modifier = Modifier.size(28.dp)) {
+                        IconButton(
+                            onClick = { dismissed = true },
+                            modifier = Modifier.size(DesignTokens.IconSize.minTouchTarget),
+                        ) {
                             Icon(Icons.Filled.Close, contentDescription = "Dismiss", tint = banner.color, modifier = Modifier.size(16.dp))
                         }
                     }
@@ -1174,6 +1180,9 @@ private fun ActivityRow(item: ActivityItem, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "${item.title}, ${item.id}, ${item.date}, ${item.amount}, $statusLabel"
+            }
             .padding(vertical = DesignTokens.Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),

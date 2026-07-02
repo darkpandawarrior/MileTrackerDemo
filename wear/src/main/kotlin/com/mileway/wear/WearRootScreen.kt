@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -126,6 +128,9 @@ private fun TripsEntryCard(
                 .clip(RoundedCornerShape(CARD_CORNER_RADIUS_DP.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainer)
                 .clickable(onClick = onClick)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = "$tripCount trips, open trip list"
+                }
                 .padding(CARD_PADDING_DP.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(CARD_SPACING_DP.dp),
@@ -163,7 +168,14 @@ internal fun InfoPanel(
 
 @Composable
 private fun TrackingPill(isTracking: Boolean) {
-    InfoPanel(modifier = Modifier.fillMaxWidth()) {
+    InfoPanel(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    contentDescription = if (isTracking) "Tracking status: tracking" else "Tracking status: idle"
+                },
+    ) {
         Text(
             text = if (isTracking) "TRACKING" else "IDLE",
             style = MaterialTheme.typography.labelMedium,

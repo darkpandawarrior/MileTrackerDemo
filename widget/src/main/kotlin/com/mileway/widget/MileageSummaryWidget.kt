@@ -22,6 +22,8 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.semantics.contentDescription
+import androidx.glance.semantics.semantics
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -136,11 +138,15 @@ fun MileageSummaryContent(model: WidgetUiModel) {
             text = if (model.isTracking) "■ Stop" else "▶ Start",
             style = TextStyle(color = ColorProvider(AccentColor), fontWeight = FontWeight.Bold, fontSize = 14.sp),
             modifier =
-                GlanceModifier.clickable(
-                    actionRunCallback<ToggleTrackingAction>(
-                        actionParametersOf(IsTrackingKey.to(model.isTracking)),
-                    ),
-                ),
+                GlanceModifier
+                    .clickable(
+                        actionRunCallback<ToggleTrackingAction>(
+                            actionParametersOf(IsTrackingKey.to(model.isTracking)),
+                        ),
+                    )
+                    .semantics {
+                        contentDescription = if (model.isTracking) "Stop tracking" else "Start tracking"
+                    },
         )
     }
 }

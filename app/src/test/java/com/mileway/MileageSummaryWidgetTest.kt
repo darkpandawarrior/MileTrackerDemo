@@ -1,6 +1,7 @@
 package com.mileway
 
 import androidx.glance.appwidget.testing.unit.runGlanceAppWidgetUnitTest
+import androidx.glance.testing.unit.hasContentDescriptionEqualTo
 import androidx.glance.testing.unit.hasText
 import com.mileway.core.data.watch.WatchSyncPayload
 import com.mileway.widget.MileageSummaryContent
@@ -46,6 +47,28 @@ class MileageSummaryWidgetTest {
             }
 
             onNode(hasText("▶ Start")).assertExists()
+        }
+
+    // ── P8.1: a11y — TalkBack must announce the action, not the glyph, for the quick-start toggle. ──
+
+    @Test
+    fun `start toggle has an accessible action label when idle`() =
+        runGlanceAppWidgetUnitTest {
+            provideComposable {
+                MileageSummaryContent(WatchSyncPayload(isTracking = false).toWidgetUiModel())
+            }
+
+            onNode(hasContentDescriptionEqualTo("Start tracking")).assertExists()
+        }
+
+    @Test
+    fun `stop toggle has an accessible action label when tracking`() =
+        runGlanceAppWidgetUnitTest {
+            provideComposable {
+                MileageSummaryContent(WatchSyncPayload(isTracking = true).toWidgetUiModel())
+            }
+
+            onNode(hasContentDescriptionEqualTo("Stop tracking")).assertExists()
         }
 
     // ── P6.2: pure state->widget mapper (acceptance: "unit test on the state→widget mapper") ────
