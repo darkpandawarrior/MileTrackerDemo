@@ -1,6 +1,7 @@
 // MilewayWatch: watchOS companion app.
-// Presents today's tracked distance on the wrist, backed by WatchDashboardModel which reads
-// through MilewayWatchGraph (P4.3) into the `:sharedWatch` KMP framework's WatchDomainFacade.
+// Presents today's tracked distance and recent trips on the wrist, backed by WatchDashboardModel
+// which reads through MilewayWatchGraph (P4.3) into the `:sharedWatch` KMP framework's
+// WatchDomainFacade. WatchRootView (P4.4) owns the NavigationStack + dashboard/trip-list screens.
 
 import SwiftUI
 
@@ -8,7 +9,7 @@ import SwiftUI
 struct MilewayWatchApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            WatchRootView()
         }
     }
 }

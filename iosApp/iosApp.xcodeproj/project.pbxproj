@@ -15,9 +15,11 @@
 		8B89BD7706E039328290B97A /* Mileway.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 09A024EED53672A3583D2772 /* Mileway.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		94929968F9F24A759F9DEE60 /* WatchDashboardModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D997782651414A5BD00A79 /* WatchDashboardModelTests.swift */; };
 		AA86FB5A54A6C0E55CA41F5B /* WatchDashboardModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10514A614A98E936225446FF /* WatchDashboardModel.swift */; };
+		B918E0C00F3ACA645BF520D8 /* WatchRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 775CAA27FC40AE26546D2ADC /* WatchRootView.swift */; };
+		C308E16E1E42609ECA25C2A7 /* WatchDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0065C13010A83BA04483080 /* WatchDashboardView.swift */; };
 		C87B4FA04BDA1DA04158D48E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A55143988C4C8F291BE72E9A /* GoogleService-Info.plist */; };
+		CB401EA2FB6DEAE4CD80D72E /* WatchTripListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1EA19A896C975FD3795D223 /* WatchTripListView.swift */; };
 		CD40F3B1E17882151DA1AC03 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B793F8131E4F61634C2845A1 /* WatchApp.swift */; };
-		FC6EBB6D0FEBA2D48DE1B185 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3174A5490416D60A475FA30 /* ContentView.swift */; };
 		FDE52B8D57A097A60A4CF366 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B6C1F485E0CF8BB70C9DDD2 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -69,14 +71,16 @@
 		3408BF1238111660C52B82AD /* MilewayWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MilewayWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4ED225531C5A6AE1EE053CA3 /* MilewayWatchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MilewayWatchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		668CECA83ACC03A83C85A623 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
+		775CAA27FC40AE26546D2ADC /* WatchRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRootView.swift; sourceTree = "<group>"; };
 		86038AE1032E284E79B32AD6 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B6C1F485E0CF8BB70C9DDD2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		8C1D61413F7E3E63A3502BC0 /* MilewayWatchGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilewayWatchGraph.swift; sourceTree = "<group>"; };
 		A55143988C4C8F291BE72E9A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		B1EA19A896C975FD3795D223 /* WatchTripListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchTripListView.swift; sourceTree = "<group>"; };
 		B793F8131E4F61634C2845A1 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
 		C5D997782651414A5BD00A79 /* WatchDashboardModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardModelTests.swift; sourceTree = "<group>"; };
 		CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		E3174A5490416D60A475FA30 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E0065C13010A83BA04483080 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -142,10 +146,12 @@
 		960A0FC72537BAD0921F489E /* MilewayWatch */ = {
 			isa = PBXGroup;
 			children = (
-				E3174A5490416D60A475FA30 /* ContentView.swift */,
 				8C1D61413F7E3E63A3502BC0 /* MilewayWatchGraph.swift */,
 				B793F8131E4F61634C2845A1 /* WatchApp.swift */,
 				10514A614A98E936225446FF /* WatchDashboardModel.swift */,
+				E0065C13010A83BA04483080 /* WatchDashboardView.swift */,
+				775CAA27FC40AE26546D2ADC /* WatchRootView.swift */,
+				B1EA19A896C975FD3795D223 /* WatchTripListView.swift */,
 			);
 			path = MilewayWatch;
 			sourceTree = "<group>";
@@ -320,10 +326,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FC6EBB6D0FEBA2D48DE1B185 /* ContentView.swift in Sources */,
 				449589A19DEF21181D487380 /* MilewayWatchGraph.swift in Sources */,
 				CD40F3B1E17882151DA1AC03 /* WatchApp.swift in Sources */,
 				AA86FB5A54A6C0E55CA41F5B /* WatchDashboardModel.swift in Sources */,
+				C308E16E1E42609ECA25C2A7 /* WatchDashboardView.swift in Sources */,
+				B918E0C00F3ACA645BF520D8 /* WatchRootView.swift in Sources */,
+				CB401EA2FB6DEAE4CD80D72E /* WatchTripListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
