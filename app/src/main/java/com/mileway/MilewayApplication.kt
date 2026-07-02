@@ -44,6 +44,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.mileway.core.data.watch.PhoneSnapshotSync
 import com.mileway.core.ui.di.initKoin
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
@@ -168,6 +169,8 @@ class MilewayApplication : Application(), SingletonImageLoader.Factory {
             scheduleWeeklyMaintenance()
             seedAppShortcuts()
         }
+        // P2.9: phone->watch snapshot sync. Harmless on noGms (WatchSyncBridge is a Noop there).
+        get<PhoneSnapshotSync>().start(appScope)
         // P-C.4: run ghost-session reconciliation off the main thread immediately after Koin is up.
         appScope.launch {
             val outcome = get<SessionReconciliationPolicy>().reconcile()

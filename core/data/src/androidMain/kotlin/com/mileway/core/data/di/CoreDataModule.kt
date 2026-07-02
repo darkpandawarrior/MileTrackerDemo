@@ -21,6 +21,7 @@ import com.mileway.core.data.settings.AgentSessionStore
 import com.mileway.core.data.settings.AgentSessionStoreImpl
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.data.settings.StorageRepository
+import com.mileway.core.data.watch.PhoneSnapshotSync
 import com.mileway.core.data.watch.SnapshotCache
 import com.mileway.core.data.watch.SnapshotCacheStore
 import kotlinx.serialization.json.Json
@@ -73,4 +74,7 @@ val coreDataModule =
         // P6.1: cross-process snapshot cache for the widget/extension process.
         single { SnapshotCacheStore(androidContext()) }
         single<SnapshotCache> { get<SnapshotCacheStore>() }
+        // P2.9: observe+push loop over WatchSyncBridge — flavor-agnostic (see its doc comment); the
+        // WatchSyncBridge binding itself is flavor-specific (gms/noGms PlatformServicesKoinEntry).
+        single { PhoneSnapshotSync(get(), get()) }
     }

@@ -1,5 +1,7 @@
 package com.mileway
 
+import com.mileway.core.data.watch.NoopWatchSyncBridge
+import com.mileway.core.data.watch.WatchSyncBridge
 import com.mileway.core.platform.AnalyticsHelper
 import com.mileway.core.platform.AppReviewManagerFactory
 import com.mileway.core.platform.AppUpdateManagerFactory
@@ -28,4 +30,7 @@ fun platformServicesKoinModule(): Module =
         single<AnalyticsHelper> { LoggingAnalyticsHelper() }
         // CF.4: no crash reporting on FOSS → shared no-op.
         single<CrashReporter> { PlatformBindings().crashReporter }
+        // P2.9: no Data Layer transport on F-Droid/FOSS → NoopWatchSyncBridge (no PhoneSnapshotPublisher
+        // binding here either — there is nothing to push through on this flavor).
+        single<WatchSyncBridge> { NoopWatchSyncBridge() }
     }

@@ -1,5 +1,6 @@
 package com.mileway
 
+import com.mileway.core.data.watch.WatchSyncBridge
 import com.mileway.core.platform.AnalyticsHelper
 import com.mileway.core.platform.AppReviewManagerFactory
 import com.mileway.core.platform.AppUpdateManagerFactory
@@ -10,6 +11,7 @@ import com.mileway.platform.gms.FirebaseAnalyticsHelper
 import com.mileway.platform.gms.FirebaseCrashReporter
 import com.mileway.platform.gms.PlayAppReviewManagerFactoryImpl
 import com.mileway.platform.gms.PlayAppUpdateManagerFactoryImpl
+import com.mileway.platform.gms.WearDataLayerWatchSyncBridge
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -32,4 +34,7 @@ fun platformServicesKoinModule(): Module =
         single<AnalyticsHelper> { FirebaseAnalyticsHelper(androidContext()) }
         // CF.4: real Firebase Crashlytics on the Play build.
         single<CrashReporter> { FirebaseCrashReporter() }
+        // P2.9: real Data Layer WatchSyncBridge (PhoneSnapshotSync, the observe+push loop, is
+        // bound once in coreDataModule since it's flavor-agnostic — see its doc comment).
+        single<WatchSyncBridge> { WearDataLayerWatchSyncBridge(androidContext()) }
     }

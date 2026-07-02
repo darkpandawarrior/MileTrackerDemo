@@ -316,6 +316,12 @@ dependencies {
     // V15 RF.2: Install Referrer, Play-Store-only attribution, gms flavor ONLY (noGms/F-Droid has none).
     "gmsImplementation"(libs.install.referrer)
 
+    // P2.9: phone->watch snapshot Data Layer sync (WearDataLayerWatchSyncBridge), gms flavor ONLY.
+    // noGms binds WatchSyncBridge to NoopWatchSyncBridge instead — VerifyDependencyPrefixes (FLFD.2)
+    // keeps play-services-wearable out of noGmsReleaseRuntimeClasspath.
+    "gmsImplementation"(libs.play.services.wearable)
+    "gmsImplementation"(libs.kotlinx.coroutines.play.services)
+
     // Konnection: KMP network connectivity monitor (init in Application)
     implementation(libs.konnection)
 

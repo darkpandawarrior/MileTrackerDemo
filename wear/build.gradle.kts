@@ -61,6 +61,12 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
     implementation(libs.koin.compose.viewmodel)
+
+    // P2.9: phone->watch snapshot Data Layer sync (WearDataLayerSyncBridge), gms flavor ONLY.
+    // noGms binds WatchSyncBridge to NoopWatchSyncBridge instead (wear/src/noGms) — the
+    // FOSS-purity guard above enforces this never leaks onto noGmsReleaseRuntimeClasspath.
+    "gmsImplementation"(libs.play.services.wearable)
+    "gmsImplementation"(libs.kotlinx.coroutines.play.services)
 }
 
 // ─── P2.2, FOSS-purity dependency guard for the wear noGms flavor ───────────────────────────────────
