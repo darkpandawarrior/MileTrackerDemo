@@ -85,6 +85,18 @@
         <!-- Phase 10: LoggingActivity registered here -->
         <!-- Phase 5: MediaActivity registered here -->
 
+        <!-- P7.3: Quick Settings tile — start/stop tracking without opening the app UI. -->
+        <service
+            android:name=".qs.TrackingTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_logo_mark"
+            android:label="@string/qs_tile_tracking_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!-- FileProvider for sharing exported track files -->
         <provider
             android:name="androidx.core.content.FileProvider"

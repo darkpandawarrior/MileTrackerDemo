@@ -7,4 +7,7 @@
     <string name="shortcut_start_tracking_long">Start tracking a trip</string>
     <string name="shortcut_log_expense_short">Log expense</string>
     <string name="shortcut_log_expense_long">Log a new expense</string>
+
+    <!-- P7.3: Quick Settings tile label. -->
+    <string name="qs_tile_tracking_label">Mileway tracking</string>
 </resources>
