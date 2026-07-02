@@ -1,6 +1,8 @@
 package com.mileway.wear
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,20 +30,38 @@ import kotlin.math.roundToInt
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * P2.4: the Wear app's dashboard — today/week distance, a tracking-status pill, and the week-goal
- * progress ring, all rendered from the shared [com.mileway.core.data.model.display.SurfaceSnapshot]
- * via [WearViewModel]/[WearPresentation]. Single-activity, state `when` over [WearRootUiState]
- * (biciradar pattern) — there's exactly one state shape today; P2.5 adds trip-list/detail states
- * to this same `when`.
+ * P2.4/P2.5: the Wear app's single screen surface — dashboard, trip list ([TripListScreen]) and
+ * trip detail ([TripDetailScreen], both in `WearTripScreens.kt`) all live behind this one
+ * `Composable`, dispatched by [WearRootUiState.screen] (biciradar single-activity pattern:
+ * [WearViewModel] never triggers a new Activity, it just swaps [WearScreen]). System back
+ * (crown/gesture) is wired to [WearViewModel.onBack] via [BackHandler] so "back returns" per P2.5's
+ * acceptance works the same way a real nav stack would, without pulling in `wear-compose-navigation`
+ * for a two-level stack this shallow.
  */
 @Composable
 fun WearRootScreen(viewModel: WearViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    BackHandler(enabled = uiState.screen != WearScreen.Dashboard) { viewModel.onBack() }
     WearMilewayTheme {
         AppScaffold {
             val listState = rememberScalingLazyListState()
             ScreenScaffold(scrollState = listState) {
-                WearDashboard(uiState = uiState, listState = listState)
+                when (uiState.screen) {
+                    WearScreen.Dashboard ->
+                        WearDashboard(
+                            uiState = uiState,
+                            listState = listState,
+                            onTripsClick = viewModel::openTripList,
+                        )
+                    WearScreen.TripList ->
+                        TripListScreen(
+                            trips = uiState.trips,
+                            listState = listState,
+                            onTripClick = viewModel::openTripDetail,
+                        )
+                    WearScreen.TripDetail ->
+                        TripDetailScreen(trip = uiState.selectedTrip, listState = listState)
+                }
             }
         }
     }
@@ -51,6 +71,7 @@ fun WearRootScreen(viewModel: WearViewModel = koinViewModel()) {
 private fun WearDashboard(
     uiState: WearRootUiState,
     listState: ScalingLazyListState,
+    onTripsClick: () -> Unit,
 ) {
     ScalingLazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -61,6 +82,7 @@ private fun WearDashboard(
         item { DistanceCard(label = "TODAY", km = uiState.todayDistanceKm) }
         item { DistanceCard(label = "WEEK", km = uiState.weekDistanceKm) }
         item { WeekGoalCard(uiState = uiState) }
+        item { TripsEntryCard(tripCount = uiState.trips.size, onClick = onTripsClick) }
     }
 }
 
@@ -73,10 +95,39 @@ private fun DashboardHeader() {
     )
 }
 
-/** A non-interactive info panel — Wear's `Card` composable is click-only, so a plain surface
- * container is used for read-only dashboard tiles instead (no fake `onClick = {}` semantics). */
+/** Dashboard entry point into [TripListScreen] — a clickable card so the recent-trips count is
+ * visible without opening the list, per P2.5's "tapping opens detail" acceptance chain. */
 @Composable
-private fun InfoPanel(
+private fun TripsEntryCard(
+    tripCount: Int,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(CARD_CORNER_RADIUS_DP.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .clickable(onClick = onClick)
+                .padding(CARD_PADDING_DP.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(CARD_SPACING_DP.dp),
+    ) {
+        Text(text = "TRIPS", style = MaterialTheme.typography.labelSmall)
+        Text(
+            text = tripCount.toString(),
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/** A non-interactive info panel — Wear's `Card` composable is click-only, so a plain surface
+ * container is used for read-only dashboard tiles instead (no fake `onClick = {}` semantics).
+ * Internal (not private) so `WearTripScreens.kt`'s [TripDateCard][com.mileway.wear.TripDateCard]
+ * can reuse the same read-only-panel styling. */
+@Composable
+internal fun InfoPanel(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -104,8 +155,9 @@ private fun TrackingPill(isTracking: Boolean) {
     }
 }
 
+/** Internal (not private) so `WearTripScreens.kt`'s trip-detail distance row can reuse it. */
 @Composable
-private fun DistanceCard(
+internal fun DistanceCard(
     label: String,
     km: Double,
 ) {
@@ -131,9 +183,9 @@ private fun WeekGoalCard(uiState: WearRootUiState) {
     }
 }
 
-private const val CARD_CORNER_RADIUS_DP = 12
-private const val CARD_PADDING_DP = 8
-private const val CARD_SPACING_DP = 2
+internal const val CARD_CORNER_RADIUS_DP = 12
+internal const val CARD_PADDING_DP = 8
+internal const val CARD_SPACING_DP = 2
 private const val PERCENT_SCALE = 100
 
 // UnusedPrivateMember: only called by the Compose/Android Studio preview renderer via reflection
@@ -157,6 +209,7 @@ private fun WearDashboardPreview() {
                             weekGoalProgress = 0.587f,
                         ),
                     listState = listState,
+                    onTripsClick = {},
                 )
             }
         }

@@ -1,7 +1,9 @@
 package com.mileway.wear
 
 import com.mileway.core.data.model.display.SurfaceSnapshot
+import com.mileway.feature.tracking.watch.TripSummary
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -50,5 +52,41 @@ class WearPresentationTest {
         val uiState = WearPresentation.toUiState(SurfaceSnapshot())
 
         assertEquals(WearRootUiState(), uiState)
+    }
+
+    // ─── P2.5: toTripListItems ──────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `maps trip summaries straight through to display rows`() {
+        val trips =
+            listOf(
+                TripSummary(id = "t1", label = "Commute", km = 12.4, endMs = 1_000L),
+                TripSummary(id = "t2", label = "Errand", km = 3.2, endMs = 2_000L),
+            )
+
+        val items = WearPresentation.toTripListItems(trips)
+
+        assertEquals(2, items.size)
+        assertEquals("t1", items[0].id)
+        assertEquals("Commute", items[0].label)
+        assertEquals(12.4, items[0].km, 0.0)
+        assertEquals(1_000L, items[0].endMs)
+        assertEquals("t2", items[1].id)
+    }
+
+    @Test
+    fun `blank trip label falls back to a generic Trip label`() {
+        val trip = TripSummary(id = "t1", label = "", km = 5.0, endMs = 1_000L)
+
+        val items = WearPresentation.toTripListItems(listOf(trip))
+
+        assertEquals("Trip", items.single().label)
+    }
+
+    @Test
+    fun `empty trip list maps to an empty list of rows`() {
+        val items = WearPresentation.toTripListItems(emptyList())
+
+        assertTrue(items.isEmpty())
     }
 }
