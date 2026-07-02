@@ -9,6 +9,7 @@ import com.mileway.feature.profile.repository.MockAccountRepository
 import com.mileway.feature.profile.repository.NotificationRepository
 import com.mileway.feature.profile.repository.PassportDetailsRepository
 import com.mileway.feature.profile.repository.ProfileRepository
+import com.mileway.feature.profile.repository.SyncDiagnosticsRepository
 import com.mileway.feature.profile.repository.VehicleDetailsRepository
 import com.mileway.feature.profile.viewmodel.ActiveSessionsViewModel
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
@@ -20,6 +21,7 @@ import com.mileway.feature.profile.viewmodel.PersonalDetailsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import com.mileway.feature.profile.viewmodel.StorageViewModel
 import com.mileway.feature.profile.viewmodel.SwitchAccountViewModel
+import com.mileway.feature.profile.viewmodel.SyncDiagnosticsViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -40,6 +42,8 @@ val profileModule =
         single { NotificationRepository(get()) }
         // P6.6: Connected Accounts' Room-backed repository (see ConnectedAccountsScreen).
         single { ConnectedAccountsRepository(get()) }
+        // P6.7: Settings' Sync Diagnostics card — in-memory local counter (see SyncDiagnosticsCard).
+        single { SyncDiagnosticsRepository() }
         viewModelOf(::ProfileViewModel)
         viewModel { AdvanceViewModel(get()) }
         viewModelOf(::DemoSettingsViewModel)
@@ -51,4 +55,5 @@ val profileModule =
         viewModelOf(::ConnectedAccountsViewModel)
         // P6.6: Preferences' Storage tile/sheet (real cache-size readout + clear-cache action).
         viewModelOf(::StorageViewModel)
+        viewModelOf(::SyncDiagnosticsViewModel)
     }

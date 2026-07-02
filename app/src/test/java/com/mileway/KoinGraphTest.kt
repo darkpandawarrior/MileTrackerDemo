@@ -59,6 +59,7 @@ import com.mileway.feature.profile.viewmodel.PersonalDetailsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import com.mileway.feature.profile.viewmodel.StorageViewModel
 import com.mileway.feature.profile.viewmodel.SwitchAccountViewModel
+import com.mileway.feature.profile.viewmodel.SyncDiagnosticsViewModel
 import com.mileway.feature.tracking.debug.DebugMenuComposeViewModel
 import com.mileway.feature.tracking.di.trackingModule
 import com.mileway.feature.tracking.viewmodel.CheckInViewModel
@@ -230,6 +231,7 @@ class KoinGraphTest : KoinTest {
         assertNotNull(get<NotificationViewModel>())
         assertNotNull(get<ConnectedAccountsViewModel>())
         assertNotNull(get<StorageViewModel>())
+        assertNotNull(get<SyncDiagnosticsViewModel>())
         assertNotNull(get<CheckInViewModel>())
         assertNotNull(get<ApprovalsViewModel>())
         assertNotNull(get<PayablesViewModel>())

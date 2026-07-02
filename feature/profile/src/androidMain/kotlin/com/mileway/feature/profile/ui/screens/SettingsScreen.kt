@@ -1,6 +1,10 @@
 package com.mileway.feature.profile.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,15 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,7 +52,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -75,10 +71,13 @@ import com.mileway.core.ui.theme.LocaleController
 import com.mileway.core.ui.theme.PaletteStyleNames
 import com.mileway.core.ui.theme.parseHexColor
 import com.mileway.feature.profile.model.SettingsUiState
+import com.mileway.feature.profile.model.computePermissionHealth
+import com.mileway.feature.profile.ui.components.SyncDiagnosticsCard
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import android.provider.Settings as SystemSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,13 +135,36 @@ fun SettingsScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState()),
         ) {
+            val permissionRows = rememberPermissionHealthRows()
+            val requestPermissionLauncher =
+                rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                    if (!granted) {
+                        permScope.launch {
+                            permSnackbarState.showSnackbar("Denied — enable it from system settings instead.")
+                        }
+                    }
+                }
             PermissionHealthSection(
-                onPermissionToggle = {
-                    permScope.launch {
-                        permSnackbarState.showSnackbar("Permission changes require system settings.")
+                rows = permissionRows,
+                onPermissionToggle = { row ->
+                    val manifestPermission = manifestPermissionFor(row.name)
+                    if (row.isGranted || manifestPermission == null) {
+                        // Already granted, or nothing to request on this API level/permission (e.g.
+                        // scoped-storage Storage) — only a real Settings toggle can change it.
+                        context.startActivity(
+                            Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            },
+                        )
+                    } else {
+                        requestPermissionLauncher.launch(manifestPermission)
                     }
                 },
             )
+            HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.s))
+            Spacer(Modifier.height(DesignTokens.Spacing.xs))
+            SyncDiagnosticsCard()
+            Spacer(Modifier.height(DesignTokens.Spacing.s))
             HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.s))
             SettingsSectionLabel("Account")
             val header = profile.header
@@ -544,28 +566,14 @@ private fun SettingsSectionLabel(text: String) {
     )
 }
 
-private data class PermissionEntry(
-    val name: String,
-    val icon: ImageVector,
-    val isRequired: Boolean,
-    val isGranted: Boolean,
-)
-
-private val PERMISSIONS =
-    listOf(
-        PermissionEntry("Location (Precise)", Icons.Filled.LocationOn, isRequired = true, isGranted = true),
-        PermissionEntry("Location (Background)", Icons.Filled.PinDrop, isRequired = true, isGranted = true),
-        PermissionEntry("Camera", Icons.Filled.Camera, isRequired = true, isGranted = true),
-        PermissionEntry("Storage", Icons.Filled.Folder, isRequired = true, isGranted = true),
-        PermissionEntry("Notifications", Icons.Filled.NotificationsNone, isRequired = false, isGranted = true),
-        PermissionEntry("Activity Recognition", Icons.AutoMirrored.Filled.DirectionsRun, isRequired = false, isGranted = true),
-        PermissionEntry("Bluetooth", Icons.Filled.Bluetooth, isRequired = false, isGranted = false),
-    )
-
 @Composable
-private fun PermissionHealthSection(onPermissionToggle: () -> Unit) {
+private fun PermissionHealthSection(
+    rows: List<PermissionHealthRow>,
+    onPermissionToggle: (PermissionHealthRow) -> Unit,
+) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
+    val summary = computePermissionHealth(rows.map { it.toHealthEntry() })
 
     SettingsSectionLabel("Permission Health")
 
@@ -588,7 +596,7 @@ private fun PermissionHealthSection(onPermissionToggle: () -> Unit) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.size(80.dp)) {
                 androidx.compose.foundation.Canvas(modifier = Modifier.size(80.dp)) {
                     val strokeWidth = 8.dp.toPx()
-                    val sweep = 360f * 0.90f
+                    val sweep = 360f * (summary.healthScorePercent / 100f)
                     drawArc(
                         color = surfaceVariantColor,
                         startAngle = -90f,
@@ -605,22 +613,35 @@ private fun PermissionHealthSection(onPermissionToggle: () -> Unit) {
                     )
                 }
                 Text(
-                    "90%",
+                    "${summary.healthScorePercent}%",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
+                val allRequiredGranted = summary.requiredGranted == summary.requiredTotal
                 Text(
-                    "90%: All required permissions granted",
+                    "${summary.healthScorePercent}%: " +
+                        if (allRequiredGranted) {
+                            "All required permissions granted"
+                        } else {
+                            "${summary.requiredTotal - summary.requiredGranted} required permission(s) missing"
+                        },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(Modifier.height(DesignTokens.Spacing.s))
                 Row(horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.s)) {
-                    PermChip(label = "Required 4/4 ✓", color = DesignTokens.StatusColors.success)
-                    PermChip(label = "Recommended 3/4", color = DesignTokens.StatusColors.warning)
+                    val requiredMark = if (allRequiredGranted) " ✓" else ""
+                    PermChip(
+                        label = "Required ${summary.requiredGranted}/${summary.requiredTotal}$requiredMark",
+                        color = if (allRequiredGranted) DesignTokens.StatusColors.success else DesignTokens.StatusColors.error,
+                    )
+                    PermChip(
+                        label = "Recommended ${summary.recommendedGranted}/${summary.recommendedTotal}",
+                        color = DesignTokens.StatusColors.warning,
+                    )
                 }
             }
         }
@@ -628,10 +649,17 @@ private fun PermissionHealthSection(onPermissionToggle: () -> Unit) {
 
     Spacer(Modifier.height(DesignTokens.Spacing.m))
 
-    PERMISSIONS.forEach { perm ->
-        PermissionCard(entry = perm, onToggle = onPermissionToggle)
+    rows.forEach { row ->
+        PermissionCard(entry = row, onToggle = { onPermissionToggle(row) })
     }
 }
+
+private fun PermissionHealthRow.toHealthEntry() =
+    com.mileway.feature.profile.model.PermissionHealthEntry(
+        name = name,
+        isRequired = isRequired,
+        isGranted = isGranted,
+    )
 
 @Composable
 private fun PermChip(
@@ -654,7 +682,7 @@ private fun PermChip(
 
 @Composable
 private fun PermissionCard(
-    entry: PermissionEntry,
+    entry: PermissionHealthRow,
     onToggle: () -> Unit,
 ) {
     val grantedColor = if (entry.isGranted) DesignTokens.StatusColors.success else DesignTokens.StatusColors.error
