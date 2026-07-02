@@ -1,8 +1,6 @@
-// MilewayWatch: watchOS companion stub
-// Presents today's tracked distance on the wrist. Wired to WatchGraph which holds
-// a single copy of the KMP shared framework and exposes pre-computed snapshots.
-// TODO ios: link the real shared KMP framework (compileKotlinWatchosArm64 target)
-//           once the watchOS KMP target is added to :core modules.
+// MilewayWatch: watchOS companion app.
+// Presents today's tracked distance on the wrist, backed by WatchDashboardModel which reads
+// through MilewayWatchGraph (P4.3) into the `:sharedWatch` KMP framework's WatchDomainFacade.
 
 import SwiftUI
 

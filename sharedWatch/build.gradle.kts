@@ -3,7 +3,7 @@ plugins {
 }
 
 /**
- * P3.3: watchOS umbrella module — produces the headless `MilewayWatch.framework` the future
+ * P3.3: watchOS umbrella module — produces the headless `SharedWatch.framework` the future
  * SwiftUI watch app (Phase 4) links against. Mirrors `:shared`'s iOS-umbrella shape (same "sits
  * above the modules it re-exports" reasoning), but:
  *  - **watchos* targets only** — no `iosArm64`/`iosSimulatorArm64`, no Android. This module is
@@ -33,7 +33,11 @@ kotlin {
         watchosDeviceArm64(),
     ).forEach { watchosTarget ->
         watchosTarget.binaries.framework {
-            baseName = "MilewayWatch"
+            // P4.3: named SharedWatch, NOT MilewayWatch — the watchOS Xcode *app target* is itself
+            // named MilewayWatch (P4.1), and a Swift module can't import a framework sharing its
+            // own module name (`import MilewayWatch` from inside target MilewayWatch self-resolves
+            // and never sees the Kotlin framework's symbols). Distinct names avoid the collision.
+            baseName = "SharedWatch"
             isStatic = true
             export(project(":core:data"))
             linkerOpts("-lsqlite3")

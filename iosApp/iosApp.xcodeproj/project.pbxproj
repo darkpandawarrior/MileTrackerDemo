@@ -10,9 +10,11 @@
 		155AA8BCA2F1FF1FF3FA589C /* MilewayWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3408BF1238111660C52B82AD /* MilewayWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668CECA83ACC03A83C85A623 /* iOSApp.swift */; };
 		38683ACAC990751F0AA92EFC /* Mileway.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09A024EED53672A3583D2772 /* Mileway.framework */; };
+		449589A19DEF21181D487380 /* MilewayWatchGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C1D61413F7E3E63A3502BC0 /* MilewayWatchGraph.swift */; };
 		56B0305B5D3847FC6B326502 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */; };
-		5C4D4DE2ABCE6B82D9988237 /* WatchGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25728225E30528F801F22EE /* WatchGraph.swift */; };
 		8B89BD7706E039328290B97A /* Mileway.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 09A024EED53672A3583D2772 /* Mileway.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		94929968F9F24A759F9DEE60 /* WatchDashboardModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D997782651414A5BD00A79 /* WatchDashboardModelTests.swift */; };
+		AA86FB5A54A6C0E55CA41F5B /* WatchDashboardModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10514A614A98E936225446FF /* WatchDashboardModel.swift */; };
 		C87B4FA04BDA1DA04158D48E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A55143988C4C8F291BE72E9A /* GoogleService-Info.plist */; };
 		CD40F3B1E17882151DA1AC03 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B793F8131E4F61634C2845A1 /* WatchApp.swift */; };
 		FC6EBB6D0FEBA2D48DE1B185 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3174A5490416D60A475FA30 /* ContentView.swift */; };
@@ -21,6 +23,13 @@
 
 /* Begin PBXContainerItemProxy section */
 		4FD8E345C5F05160EF836165 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 242FB5348943441C388468CE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 155299A8EB0461BB4E2034AC;
+			remoteInfo = MilewayWatch;
+		};
+		F57F84F461618BF31915A3E8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 242FB5348943441C388468CE /* Project object */;
 			proxyType = 1;
@@ -56,14 +65,17 @@
 
 /* Begin PBXFileReference section */
 		09A024EED53672A3583D2772 /* Mileway.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Mileway.framework; path = ../shared/build/bin/iosSimulatorArm64/debugFramework/Mileway.framework; sourceTree = "<group>"; };
+		10514A614A98E936225446FF /* WatchDashboardModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardModel.swift; sourceTree = "<group>"; };
 		3408BF1238111660C52B82AD /* MilewayWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MilewayWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4ED225531C5A6AE1EE053CA3 /* MilewayWatchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MilewayWatchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		668CECA83ACC03A83C85A623 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
 		86038AE1032E284E79B32AD6 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B6C1F485E0CF8BB70C9DDD2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		8C1D61413F7E3E63A3502BC0 /* MilewayWatchGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilewayWatchGraph.swift; sourceTree = "<group>"; };
 		A55143988C4C8F291BE72E9A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		B793F8131E4F61634C2845A1 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
+		C5D997782651414A5BD00A79 /* WatchDashboardModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardModelTests.swift; sourceTree = "<group>"; };
 		CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		D25728225E30528F801F22EE /* WatchGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchGraph.swift; sourceTree = "<group>"; };
 		E3174A5490416D60A475FA30 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -79,6 +91,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1A677E40BAD580B059E25ED3 /* MilewayWatchTests */ = {
+			isa = PBXGroup;
+			children = (
+				C5D997782651414A5BD00A79 /* WatchDashboardModelTests.swift */,
+			);
+			path = MilewayWatchTests;
+			sourceTree = "<group>";
+		};
 		1DB4B685CAEE8BEFEBBAEF94 /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
@@ -103,6 +123,7 @@
 			children = (
 				1DB4B685CAEE8BEFEBBAEF94 /* iosApp */,
 				960A0FC72537BAD0921F489E /* MilewayWatch */,
+				1A677E40BAD580B059E25ED3 /* MilewayWatchTests */,
 				3666012298E772D226418813 /* Frameworks */,
 				94C98B8B3A2BFC1966447269 /* Products */,
 			);
@@ -113,6 +134,7 @@
 			children = (
 				86038AE1032E284E79B32AD6 /* iosApp.app */,
 				3408BF1238111660C52B82AD /* MilewayWatch.app */,
+				4ED225531C5A6AE1EE053CA3 /* MilewayWatchTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -121,8 +143,9 @@
 			isa = PBXGroup;
 			children = (
 				E3174A5490416D60A475FA30 /* ContentView.swift */,
+				8C1D61413F7E3E63A3502BC0 /* MilewayWatchGraph.swift */,
 				B793F8131E4F61634C2845A1 /* WatchApp.swift */,
-				D25728225E30528F801F22EE /* WatchGraph.swift */,
+				10514A614A98E936225446FF /* WatchDashboardModel.swift */,
 			);
 			path = MilewayWatch;
 			sourceTree = "<group>";
@@ -147,6 +170,24 @@
 			productName = MilewayWatch;
 			productReference = 3408BF1238111660C52B82AD /* MilewayWatch.app */;
 			productType = "com.apple.product-type.application";
+		};
+		25FE5153778DCBAD25E961D2 /* MilewayWatchTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 568BFC9281EA3F776983D52F /* Build configuration list for PBXNativeTarget "MilewayWatchTests" */;
+			buildPhases = (
+				CC120BE85F60E482A16A0C2E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				70343B676ECAAE5B1C96BBFB /* PBXTargetDependency */,
+			);
+			name = MilewayWatchTests;
+			packageProductDependencies = (
+			);
+			productName = MilewayWatchTests;
+			productReference = 4ED225531C5A6AE1EE053CA3 /* MilewayWatchTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		78B53CC79860CBFC2F5543C6 /* iosApp */ = {
 			isa = PBXNativeTarget;
@@ -183,6 +224,9 @@
 					155299A8EB0461BB4E2034AC = {
 						ProvisioningStyle = Automatic;
 					};
+					25FE5153778DCBAD25E961D2 = {
+						ProvisioningStyle = Automatic;
+					};
 					78B53CC79860CBFC2F5543C6 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -203,6 +247,7 @@
 			projectRoot = "";
 			targets = (
 				155299A8EB0461BB4E2034AC /* MilewayWatch */,
+				25FE5153778DCBAD25E961D2 /* MilewayWatchTests */,
 				78B53CC79860CBFC2F5543C6 /* iosApp */,
 			);
 		};
@@ -237,7 +282,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\ncd \"${SRCROOT}/..\"\nFLAVOR=\"${CONFIGURATION}Framework\"\nDEST=\"sharedWatch/build/bin/watchosCurrent/${FLAVOR}\"\nmkdir -p \"$DEST\"\nif [ \"${PLATFORM_NAME}\" = \"watchsimulator\" ]; then\n  ./gradlew \":sharedWatch:link${CONFIGURATION}FrameworkWatchosSimulatorArm64\"\n  rm -rf \"$DEST/MilewayWatch.framework\"\n  cp -R \"sharedWatch/build/bin/watchosSimulatorArm64/${FLAVOR}/MilewayWatch.framework\" \"$DEST/MilewayWatch.framework\"\nelse\n  ./gradlew \":sharedWatch:link${CONFIGURATION}FrameworkWatchosArm64\" \":sharedWatch:link${CONFIGURATION}FrameworkWatchosDeviceArm64\"\n  rm -rf \"$DEST/MilewayWatch.framework\"\n  cp -R \"sharedWatch/build/bin/watchosArm64/${FLAVOR}/MilewayWatch.framework\" \"$DEST/MilewayWatch.framework\"\n  lipo -create \\\n    \"sharedWatch/build/bin/watchosArm64/${FLAVOR}/MilewayWatch.framework/MilewayWatch\" \\\n    \"sharedWatch/build/bin/watchosDeviceArm64/${FLAVOR}/MilewayWatch.framework/MilewayWatch\" \\\n    -output \"$DEST/MilewayWatch.framework/MilewayWatch\"\nfi\n";
+			shellScript = "set -e\ncd \"${SRCROOT}/..\"\n# Xcode's ${CONFIGURATION} is \"Debug\"/\"Release\" (capitalized), but Kotlin/Native's own\n# framework task output dir is lowerCamelCase (\"debugFramework\"/\"releaseFramework\") —\n# KOTLIN_FLAVOR lowercases just the first letter to match Kotlin's actual output path;\n# FLAVOR (unchanged) still names our own DEST dir and the gradle task itself.\nFLAVOR=\"${CONFIGURATION}Framework\"\nKOTLIN_FLAVOR=\"$(echo \"${CONFIGURATION:0:1}\" | tr '[:upper:]' '[:lower:]')${CONFIGURATION:1}Framework\"\nDEST=\"sharedWatch/build/bin/watchosCurrent/${FLAVOR}\"\nmkdir -p \"$DEST\"\nif [ \"${PLATFORM_NAME}\" = \"watchsimulator\" ]; then\n  ./gradlew \":sharedWatch:link${CONFIGURATION}FrameworkWatchosSimulatorArm64\"\n  rm -rf \"$DEST/SharedWatch.framework\"\n  cp -R \"sharedWatch/build/bin/watchosSimulatorArm64/${KOTLIN_FLAVOR}/SharedWatch.framework\" \"$DEST/SharedWatch.framework\"\nelse\n  ./gradlew \":sharedWatch:link${CONFIGURATION}FrameworkWatchosArm64\" \":sharedWatch:link${CONFIGURATION}FrameworkWatchosDeviceArm64\"\n  rm -rf \"$DEST/SharedWatch.framework\"\n  cp -R \"sharedWatch/build/bin/watchosArm64/${KOTLIN_FLAVOR}/SharedWatch.framework\" \"$DEST/SharedWatch.framework\"\n  lipo -create \\\n    \"sharedWatch/build/bin/watchosArm64/${KOTLIN_FLAVOR}/SharedWatch.framework/SharedWatch\" \\\n    \"sharedWatch/build/bin/watchosDeviceArm64/${KOTLIN_FLAVOR}/SharedWatch.framework/SharedWatch\" \\\n    -output \"$DEST/SharedWatch.framework/SharedWatch\"\nfi\n";
 		};
 		B80CB09103FF423E9A215DEE /* Build Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -276,8 +321,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				FC6EBB6D0FEBA2D48DE1B185 /* ContentView.swift in Sources */,
+				449589A19DEF21181D487380 /* MilewayWatchGraph.swift in Sources */,
 				CD40F3B1E17882151DA1AC03 /* WatchApp.swift in Sources */,
-				5C4D4DE2ABCE6B82D9988237 /* WatchGraph.swift in Sources */,
+				AA86FB5A54A6C0E55CA41F5B /* WatchDashboardModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC120BE85F60E482A16A0C2E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				94929968F9F24A759F9DEE60 /* WatchDashboardModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,9 +343,41 @@
 			target = 155299A8EB0461BB4E2034AC /* MilewayWatch */;
 			targetProxy = 4FD8E345C5F05160EF836165 /* PBXContainerItemProxy */;
 		};
+		70343B676ECAAE5B1C96BBFB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 155299A8EB0461BB4E2034AC /* MilewayWatch */;
+			targetProxy = F57F84F461618BF31915A3E8 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		00DCC71E775108B35120BD2B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "arm64 arm64_32";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../sharedWatch/build/bin/watchosCurrent/$(CONFIGURATION)Framework",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mileway.ios.watchkitapp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchsimulator;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MilewayWatch.app/MilewayWatch";
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
+			};
+			name = Debug;
+		};
 		0F5EC5F049AD06BA761748B7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -309,7 +395,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
-					MilewayWatch,
+					SharedWatch,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.mileway.ios.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -378,6 +464,33 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
 				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
+			};
+			name = Release;
+		};
+		129DA2BBFFDA1B1EBA5A2F05 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "arm64 arm64_32";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../sharedWatch/build/bin/watchosCurrent/$(CONFIGURATION)Framework",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mileway.ios.watchkitapp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchsimulator;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MilewayWatch.app/MilewayWatch";
 				WATCHOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Release;
@@ -520,7 +633,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
-					MilewayWatch,
+					SharedWatch,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.mileway.ios.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -544,6 +657,15 @@
 			buildConfigurations = (
 				9221A1FDC06803E8A2FC6E61 /* Debug */,
 				AF835BFF1220CA5AB5B867E4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		568BFC9281EA3F776983D52F /* Build configuration list for PBXNativeTarget "MilewayWatchTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00DCC71E775108B35120BD2B /* Debug */,
+				129DA2BBFFDA1B1EBA5A2F05 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

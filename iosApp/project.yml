@@ -48,6 +48,11 @@ schemes:
     build:
       targets:
         MilewayWatch: all
+        MilewayWatchTests: [test]
+    test:
+      config: Debug
+      targets:
+        - MilewayWatchTests
 
 targets:
   iosApp:
@@ -138,26 +143,54 @@ targets:
         OTHER_LDFLAGS:
           - "$(inherited)"
           - "-framework"
-          - "MilewayWatch"
+          - "SharedWatch"
     preBuildScripts:
       - name: "Build KMP watch framework (lipo)"
         script: |
           set -e
           cd "${SRCROOT}/.."
+          # Xcode's ${CONFIGURATION} is "Debug"/"Release" (capitalized), but Kotlin/Native's own
+          # framework task output dir is lowerCamelCase ("debugFramework"/"releaseFramework") —
+          # KOTLIN_FLAVOR lowercases just the first letter to match Kotlin's actual output path;
+          # FLAVOR (unchanged) still names our own DEST dir and the gradle task itself.
           FLAVOR="${CONFIGURATION}Framework"
+          KOTLIN_FLAVOR="$(echo "${CONFIGURATION:0:1}" | tr '[:upper:]' '[:lower:]')${CONFIGURATION:1}Framework"
           DEST="sharedWatch/build/bin/watchosCurrent/${FLAVOR}"
           mkdir -p "$DEST"
           if [ "${PLATFORM_NAME}" = "watchsimulator" ]; then
             ./gradlew ":sharedWatch:link${CONFIGURATION}FrameworkWatchosSimulatorArm64"
-            rm -rf "$DEST/MilewayWatch.framework"
-            cp -R "sharedWatch/build/bin/watchosSimulatorArm64/${FLAVOR}/MilewayWatch.framework" "$DEST/MilewayWatch.framework"
+            rm -rf "$DEST/SharedWatch.framework"
+            cp -R "sharedWatch/build/bin/watchosSimulatorArm64/${KOTLIN_FLAVOR}/SharedWatch.framework" "$DEST/SharedWatch.framework"
           else
             ./gradlew ":sharedWatch:link${CONFIGURATION}FrameworkWatchosArm64" ":sharedWatch:link${CONFIGURATION}FrameworkWatchosDeviceArm64"
-            rm -rf "$DEST/MilewayWatch.framework"
-            cp -R "sharedWatch/build/bin/watchosArm64/${FLAVOR}/MilewayWatch.framework" "$DEST/MilewayWatch.framework"
+            rm -rf "$DEST/SharedWatch.framework"
+            cp -R "sharedWatch/build/bin/watchosArm64/${KOTLIN_FLAVOR}/SharedWatch.framework" "$DEST/SharedWatch.framework"
             lipo -create \
-              "sharedWatch/build/bin/watchosArm64/${FLAVOR}/MilewayWatch.framework/MilewayWatch" \
-              "sharedWatch/build/bin/watchosDeviceArm64/${FLAVOR}/MilewayWatch.framework/MilewayWatch" \
-              -output "$DEST/MilewayWatch.framework/MilewayWatch"
+              "sharedWatch/build/bin/watchosArm64/${KOTLIN_FLAVOR}/SharedWatch.framework/SharedWatch" \
+              "sharedWatch/build/bin/watchosDeviceArm64/${KOTLIN_FLAVOR}/SharedWatch.framework/SharedWatch" \
+              -output "$DEST/SharedWatch.framework/SharedWatch"
           fi
         basedOnDependencyAnalysis: false
+
+  MilewayWatchTests:
+    type: bundle.unit-test
+    platform: watchOS
+    deploymentTarget: "9.0"
+    sources:
+      - path: MilewayWatchTests
+    settings:
+      base:
+        SDKROOT: watchsimulator
+        CODE_SIGN_STYLE: Automatic
+        PRODUCT_BUNDLE_IDENTIFIER: com.mileway.ios.watchkitapp.tests
+        PRODUCT_NAME: "$(TARGET_NAME)"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "4"
+        ARCHS: "arm64 arm64_32"
+        WATCHOS_DEPLOYMENT_TARGET: "9.0"
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/../sharedWatch/build/bin/watchosCurrent/$(CONFIGURATION)Framework"
+    dependencies:
+      - target: MilewayWatch
