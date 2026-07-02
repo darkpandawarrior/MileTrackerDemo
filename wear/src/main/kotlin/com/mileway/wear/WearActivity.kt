@@ -6,8 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.mileway.wear.theme.WearMilewayTheme
 
 /**
  * P2.1: the Wear app's single entry point (mirrors [com.mileway.LauncherActivity]'s role on the
@@ -28,7 +28,7 @@ class WearActivity : ComponentActivity() {
 /** Placeholder root composable — replaced by the real dashboard/trip-list/detail flow in P2.4/P2.5. */
 @Composable
 fun WearRoot() {
-    MaterialTheme {
+    WearMilewayTheme {
         Text(
             text = "Mileway",
             modifier = Modifier.fillMaxSize(),

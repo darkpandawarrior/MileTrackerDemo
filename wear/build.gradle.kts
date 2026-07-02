@@ -36,10 +36,14 @@ dependencies {
     implementation(project(":stub"))
 
     // Compose for Wear OS.
+    implementation(platform(libs.compose.bom))
     implementation(libs.wear.compose.foundation)
     implementation(libs.wear.compose.material3)
     implementation(libs.wear.compose.navigation)
     implementation(libs.activity.compose)
+    // P2.3: WearMilewayTheme's @Preview (round-watch device preview).
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling)
 
     // Tile / complication / ongoing-activity surfaces (already present before this task).
     implementation(libs.wear.protolayout)
