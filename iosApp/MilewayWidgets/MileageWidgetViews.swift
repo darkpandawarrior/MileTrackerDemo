@@ -27,17 +27,30 @@ struct MileageHomeWidgetView: View {
         ZStack {
             WidgetMatrixPalette.canvas
             VStack(alignment: .leading, spacing: 4) {
-                Text(formattedKm(entry.payload.todayKm))
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundStyle(WidgetMatrixPalette.accent)
-                Text("today")
-                    .font(.caption2)
-                    .foregroundStyle(WidgetMatrixPalette.textMuted)
+                Group {
+                    Text(formattedKm(entry.payload.todayKm))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(WidgetMatrixPalette.accent)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                    Text("today")
+                        .font(.caption2)
+                        .foregroundStyle(WidgetMatrixPalette.textMuted)
+                }
+                // P8.2: today's distance + its caption read as one VoiceOver stop with a clear value.
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Distance today")
+                .accessibilityValue(formattedKm(entry.payload.todayKm))
 
                 if family == .systemMedium {
                     Text("\(formattedKm(entry.payload.weekKm)) this week · \(entry.payload.tripCount) trips")
                         .font(.caption)
                         .foregroundStyle(WidgetMatrixPalette.text)
+                        .minimumScaleFactor(0.8)
+                        .lineLimit(2)
+                        .accessibilityLabel(
+                            "\(formattedKm(entry.payload.weekKm)) this week, \(entry.payload.tripCount) trips"
+                        )
                 }
 
                 Spacer(minLength: 4)
@@ -48,10 +61,13 @@ struct MileageHomeWidgetView: View {
                             .font(.caption2.weight(.semibold))
                     }
                     .tint(WidgetMatrixPalette.accent)
+                    .accessibilityLabel(entry.payload.isTracking ? "Stop tracking" : "Start tracking")
                 } else {
                     Text(entry.payload.isTracking ? "Tracking" : "Idle")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(WidgetMatrixPalette.textMuted)
+                        .accessibilityLabel("Tracking status")
+                        .accessibilityValue(entry.payload.isTracking ? "Tracking" : "Idle")
                 }
             }
             .padding()
@@ -68,9 +84,17 @@ struct MileageAccessoryRectangularView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(formattedKm(entry.payload.todayKm))
                 .font(.headline)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
             Text(entry.payload.isTracking ? "Tracking" : "Idle")
                 .font(.caption2)
         }
+        // P8.2: Lock Screen accessories are read as a single VoiceOver stop by convention.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Mileway distance today")
+        .accessibilityValue(
+            "\(formattedKm(entry.payload.todayKm)), \(entry.payload.isTracking ? "tracking" : "idle")"
+        )
     }
 }
 
@@ -84,6 +108,10 @@ struct MileageAccessoryCircularView: View {
             Text(String(format: "%.0f", entry.payload.todayKm))
         }
         .gaugeStyle(.accessoryCircular)
+        .accessibilityLabel("Weekly distance goal progress")
+        .accessibilityValue(
+            "\(Int(min(entry.payload.weekGoalProgress, 1.0) * 100)) percent, \(formattedKm(entry.payload.todayKm)) today"
+        )
     }
 }
 

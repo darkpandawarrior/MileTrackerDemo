@@ -20,11 +20,17 @@ struct WatchTripListView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(trip.label.isEmpty ? "Trip" : trip.label)
                                 .font(.body)
+                                .lineLimit(2)
                             Text(String(format: "%.1f km", trip.km))
                                 .font(.caption2)
                                 .foregroundStyle(WatchMatrixPalette.textMuted)
                         }
                     }
+                    // P8.2: one VoiceOver stop per row ("Commute, 8.2 kilometers") instead of two
+                    // fragments read back to back.
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(trip.label.isEmpty ? "Trip" : trip.label)
+                    .accessibilityValue(String(format: "%.1f kilometers", trip.km))
                 }
             }
         }
@@ -39,12 +45,19 @@ struct WatchTripDetailView: View {
         VStack(spacing: 8) {
             Text(trip.label.isEmpty ? "Trip" : trip.label)
                 .font(.headline)
+                .minimumScaleFactor(0.7)
+                .lineLimit(2)
             Text(String(format: "%.1f km", trip.km))
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundStyle(WatchMatrixPalette.accent)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
         }
         .padding()
         .navigationTitle("Detail")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(trip.label.isEmpty ? "Trip" : trip.label)
+        .accessibilityValue(String(format: "%.1f kilometers", trip.km))
     }
 }
 
