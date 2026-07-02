@@ -59,8 +59,12 @@ import java.io.File
 // Output: docs/screenshots/<name>.png
 // ---------------------------------------------------------------------------
 
+// Z.5c: qualifiers pins a fixed device config (density/viewport), matching
+// ScreenshotGalleryTest/WelcomeDisclaimerSheetTest's convention. Without it, Robolectric's
+// default device config is left to environment defaults, which is the root cause of the
+// ~110-baseline nondeterministic re-record noise this class produced per run.
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [33], application = Application::class)
+@Config(sdk = [33], application = Application::class, qualifiers = "w411dp-h891dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ScreenshotCatalogTest {
 
