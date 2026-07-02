@@ -157,38 +157,41 @@ private fun AppEntry(
             paletteStyle = paletteStyle,
         ) {
             MaintenanceGate(underMaintenance = underMaintenance) {
-                AnimatedContent(
-                    targetState = stage,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label = "appStage",
-                ) { current ->
-                    when (current) {
-                        AppStage.SPLASH -> SplashScreen(onFinished = { stage = AppStage.LOGIN })
-                        AppStage.LOGIN ->
-                            LoginScreen(
-                                // A.1: persist how the user signed in BEFORE entering the app, so the
-                                // session (guest or credentials) survives recreation and deep links.
-                                // P7.4: land on the PIN gate next, not the app shell directly — every
-                                // sign-in (fresh or guest) passes through SetPinScreen/CheckPinScreen.
-                                onSignInWithCredentials = { email ->
-                                    sessionScope.launch { sessionRepository.signInWithCredentials(email) }
-                                    stage = AppStage.PIN
-                                },
-                                onContinueAsGuest = {
-                                    sessionScope.launch { sessionRepository.continueAsGuest() }
-                                    stage = AppStage.PIN
-                                },
-                                // P7.5: show WelcomeDisclaimerSheet once per install, persisted so
-                                // it never replays after this first shown-and-dismissed session.
-                                hasShownWelcomeDisclaimer = session?.hasShownWelcomeDisclaimer == true,
-                                onWelcomeDisclaimerShown = {
-                                    sessionScope.launch { sessionRepository.markWelcomeDisclaimerShown() }
-                                },
-                            )
-                        AppStage.PIN ->
-                            PinGateStage(hasPin = session?.hasPin == true, onPassed = { stage = AppStage.APP })
-                        AppStage.APP ->
-                            UpdateGate(config = updateConfig) {
+                // P7.6: the update gate now wraps every stage (splash/login/PIN/app), not just APP,
+                // so a forced/flexible update blocks the login screen itself, matching MaintenanceGate's
+                // existing scope — only AppStage.APP's inner behavior is unchanged.
+                UpdateGate(config = updateConfig) {
+                    AnimatedContent(
+                        targetState = stage,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "appStage",
+                    ) { current ->
+                        when (current) {
+                            AppStage.SPLASH -> SplashScreen(onFinished = { stage = AppStage.LOGIN })
+                            AppStage.LOGIN ->
+                                LoginScreen(
+                                    // A.1: persist how the user signed in BEFORE entering the app, so the
+                                    // session (guest or credentials) survives recreation and deep links.
+                                    // P7.4: land on the PIN gate next, not the app shell directly — every
+                                    // sign-in (fresh or guest) passes through SetPinScreen/CheckPinScreen.
+                                    onSignInWithCredentials = { email ->
+                                        sessionScope.launch { sessionRepository.signInWithCredentials(email) }
+                                        stage = AppStage.PIN
+                                    },
+                                    onContinueAsGuest = {
+                                        sessionScope.launch { sessionRepository.continueAsGuest() }
+                                        stage = AppStage.PIN
+                                    },
+                                    // P7.5: show WelcomeDisclaimerSheet once per install, persisted so
+                                    // it never replays after this first shown-and-dismissed session.
+                                    hasShownWelcomeDisclaimer = session?.hasShownWelcomeDisclaimer == true,
+                                    onWelcomeDisclaimerShown = {
+                                        sessionScope.launch { sessionRepository.markWelcomeDisclaimerShown() }
+                                    },
+                                )
+                            AppStage.PIN ->
+                                PinGateStage(hasPin = session?.hasPin == true, onPassed = { stage = AppStage.APP })
+                            AppStage.APP ->
                                 MilewayAppRoot(
                                     deepLinkRoute = initialRoute,
                                     // P2.4: the last persona was just signed out of — jump back to
@@ -197,7 +200,7 @@ private fun AppEntry(
                                     // durable/process-death-safe path; this is the fast path).
                                     onSignedOut = { stage = AppStage.LOGIN },
                                 )
-                            }
+                        }
                     }
                 }
             }
