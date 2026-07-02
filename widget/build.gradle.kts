@@ -12,7 +12,11 @@ android {
 dependencies {
     implementation(libs.glance.appwidget)
     implementation(project(":core:data"))
-    // Room base types (RoomDatabase/close) — core:data keeps Room as implementation.
-    implementation(libs.room.runtime)
+    // P6.2: WatchFacade (start/stop-tracking) for the widget's quick-start/stop button.
+    implementation(project(":feature:tracking"))
+    // KoinPlatform.getKoin() — same framework-instantiated-component lookup pattern
+    // WearTrackingCommandService/MileageTileService use; a GlanceAppWidgetReceiver runs in-process
+    // on Android, so the app's already-started Koin graph is reachable here.
+    implementation(libs.koin.core)
     implementation(libs.kotlinx.coroutines.core)
 }

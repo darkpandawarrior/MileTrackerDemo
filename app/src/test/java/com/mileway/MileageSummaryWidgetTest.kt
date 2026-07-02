@@ -2,14 +2,18 @@ package com.mileway
 
 import androidx.glance.appwidget.testing.unit.runGlanceAppWidgetUnitTest
 import androidx.glance.testing.unit.hasText
-import com.mileway.core.data.model.display.SurfaceSnapshot
+import com.mileway.core.data.watch.WatchSyncPayload
 import com.mileway.widget.MileageSummaryContent
+import com.mileway.widget.toWidgetUiModel
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /**
- * G11: Glance render test for the home-screen widget. Uses the host-side Glance unit-test environment
- * (`runGlanceAppWidgetUnitTest`, no emulator) to compose [MileageSummaryContent] from a fixed
- * [SurfaceSnapshot] and assert the summary text renders — proving the SurfaceSnapshot *consumer* works.
+ * G11/P6.2: Glance render test for the home-screen widget. Uses the host-side Glance unit-test
+ * environment (`runGlanceAppWidgetUnitTest`, no emulator) to compose [MileageSummaryContent] from a
+ * fixed [com.mileway.widget.WidgetUiModel] and assert the summary text renders — proving the
+ * [WatchSyncPayload] *consumer* works.
  */
 class MileageSummaryWidgetTest {
     @Test
@@ -17,20 +21,53 @@ class MileageSummaryWidgetTest {
         runGlanceAppWidgetUnitTest {
             provideComposable {
                 MileageSummaryContent(
-                    SurfaceSnapshot(
-                        todayDistanceKm = 12.3,
-                        todayTrips = 2,
-                        weekDistanceKm = 45.6,
-                        weekTrips = 7,
+                    WatchSyncPayload(
+                        todayKm = 12.3,
+                        weekKm = 45.6,
+                        tripCount = 7,
                         isTracking = true,
-                    ),
+                    ).toWidgetUiModel(),
                 )
             }
 
             // Full rendered strings (match under either exact or contains matcher semantics).
             onNode(hasText("Mileway")).assertExists()
-            onNode(hasText("Today   12.3 km · 2 trips")).assertExists()
+            onNode(hasText("Today   12.3 km")).assertExists()
             onNode(hasText("Week    45.6 km · 7 trips")).assertExists()
             onNode(hasText("● Tracking now")).assertExists()
+            onNode(hasText("■ Stop")).assertExists()
         }
+
+    @Test
+    fun rendersStartButtonWhenNotTracking() =
+        runGlanceAppWidgetUnitTest {
+            provideComposable {
+                MileageSummaryContent(WatchSyncPayload(isTracking = false).toWidgetUiModel())
+            }
+
+            onNode(hasText("▶ Start")).assertExists()
+        }
+
+    // ── P6.2: pure state->widget mapper (acceptance: "unit test on the state→widget mapper") ────
+
+    @Test
+    fun `mapper formats today and week labels from the payload`() {
+        val model = WatchSyncPayload(todayKm = 8.2, weekKm = 18.0, tripCount = 3).toWidgetUiModel()
+
+        assertEquals("Today   8.2 km", model.todayLabel)
+        assertEquals("Week    18.0 km · 3 trips", model.weekLabel)
+    }
+
+    @Test
+    fun `mapper reports tracking status`() {
+        val tracking = WatchSyncPayload(isTracking = true, isPaused = false).toWidgetUiModel()
+        val paused = WatchSyncPayload(isTracking = true, isPaused = true).toWidgetUiModel()
+        val idle = WatchSyncPayload(isTracking = false).toWidgetUiModel()
+
+        assertEquals("● Tracking now", tracking.statusLabel)
+        assertEquals("‖ Paused", paused.statusLabel)
+        assertNull(idle.statusLabel)
+        assertEquals(true, tracking.isTracking)
+        assertEquals(false, idle.isTracking)
+    }
 }

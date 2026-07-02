@@ -7,8 +7,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -21,11 +26,11 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import com.mileway.core.data.database.buildMilewayDatabase
-import com.mileway.core.data.model.display.SurfaceSnapshot
-import com.mileway.core.data.model.display.SurfaceSnapshotProducer
-import kotlinx.coroutines.flow.first
+import com.mileway.core.data.watch.SnapshotCache
+import com.mileway.core.data.watch.WatchSyncPayload
+import com.mileway.feature.tracking.watch.WatchFacade
 import kotlin.math.round
+import org.koin.mp.KoinPlatform
 
 // Fixed palette (the app's matrix-dark surface + green accent) — plain Glance colors keep the widget free
 // of the Material-You/glance-material3 surface so it renders identically across hosts.
@@ -34,45 +39,69 @@ private val AccentColor = Color(0xFF4ADE80)
 private val OnSurfaceColor = Color(0xFFE6E6E6)
 
 /**
- * G11: a home-screen [GlanceAppWidget] summarising today's / this-week's mileage — the missing **consumer**
- * of the shared [SurfaceSnapshot] (the producer + its test already exist in :core:data).
- *
- * On each update it folds the completed-track list (Room) through [SurfaceSnapshotProducer] and renders the
- * result with Glance. (When L.1 lands a persisted SnapshotPublisher, this can switch to reading the published
- * snapshot instead of touching the DB directly — the render layer stays the same.)
+ * P6.2: state a widget renders — a pure projection of [WatchSyncPayload] (the same wire shape
+ * [SnapshotCache] persists) down to the strings/flags [MileageSummaryContent] lays out. Kept
+ * separate from the payload itself (rather than rendering [WatchSyncPayload] fields directly) so
+ * the render layer never needs to know the payload's field names, and so the mapping is
+ * unit-testable without a Glance host (see `WidgetUiModelTest`).
+ */
+data class WidgetUiModel(
+    val todayLabel: String,
+    val weekLabel: String,
+    val statusLabel: String?,
+    val isTracking: Boolean,
+)
+
+/** Pure state->widget mapper (P6.2 acceptance). No cache/Koin/Glance dependency, trivially testable. */
+fun WatchSyncPayload.toWidgetUiModel(): WidgetUiModel =
+    WidgetUiModel(
+        todayLabel = "Today   ${format1(todayKm)} km",
+        weekLabel = "Week    ${format1(weekKm)} km · $tripCount trips",
+        statusLabel =
+            when {
+                isTracking && isPaused -> "‖ Paused"
+                isTracking -> "● Tracking now"
+                else -> null
+            },
+        isTracking = isTracking,
+    )
+
+private const val ONE_DECIMAL_SCALE = 10.0
+
+private fun format1(value: Double): String {
+    val scaled = round(value * ONE_DECIMAL_SCALE) / ONE_DECIMAL_SCALE
+    return scaled.toString()
+}
+
+/**
+ * P6.2: a home-screen [GlanceAppWidget] summarising today's/this-week's mileage, plus an
+ * interactive Start/Stop button. Reads [SnapshotCache] (P6.1) rather than opening the Room
+ * database directly (widgets are re-launched cold on every timeline refresh — see
+ * [SnapshotCache]'s doc comment for why touching Room from here is the anti-pattern P6.1 replaces).
+ * Resolves its dependencies via `KoinPlatform.getKoin()` — same pattern
+ * `WearTrackingCommandService`/`MileageTileService` use for framework-instantiated Android
+ * components Koin cannot constructor-inject — since a home-screen widget runs in-process on
+ * Android (unlike an iOS WidgetKit extension), the app's already-started Koin graph is always
+ * reachable here.
  */
 class MileageSummaryWidget : GlanceAppWidget() {
     override suspend fun provideGlance(
         context: Context,
         id: GlanceId,
     ) {
-        val snapshot = loadSnapshot(context)
+        val payload = KoinPlatform.getKoin().getOrNull<SnapshotCache>()?.read() ?: WatchSyncPayload()
         provideContent {
-            MileageSummaryContent(snapshot)
-        }
-    }
-
-    private suspend fun loadSnapshot(context: Context): SurfaceSnapshot {
-        val db = buildMilewayDatabase(context)
-        return try {
-            val completed = db.savedTrackDao().getCompletedTracks().first()
-            SurfaceSnapshotProducer.produce(
-                completedTracks = completed,
-                isTracking = db.savedTrackDao().getActiveTrack() != null,
-                nowEpochMs = System.currentTimeMillis(),
-            )
-        } finally {
-            db.close()
+            MileageSummaryContent(payload.toWidgetUiModel())
         }
     }
 }
 
 /**
- * Stateless render of a [SurfaceSnapshot]. Public so the Glance render test can drive it directly with a
- * fixed snapshot (no DB), matching the "test trivially" contract of the shared model.
+ * Stateless render of a [WidgetUiModel]. Public so the Glance render test can drive it directly
+ * with a fixed model (no cache/Koin), matching the "test trivially" contract of the shared model.
  */
 @Composable
-fun MileageSummaryContent(snapshot: SurfaceSnapshot) {
+fun MileageSummaryContent(model: WidgetUiModel) {
     Column(
         modifier =
             GlanceModifier
@@ -87,42 +116,53 @@ fun MileageSummaryContent(snapshot: SurfaceSnapshot) {
         )
         Spacer(GlanceModifier.height(8.dp))
         Text(
-            text = "Today   ${format1(snapshot.todayDistanceKm)} km · ${snapshot.todayTrips} trips",
+            text = model.todayLabel,
             style = TextStyle(color = ColorProvider(OnSurfaceColor), fontSize = 14.sp),
         )
         Spacer(GlanceModifier.height(4.dp))
         Text(
-            text = "Week    ${format1(snapshot.weekDistanceKm)} km · ${snapshot.weekTrips} trips",
+            text = model.weekLabel,
             style = TextStyle(color = ColorProvider(OnSurfaceColor), fontSize = 14.sp),
         )
-        Spacer(GlanceModifier.height(4.dp))
-        // L.1: weekly-goal progress from the enriched snapshot.
-        Text(
-            text = "Goal    ${(snapshot.weekGoalProgress * 100).toInt()}% of ${format1(snapshot.weekGoalKm)} km",
-            style = TextStyle(color = ColorProvider(OnSurfaceColor), fontSize = 13.sp),
-        )
-        if (snapshot.actionRequiredCount > 0) {
-            Spacer(GlanceModifier.height(4.dp))
-            Text(
-                text = "⚑ ${snapshot.actionRequiredCount} to submit",
-                style = TextStyle(color = ColorProvider(AccentColor), fontWeight = FontWeight.Medium, fontSize = 13.sp),
-            )
-        }
-        if (snapshot.isTracking) {
+        if (model.statusLabel != null) {
             Spacer(GlanceModifier.height(6.dp))
             Text(
-                text = if (snapshot.isPaused) "‖ Paused" else "● Tracking now",
+                text = model.statusLabel,
                 style = TextStyle(color = ColorProvider(AccentColor), fontWeight = FontWeight.Medium, fontSize = 13.sp),
             )
         }
+        Spacer(GlanceModifier.height(8.dp))
+        Text(
+            text = if (model.isTracking) "■ Stop" else "▶ Start",
+            style = TextStyle(color = ColorProvider(AccentColor), fontWeight = FontWeight.Bold, fontSize = 14.sp),
+            modifier =
+                GlanceModifier.clickable(
+                    actionRunCallback<ToggleTrackingAction>(
+                        actionParametersOf(IsTrackingKey.to(model.isTracking)),
+                    ),
+                ),
+        )
     }
 }
 
-private const val ONE_DECIMAL_SCALE = 10.0
+private val IsTrackingKey = ActionParameters.Key<Boolean>("is_tracking")
 
-private fun format1(value: Double): String {
-    val scaled = round(value * ONE_DECIMAL_SCALE) / ONE_DECIMAL_SCALE
-    return scaled.toString()
+/**
+ * The widget's quick-start/stop action (P6.2 acceptance: "the action toggles tracking"). Proxies
+ * to [WatchFacade.startTracking]/[WatchFacade.stopTracking] — the same start/stop seam the Wear OS
+ * UI already binds to — so a widget-initiated trip behaves identically to a watch-initiated one.
+ */
+class ToggleTrackingAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val facade = KoinPlatform.getKoin().getOrNull<WatchFacade>() ?: return
+        val wasTracking = parameters[IsTrackingKey] ?: false
+        if (wasTracking) facade.stopTracking() else facade.startTracking()
+        MileageSummaryWidget().update(context, glanceId)
+    }
 }
 
 /** Registers [MileageSummaryWidget] with the platform (declared in the manifest). */
