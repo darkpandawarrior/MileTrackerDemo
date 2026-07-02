@@ -1,6 +1,7 @@
 package com.mileway.core.data.session
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -18,13 +19,25 @@ private val Context.sessionDataStore by preferencesDataStore(name = "user_sessio
  * persist — otherwise the splash/login theatre replays on every cold start and a guest is bounced
  * back to login, losing their place and any pending deep link. The launcher reads [sessionState]
  * to decide whether to skip straight to the app shell.
+ *
+ * PLAN_V22 P7.1: [signInWithCredentials] now also runs [MockPostLoginInitializer] to synthesize a
+ * post-login bootstrap block (still no network call) and sets [SessionState.isFirstLoginPending]
+ * so the app shell can show a one-time welcome banner.
  */
-class SessionRepository(private val context: Context) : SessionSource {
+class SessionRepository(
+    private val context: Context,
+    private val postLoginInitializer: MockPostLoginInitializer,
+) : SessionSource {
     private val kindKey = stringPreferencesKey("session_kind")
     private val emailKey = stringPreferencesKey("session_email")
     private val employeeCodeKey = stringPreferencesKey("session_employee_code")
     private val tenantKey = stringPreferencesKey("session_tenant")
     private val signedInAtKey = longPreferencesKey("session_signed_in_at")
+    private val displayNameKey = stringPreferencesKey("session_display_name")
+    private val officeNameKey = stringPreferencesKey("session_office_name")
+    private val themeColorHexKey = stringPreferencesKey("session_theme_color_hex")
+    private val currencySymbolKey = stringPreferencesKey("session_currency_symbol")
+    private val firstLoginPendingKey = booleanPreferencesKey("session_first_login_pending")
 
     override val sessionState: Flow<SessionState> =
         context.sessionDataStore.data.map { prefs ->
@@ -38,17 +51,32 @@ class SessionRepository(private val context: Context) : SessionSource {
                 employeeCode = prefs[employeeCodeKey],
                 tenant = prefs[tenantKey] ?: DEFAULT_SESSION_TENANT,
                 signedInAtMillis = prefs[signedInAtKey],
+                displayName = prefs[displayNameKey],
+                officeName = prefs[officeNameKey],
+                themeColorHex = prefs[themeColorHexKey],
+                currencySymbol = prefs[currencySymbolKey],
+                isFirstLoginPending = prefs[firstLoginPendingKey] ?: false,
             )
         }
 
-    /** Persist a credentials sign-in (the demo accepts any non-empty email). */
+    /**
+     * Persist a credentials sign-in (the demo accepts any non-empty email). Synthesizes a
+     * post-login profile block via [MockPostLoginInitializer] — no profile fetch, purely local —
+     * and flips [SessionState.isFirstLoginPending] so the welcome banner shows exactly once.
+     */
     suspend fun signInWithCredentials(email: String) {
+        val profile = postLoginInitializer.synthesizeProfile(email)
         context.sessionDataStore.edit { prefs ->
             prefs[kindKey] = SessionKind.CREDENTIALS.name
             prefs[emailKey] = email
-            prefs[employeeCodeKey] = deriveEmployeeCode(email)
+            prefs[employeeCodeKey] = profile.employeeCode
             prefs[tenantKey] = DEFAULT_SESSION_TENANT
             prefs[signedInAtKey] = Clock.System.now().toEpochMilliseconds()
+            prefs[displayNameKey] = profile.displayName
+            prefs[officeNameKey] = profile.officeName
+            prefs[themeColorHexKey] = profile.themeColorHex
+            prefs[currencySymbolKey] = profile.currencySymbol
+            prefs[firstLoginPendingKey] = true
         }
     }
 
@@ -60,6 +88,21 @@ class SessionRepository(private val context: Context) : SessionSource {
             prefs[employeeCodeKey] = deriveEmployeeCode("guest")
             prefs[tenantKey] = DEFAULT_SESSION_TENANT
             prefs[signedInAtKey] = Clock.System.now().toEpochMilliseconds()
+            prefs.remove(displayNameKey)
+            prefs.remove(officeNameKey)
+            prefs.remove(themeColorHexKey)
+            prefs.remove(currencySymbolKey)
+            prefs.remove(firstLoginPendingKey)
+        }
+    }
+
+    /**
+     * Clears [SessionState.isFirstLoginPending] once the welcome banner has shown — one-shot,
+     * never set back to true until the next fresh [signInWithCredentials].
+     */
+    suspend fun clearFirstLoginPending() {
+        context.sessionDataStore.edit { prefs ->
+            prefs[firstLoginPendingKey] = false
         }
     }
 

@@ -11,6 +11,7 @@ import com.mileway.core.data.model.db.CurrentTrackData
 import com.mileway.core.data.model.db.LocationData
 import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.session.CurrentTrackDataStore
+import com.mileway.core.data.session.MockPostLoginInitializer
 import com.mileway.core.data.session.SessionRepository
 import com.mileway.feature.tracking.repository.LocationRepository
 import com.mileway.feature.tracking.repository.SavedTrackRepository
@@ -182,8 +183,8 @@ class TrackingLifecycleTest {
      */
     @Test
     fun ghostSession_afterAppKill_reconcilesToNeedsDecision() {
-        val store = CurrentTrackDataStore(context, SessionRepository(context))
         val db = buildMilewayDatabase(context)
+        val store = CurrentTrackDataStore(context, SessionRepository(context, MockPostLoginInitializer(db.mockAccountDao())))
         runBlocking {
             store.clearSession()
             store.saveSession(

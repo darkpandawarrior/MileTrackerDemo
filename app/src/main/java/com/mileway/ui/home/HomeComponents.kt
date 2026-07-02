@@ -383,6 +383,78 @@ fun ActionRequiredCard(
 }
 
 // =============================================================================
+// PLAN_V22 P7.1 — one-time welcome banner
+// =============================================================================
+
+/**
+ * The one-shot "Welcome" banner shown exactly once after a fresh sign-in — gated by
+ * [FirstLoginBannerUiState.isVisible] (from [com.mileway.core.data.session.SessionState
+ * .isFirstLoginPending]). Mirrors [ActionRequiredCard]'s card idiom with a success-green accent
+ * instead of the error-red one, plus a dismiss affordance like [AnimatedBannerStrip]'s dismissible
+ * banners — own design, not a port of any reference app chrome.
+ */
+@Composable
+fun WelcomeBanner(
+    displayName: String?,
+    officeName: String?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = DesignTokens.Shape.roundedMd,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = DesignTokens.Elevation.card,
+        shadowElevation = DesignTokens.Elevation.card,
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(MilewayColors.success),
+            )
+            Row(
+                modifier = Modifier.padding(DesignTokens.Spacing.l),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.s),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    tint = MilewayColors.success,
+                    modifier = Modifier.size(DesignTokens.IconSize.badge),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (displayName.isNullOrBlank()) "Welcome!" else "Welcome, $displayName!",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (!officeName.isNullOrBlank()) {
+                        Spacer(Modifier.height(DesignTokens.Spacing.xs))
+                        Text(
+                            text = "You're signed in at $officeName.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Dismiss welcome banner",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
 // Quick Actions
 // =============================================================================
 

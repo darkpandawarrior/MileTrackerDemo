@@ -13,6 +13,12 @@ const val DEFAULT_SESSION_TENANT = "DEMO-TENANT"
  * synthesized at sign-in time (see [SessionRepository]) rather than sourced from a real backend,
  * so downstream ownership-pointer/session-isolation logic (started_by_* columns, persona-switch
  * coordination) has something real and stable to key off instead of nothing.
+ *
+ * [displayName], [officeName], [themeColorHex] and [currencySymbol] are PLAN_V22 P7.1's post-login
+ * bootstrap block — synthesized by [MockPostLoginInitializer] on sign-in (still no network call),
+ * shaped like a real `profile/me` response instead of the two bare fields sign-in used to write.
+ * [isFirstLoginPending] gates the one-shot welcome banner `FirstLoginBannerViewModel` clears after
+ * its first display.
  */
 data class SessionState(
     val kind: SessionKind = SessionKind.NONE,
@@ -20,6 +26,11 @@ data class SessionState(
     val employeeCode: String? = null,
     val tenant: String = DEFAULT_SESSION_TENANT,
     val signedInAtMillis: Long? = null,
+    val displayName: String? = null,
+    val officeName: String? = null,
+    val themeColorHex: String? = null,
+    val currencySymbol: String? = null,
+    val isFirstLoginPending: Boolean = false,
 ) {
     val isSignedIn: Boolean get() = kind != SessionKind.NONE
     val isGuest: Boolean get() = kind == SessionKind.GUEST

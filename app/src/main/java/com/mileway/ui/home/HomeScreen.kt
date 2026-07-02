@@ -62,6 +62,7 @@ private val BottomBarClearance = 140.dp
  * @param onAddExpense begins expense logging; the integrator maps this to "log miles".
  * @param onOpenAccount opens account / details surfaces (At A Glance rows, account actions).
  */
+@Suppress("LongParameterList") // Composable entry point: Koin-defaulted VM/service params, not real call-site burden.
 @Composable
 fun HomeScreen(
     onStartTracking: () -> Unit,
@@ -70,10 +71,12 @@ fun HomeScreen(
     onOpenSearch: () -> Unit = onOpenAccount,
     onOpenAgent: (() -> Unit)? = null,
     viewModel: HomeViewModel = koinViewModel(),
+    firstLoginBannerViewModel: FirstLoginBannerViewModel = koinViewModel(),
     reviewTracker: ReviewTracker = koinInject(),
     featureFlags: FeatureFlags = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val welcomeBannerState by firstLoginBannerViewModel.uiState.collectAsStateWithLifecycle()
 
     // V15 RV.4/CF.1: Home is a meaningful engagement signal, record it and prompt for review if eligible
     // and the in-app-review flag is on.
@@ -91,6 +94,8 @@ fun HomeScreen(
         onOpenAccount = { viewModel.onOpenAccount(onOpenAccount) },
         onOpenSearch = onOpenSearch,
         onOpenAgent = onOpenAgent,
+        welcomeBanner = welcomeBannerState,
+        onWelcomeBannerShown = firstLoginBannerViewModel::onBannerShown,
     )
 }
 
@@ -98,6 +103,7 @@ fun HomeScreen(
  * Stateless body of the Home tab. Split out from [HomeScreen] so it can be exercised with a
  * hand-built [HomeUiState] and plain lambdas, independent of Koin and the ViewModel.
  */
+@Suppress("LongParameterList") // Stateless preview/test entry point mirroring HomeScreen's own param set.
 @Composable
 internal fun HomeScreenContent(
     state: HomeUiState,
@@ -106,7 +112,15 @@ internal fun HomeScreenContent(
     onOpenAccount: () -> Unit,
     onOpenSearch: () -> Unit = onOpenAccount,
     onOpenAgent: (() -> Unit)? = null,
+    welcomeBanner: FirstLoginBannerUiState = FirstLoginBannerUiState(),
+    onWelcomeBannerShown: () -> Unit = {},
 ) {
+    // Clear the one-shot flag right after the banner is actually composed once — not on every
+    // recomposition of the Home tab, so it never reappears on scroll/rotation before sign-out.
+    LaunchedEffect(welcomeBanner.isVisible) {
+        if (welcomeBanner.isVisible) onWelcomeBannerShown()
+    }
+
     val scrollState = rememberScrollState()
     val snackbarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -144,6 +158,16 @@ internal fun HomeScreenContent(
                 verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sectionSpacing),
             ) {
                 Spacer(Modifier.height(DesignTokens.Spacing.l))
+
+                // 2b. One-time post-sign-in welcome banner (PLAN_V22 P7.1) — shows once, then
+                //     the flag is cleared and it never reappears until the next fresh sign-in.
+                if (welcomeBanner.isVisible) {
+                    WelcomeBanner(
+                        displayName = welcomeBanner.displayName,
+                        officeName = welcomeBanner.officeName,
+                        onDismiss = onWelcomeBannerShown,
+                    )
+                }
 
                 // 3. Quick Actions.
                 Column(verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m)) {

@@ -12,6 +12,7 @@ import com.mileway.core.data.session.ActiveAccountStore
 import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.CurrentTrackDataStore
 import com.mileway.core.data.session.MockAccountSessionCoordinator
+import com.mileway.core.data.session.MockPostLoginInitializer
 import com.mileway.core.data.session.PinHashSource
 import com.mileway.core.data.session.PinHashStore
 import com.mileway.core.data.session.SessionRepository
@@ -43,7 +44,9 @@ val coreDataModule =
         single { get<MilewayDatabase>().sessionDao() }
         single { get<MilewayDatabase>().notificationDao() }
         single { get<MilewayDatabase>().connectedAccountDao() }
-        single { SessionRepository() }
+        // P7.1: local, no-network post-login profile bootstrap (see MockPostLoginInitializer doc).
+        single { MockPostLoginInitializer(get()) }
+        single { SessionRepository(get()) }
         single<SessionSource> { get<SessionRepository>() }
         single { CurrentTrackDataStore(get()) }
         single<CurrentTrackDataSource> { get<CurrentTrackDataStore>() }

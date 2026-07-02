@@ -11,7 +11,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.mileway.core.data.session.CurrentTrackDataStore
-import com.mileway.core.data.session.SessionRepository
 import com.mileway.feature.tracking.TrackMilesActivity
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +18,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Resumes an interrupted tracking session after a reboot or app update.
@@ -32,7 +33,9 @@ import kotlinx.coroutines.launch
  * startForegroundService call below will throw and we fall back to a notification the user
  * taps to resume manually.
  */
-class LocationTrackingBootReceiver : BroadcastReceiver() {
+class LocationTrackingBootReceiver : BroadcastReceiver(), KoinComponent {
+    private val currentTrackDataStore: CurrentTrackDataStore by inject()
+
     companion object {
         private const val TAG = "TrackingBootReceiver"
         private const val RESUME_NOTIFICATION_ID = 1002
@@ -67,7 +70,7 @@ class LocationTrackingBootReceiver : BroadcastReceiver() {
     }
 
     private suspend fun checkAndRestore(context: Context) {
-        val dataStore = CurrentTrackDataStore(context, SessionRepository(context))
+        val dataStore = currentTrackDataStore
         val session = dataStore.currentTrackFlow.first()
         val action =
             BootRestorePolicy.decide(
