@@ -153,6 +153,10 @@ targets:
         excludes:
           - Info.plist
       - path: Shared
+        excludes:
+          # P6.4: ActivityKit is unavailable on watchOS — this file is shared between iosApp and
+          # MilewayWidgets (both iOS) only, never the watch target.
+          - MilewayActivityAttributes.swift
     settings:
       base:
         SDKROOT: watchsimulator

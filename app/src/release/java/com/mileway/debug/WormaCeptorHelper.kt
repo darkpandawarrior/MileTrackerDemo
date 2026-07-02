@@ -11,7 +11,6 @@ import android.content.Intent
  * This object compiles in release builds without the WormaCeptor or OkHttp dependency on the classpath.
  */
 object WormaCeptorHelper {
-
     fun init(context: Context) = Unit
 
     fun getLaunchIntent(context: Context): Intent? = null

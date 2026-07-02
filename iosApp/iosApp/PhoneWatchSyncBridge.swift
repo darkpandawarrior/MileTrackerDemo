@@ -20,6 +20,10 @@ final class PhoneWatchSyncBridge: NSObject, WCSessionDelegate {
     /// Pushes the latest snapshot to the paired watch. A no-op if no watch is paired/reachable —
     /// `applicationContext` still delivers on next watch wake, it just can't send while inactive.
     func push(_ payload: MilewaySyncPayload) {
+        // P6.4: same snapshot drives the Live Activity — start/update/end tracks isTracking edges.
+        if #available(iOS 16.2, *) {
+            TrackingLiveActivityController.shared.apply(payload)
+        }
         guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
         try? WCSession.default.updateApplicationContext(MilewaySyncCodec.encode(payload))
     }

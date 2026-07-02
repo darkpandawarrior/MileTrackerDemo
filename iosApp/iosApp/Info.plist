@@ -57,6 +57,9 @@
 		<!-- FCM.4: APNs/FCM background delivery -->
 		<string>remote-notification</string>
 	</array>
+	<!-- P6.4: required for ActivityKit's Activity.request to succeed. -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations~iphone</key>
