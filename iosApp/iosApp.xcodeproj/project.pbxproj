@@ -25,6 +25,7 @@
 		C87B4FA04BDA1DA04158D48E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A55143988C4C8F291BE72E9A /* GoogleService-Info.plist */; };
 		CB401EA2FB6DEAE4CD80D72E /* WatchTripListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1EA19A896C975FD3795D223 /* WatchTripListView.swift */; };
 		CD40F3B1E17882151DA1AC03 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B793F8131E4F61634C2845A1 /* WatchApp.swift */; };
+		F788359DF1336E6977E0D04C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0DB9BE89BCB5056E43C4F34B /* Assets.xcassets */; };
 		FDE52B8D57A097A60A4CF366 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B6C1F485E0CF8BB70C9DDD2 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -72,6 +73,7 @@
 
 /* Begin PBXFileReference section */
 		09A024EED53672A3583D2772 /* Mileway.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Mileway.framework; path = ../shared/build/bin/iosSimulatorArm64/debugFramework/Mileway.framework; sourceTree = "<group>"; };
+		0DB9BE89BCB5056E43C4F34B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		10514A614A98E936225446FF /* WatchDashboardModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardModel.swift; sourceTree = "<group>"; };
 		3408BF1238111660C52B82AD /* MilewayWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MilewayWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		452F9BFCAD19BEA4E64088D3 /* PhoneWatchSyncBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneWatchSyncBridge.swift; sourceTree = "<group>"; };
@@ -158,6 +160,7 @@
 		960A0FC72537BAD0921F489E /* MilewayWatch */ = {
 			isa = PBXGroup;
 			children = (
+				0DB9BE89BCB5056E43C4F34B /* Assets.xcassets */,
 				8C1D61413F7E3E63A3502BC0 /* MilewayWatchGraph.swift */,
 				B793F8131E4F61634C2845A1 /* WatchApp.swift */,
 				10514A614A98E936225446FF /* WatchDashboardModel.swift */,
@@ -186,6 +189,7 @@
 			buildPhases = (
 				0F730B19B0F4F2A3265B7D5D /* Build KMP watch framework (lipo) */,
 				76EA65584433E5EA3D45BB2C /* Sources */,
+				464C905928A655C1B49EF74D /* Resources */,
 			);
 			buildRules = (
 			);
@@ -286,6 +290,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				C87B4FA04BDA1DA04158D48E /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		464C905928A655C1B49EF74D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F788359DF1336E6977E0D04C /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -416,7 +428,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "arm64 arm64_32";
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -654,7 +666,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "arm64 arm64_32";
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				FRAMEWORK_SEARCH_PATHS = (

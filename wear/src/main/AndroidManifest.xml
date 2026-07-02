@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-feature android:name="android.hardware.type.watch" />
-    <application>
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name">
         <!-- P2.1: standalone = true — the watch app works fully offline against its own local
              Room/DataStore graph (see WearAppGraph), it does not require the paired phone app to be
              installed to launch (P2.9's DataLayer sync is an enhancement, not a hard dependency). -->
