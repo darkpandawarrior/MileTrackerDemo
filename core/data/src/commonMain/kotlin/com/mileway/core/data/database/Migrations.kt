@@ -5,6 +5,33 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 14 → 15 (PLAN_V22 P6.5): additive `notifications` table — a real, persisted
+ * Notification Centre feed, replacing `NotificationCentreScreen`'s `remember { mutableStateOf(
+ * NOTIFICATIONS) }` seed (reset on navigation away) and its hardcoded "174 unread" topbar
+ * subtitle. Seeded once from [com.mileway.feature.profile.data.NotificationData.all] by
+ * `NotificationRepository` on first run, mirroring [MIGRATION_10_11]'s seed-on-first-run shape.
+ * See [com.mileway.core.data.model.db.NotificationEntity].
+ */
+val MIGRATION_14_15 =
+    object : Migration(14, 15) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `notifications` (
+                    `id`           TEXT    NOT NULL PRIMARY KEY,
+                    `title`        TEXT    NOT NULL,
+                    `body`         TEXT    NOT NULL,
+                    `relativeTime` TEXT    NOT NULL,
+                    `isUnread`     INTEGER NOT NULL,
+                    `type`         TEXT    NOT NULL,
+                    `createdAtMs`  INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 13 → 14 (PLAN_V22 P6.4): additive `sessions` table — a real, persisted store of
  * devices the demo account is signed in on, replacing `stub.ProfileMockData.sessions()`'s bare
  * in-memory list so `ActiveSessionsScreen`'s per-session revoke and "Sign out all other sessions"

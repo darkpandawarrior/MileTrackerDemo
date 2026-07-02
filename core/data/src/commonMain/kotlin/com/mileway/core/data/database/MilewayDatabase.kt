@@ -12,6 +12,7 @@ import com.mileway.core.data.dao.LocationDao
 import com.mileway.core.data.dao.LogMilesDraftDao
 import com.mileway.core.data.dao.LogMilesFrequentRouteDao
 import com.mileway.core.data.dao.MockAccountDao
+import com.mileway.core.data.dao.NotificationDao
 import com.mileway.core.data.dao.PassportDetailsDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.SessionDao
@@ -30,6 +31,7 @@ import com.mileway.core.data.model.db.LocationData
 import com.mileway.core.data.model.db.LogMilesDraftEntity
 import com.mileway.core.data.model.db.LogMilesFrequentRouteEntity
 import com.mileway.core.data.model.db.MockAccountEntity
+import com.mileway.core.data.model.db.NotificationEntity
 import com.mileway.core.data.model.db.PassportDetailsEntity
 import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.db.SessionEntity
@@ -57,8 +59,9 @@ import com.mileway.core.data.model.db.VoucherEntity
         PassportDetailsEntity::class,
         DelegationEntity::class,
         SessionEntity::class,
+        NotificationEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = false,
 )
 @ConstructedBy(MilewayDatabaseConstructor::class)
@@ -94,6 +97,8 @@ abstract class MilewayDatabase : RoomDatabase() {
     abstract fun delegationDao(): DelegationDao
 
     abstract fun sessionDao(): SessionDao
+
+    abstract fun notificationDao(): NotificationDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

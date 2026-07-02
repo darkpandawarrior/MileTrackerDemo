@@ -32,6 +32,18 @@ data class PreferenceToggles(
 )
 
 /**
+ * PLAN_V22 P6.5: Preferences' Notification Center channel gates — Mileway's local/offline
+ * equivalent of the reference app's WhatsApp/Slack connect-disconnect switches on the same screen.
+ * Backed by [com.mileway.core.data.settings.DemoSettingsRepository] (DataStore), so these coexist
+ * with [PreferenceToggles] rather than replacing it.
+ */
+data class NotificationChannels(
+    val pushEnabled: Boolean = true,
+    val whatsappEnabled: Boolean = false,
+    val slackEnabled: Boolean = false,
+)
+
+/**
  * Lightweight analytics snapshot shown in the "Analytics / Live" card on the Account hub.
  * [sparkline] is a list of normalised points (0f..1f) plotted as a tiny trend line.
  */
@@ -69,6 +81,8 @@ data class ProfileUiState(
     val selectedAccountId: String = "",
     val analytics: AccountAnalyticsSnapshot,
     val preferences: PreferenceToggles = PreferenceToggles(),
+    /** P6.5: Preferences' Notification Center channel gates, live-synced from DataStore. */
+    val notificationChannels: NotificationChannels = NotificationChannels(),
     val preferenceMessage: String? = null,
     /** P1.3: the persona currently shown in [AccountDetailsSheet][com.mileway.feature.profile.ui.screens.AccountDetailsSheet], or null when dismissed. */
     val accountDetailsSheet: DemoAccount? = null,

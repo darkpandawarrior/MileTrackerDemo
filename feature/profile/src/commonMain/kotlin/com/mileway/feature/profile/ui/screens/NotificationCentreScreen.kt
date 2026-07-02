@@ -1,6 +1,7 @@
 package com.mileway.feature.profile.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,130 +54,69 @@ import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
 import com.mileway.core.ui.theme.DesignTokens.StatusColors
-
-private val BASE_MS = 1_781_654_400_000L
-private val MIN_MS = 60_000L
-private val H_MS = 3_600_000L
-private val DAY_MS = 86_400_000L
+import com.mileway.feature.profile.data.NotifType
+import com.mileway.feature.profile.data.NotificationRecord
+import com.mileway.feature.profile.viewmodel.NotificationViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 private enum class NotifCategory { ALL, UNREAD, APPROVALS, SYSTEM }
 
-private data class NotifItem(
-    val id: String,
-    val title: String,
-    val body: String,
-    val relativeTime: String,
-    val isUnread: Boolean,
-    val category: NotifCategory,
-    val icon: ImageVector,
-    val iconColor: Color,
-)
+/** Icon + tint per [NotifType], matching the previous per-item hardcoded styling. */
+private fun NotifType.icon(): ImageVector =
+    when (this) {
+        NotifType.APPROVAL -> Icons.Filled.Approval
+        NotifType.ADVANCE -> Icons.Filled.Receipt
+        NotifType.EXPENSE -> Icons.Filled.MoneyOff
+        NotifType.POLICY -> Icons.Filled.Policy
+        NotifType.CARD -> Icons.Filled.CreditCard
+        NotifType.PAYABLES -> Icons.Filled.Receipt
+        NotifType.APP_UPDATE -> Icons.Filled.SystemUpdate
+        NotifType.SYSTEM -> Icons.Filled.Info
+    }
 
-private val NOTIFICATIONS =
-    listOf(
-        NotifItem(
-            "N001",
-            "Approval Required",
-            "Priya Sharma's mileage claim needs your review",
-            "2 min ago",
-            true,
-            NotifCategory.APPROVALS,
-            Icons.Filled.Approval,
-            Color(0xFF6366F1),
-        ),
-        NotifItem(
-            "N002",
-            "Advance Approved",
-            "Your advance ADV-001 of ₹8,000 was approved",
-            "1 hr ago",
-            true,
-            NotifCategory.ALL,
-            Icons.Filled.Receipt,
-            StatusColors.success,
-        ),
-        NotifItem(
-            "N003",
-            "Expense Rejected",
-            "EXP-003 rejected: receipt unclear",
-            "3 hrs ago",
-            true,
-            NotifCategory.ALL,
-            Icons.Filled.MoneyOff,
-            StatusColors.error,
-        ),
-        NotifItem(
-            "N004",
-            "Policy Alert",
-            "3 claims exceed the ₹10/km daily cap this week",
-            "Yesterday",
-            true,
-            NotifCategory.ALL,
-            Icons.Filled.Policy,
-            StatusColors.warning,
-        ),
-        NotifItem(
-            "N005",
-            "Card Blocked",
-            "CARD-002 was blocked at your request",
-            "Yesterday",
-            false,
-            NotifCategory.ALL,
-            Icons.Filled.CreditCard,
-            StatusColors.neutral,
-        ),
-        NotifItem(
-            "N006",
-            "Payables Update",
-            "PO-2024-002 approved by finance",
-            "2 days ago",
-            false,
-            NotifCategory.ALL,
-            Icons.Filled.Receipt,
-            StatusColors.info,
-        ),
-        NotifItem(
-            "N007",
-            "App Update",
-            "Version 2.4.1 available: improved GPS accuracy",
-            "3 days ago",
-            false,
-            NotifCategory.SYSTEM,
-            Icons.Filled.SystemUpdate,
-            Color(0xFF8B5CF6),
-        ),
-        NotifItem(
-            "N008",
-            "System",
-            "Scheduled maintenance: Sun 02:00–04:00 IST",
-            "4 days ago",
-            false,
-            NotifCategory.SYSTEM,
-            Icons.Filled.Info,
-            StatusColors.neutral,
-        ),
-    )
+private fun NotifType.iconColor(): Color =
+    when (this) {
+        NotifType.APPROVAL -> Color(0xFF6366F1)
+        NotifType.ADVANCE -> StatusColors.success
+        NotifType.EXPENSE -> StatusColors.error
+        NotifType.POLICY -> StatusColors.warning
+        NotifType.CARD -> StatusColors.neutral
+        NotifType.PAYABLES -> StatusColors.info
+        NotifType.APP_UPDATE -> Color(0xFF8B5CF6)
+        NotifType.SYSTEM -> StatusColors.neutral
+    }
+
+private fun NotifType.category(): NotifCategory =
+    when (this) {
+        NotifType.APPROVAL -> NotifCategory.APPROVALS
+        NotifType.SYSTEM, NotifType.APP_UPDATE -> NotifCategory.SYSTEM
+        else -> NotifCategory.ALL
+    }
 
 private val FILTER_LABELS = listOf("ALL", "UNREAD", "APPROVALS", "SYSTEM")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationCentreScreen(onBack: () -> Unit) {
+fun NotificationCentreScreen(
+    onBack: () -> Unit,
+    viewModel: NotificationViewModel = koinViewModel(),
+) {
     var selectedFilter by remember { mutableStateOf("ALL") }
-    var notifications by remember { mutableStateOf(NOTIFICATIONS) }
+    val state by viewModel.state.collectAsState()
 
     val filtered =
         when (selectedFilter) {
-            "UNREAD" -> notifications.filter { it.isUnread }
-            "APPROVALS" -> notifications.filter { it.category == NotifCategory.APPROVALS }
-            "SYSTEM" -> notifications.filter { it.category == NotifCategory.SYSTEM }
-            else -> notifications
+            "UNREAD" -> state.notifications.filter { it.isUnread }
+            "APPROVALS" -> state.notifications.filter { it.type.category() == NotifCategory.APPROVALS }
+            "SYSTEM" -> state.notifications.filter { it.type.category() == NotifCategory.SYSTEM }
+            else -> state.notifications
         }
 
     Scaffold(
         topBar = {
             DepthAwareTopBar(
                 title = "Notifications",
-                subtitle = "174 unread",
+                subtitle = "${state.unreadCount} unread",
                 depth = NavigationDepth.LEVEL_1,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -183,9 +124,7 @@ fun NotificationCentreScreen(onBack: () -> Unit) {
                     }
                 },
                 actions = {
-                    TextButton(onClick = {
-                        notifications = notifications.map { it.copy(isUnread = false) }
-                    }) {
+                    TextButton(onClick = { viewModel.markAllRead() }) {
                         Text("Mark all read")
                     }
                 },
@@ -223,7 +162,10 @@ fun NotificationCentreScreen(onBack: () -> Unit) {
                     ),
             ) {
                 items(filtered, key = { it.id }) { notif ->
-                    NotificationCard(notif = notif)
+                    NotificationCard(
+                        notif = notif,
+                        onToggleRead = { viewModel.setUnread(notif.id, !notif.isUnread) },
+                    )
                 }
             }
         }
@@ -231,9 +173,15 @@ fun NotificationCentreScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun NotificationCard(notif: NotifItem) {
+private fun NotificationCard(
+    notif: NotificationRecord,
+    onToggleRead: () -> Unit,
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleRead),
         shape = DesignTokens.Shape.roundedMd,
         colors =
             CardDefaults.cardColors(
@@ -258,13 +206,13 @@ private fun NotificationCard(notif: NotifItem) {
                     Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(notif.iconColor.copy(alpha = 0.15f)),
+                        .background(notif.type.iconColor().copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = notif.icon,
+                    imageVector = notif.type.icon(),
                     contentDescription = null,
-                    tint = notif.iconColor,
+                    tint = notif.type.iconColor(),
                     modifier = Modifier.size(22.dp),
                 )
             }

@@ -25,6 +25,12 @@ data class DemoSettings(
     // the reference app's server-driven `logMilesOdometerCapture` config, but sourced locally (this demo is
     // offline-first/stub-backed everywhere, not a server fetch).
     val logMilesOdometerCaptureEnabled: Boolean = false,
+    // P6.5: Preferences' Notification Center channel toggles — Mileway's local/offline equivalent
+    // of the reference app's WhatsApp/Slack connect-disconnect switches (no real connection is
+    // ever made; these are on/off gates only, persisted like every other toggle here).
+    val pushChannelEnabled: Boolean = true,
+    val whatsappChannelEnabled: Boolean = false,
+    val slackChannelEnabled: Boolean = false,
 )
 
 /** Sentinel for "no prior odometer reading" so the start capture falls back to its own default. */
@@ -39,6 +45,9 @@ class DemoSettingsRepository {
     private val enableKalmanKey = booleanPreferencesKey("track_enable_kalman")
     private val lastOdometerEndKey = intPreferencesKey("track_last_odometer_end")
     private val logMilesOdometerCaptureKey = booleanPreferencesKey("log_miles_odometer_capture")
+    private val pushChannelKey = booleanPreferencesKey("notif_channel_push")
+    private val whatsappChannelKey = booleanPreferencesKey("notif_channel_whatsapp")
+    private val slackChannelKey = booleanPreferencesKey("notif_channel_slack")
 
     private val store: DataStore<Preferences> =
         PreferenceDataStoreFactory.createWithPath(
@@ -56,6 +65,9 @@ class DemoSettingsRepository {
                 enableKalman = prefs[enableKalmanKey] ?: false,
                 lastOdometerEndReading = prefs[lastOdometerEndKey] ?: LAST_ODOMETER_NONE,
                 logMilesOdometerCaptureEnabled = prefs[logMilesOdometerCaptureKey] ?: false,
+                pushChannelEnabled = prefs[pushChannelKey] ?: true,
+                whatsappChannelEnabled = prefs[whatsappChannelKey] ?: false,
+                slackChannelEnabled = prefs[slackChannelKey] ?: false,
             )
         }
 
@@ -83,6 +95,15 @@ class DemoSettingsRepository {
     suspend fun setLogMilesOdometerCaptureEnabled(enabled: Boolean) {
         store.edit { prefs -> prefs[logMilesOdometerCaptureKey] = enabled }
     }
+
+    /** P6.5: toggles the Push channel gate on the Preferences screen's Notification Center tile. */
+    suspend fun togglePushChannel() = toggle(pushChannelKey)
+
+    /** P6.5: toggles the WhatsApp channel gate (Mileway's local equivalent of a connect/disconnect switch). */
+    suspend fun toggleWhatsappChannel() = toggle(whatsappChannelKey)
+
+    /** P6.5: toggles the Slack channel gate (Mileway's local equivalent of a connect/disconnect switch). */
+    suspend fun toggleSlackChannel() = toggle(slackChannelKey)
 
     private suspend fun toggle(key: Preferences.Key<Boolean>) {
         store.edit { prefs -> prefs[key] = !(prefs[key] ?: false) }

@@ -43,10 +43,12 @@ import org.koin.compose.viewmodel.koinViewModel
 /**
  * Preferences: a focused service/system preferences screen pushed from the Account hub.
  *
- * A 2-column grid of large tonal tiles under a single "Settings" section header. The two
- * stateful tiles (Push Notifications, Usage Analytics) flip a ViewModel-held toggle and update
- * their "Enabled / Disabled" subtitle; the remaining tiles raise a one-shot demo snackbar (in
- * the real app they deep-link into system screens or bottom sheets).
+ * A 2-column grid of large tonal tiles under a single "Settings" section header. Five stateful
+ * tiles (Push Notifications, Usage Analytics, and P6.5's Push/WhatsApp/Slack channel toggles)
+ * flip a ViewModel-held toggle — the channel toggles persist via
+ * [com.mileway.core.data.settings.DemoSettingsRepository] (DataStore) — and update their
+ * "Enabled / Disabled" subtitle; the remaining tiles raise a one-shot demo snackbar (in the real
+ * app they deep-link into system screens or bottom sheets).
  *
  * Full-screen flow (no bubble bar): the grid's content insets carry the bottom padding.
  */
@@ -83,6 +85,7 @@ fun PreferencesScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         val prefs = state.preferences
+        val channels = state.notificationChannels
         val items =
             listOf(
                 ProfileGridItem(
@@ -108,6 +111,32 @@ fun PreferencesScreen(
                     icon = Icons.Default.NotificationsActive,
                     status = ProfileItemStatus.COMPLETE,
                     action = { viewModel.onAction(ProfileAction.RaisePreferenceMessage("Notification Center is a demo placeholder.")) },
+                ),
+                // P6.5: Notification Center channel toggles — Mileway's local/offline equivalent
+                // of connect/disconnect switches, DataStore-backed so state survives restart.
+                ProfileGridItem(
+                    id = "channel_push",
+                    title = "Push Channel",
+                    subtitle = if (channels.pushEnabled) "Enabled" else "Disabled",
+                    icon = Icons.Default.Notifications,
+                    status = if (channels.pushEnabled) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
+                    action = { viewModel.onAction(ProfileAction.TogglePushChannel) },
+                ),
+                ProfileGridItem(
+                    id = "channel_whatsapp",
+                    title = "WhatsApp Channel",
+                    subtitle = if (channels.whatsappEnabled) "Enabled" else "Disabled",
+                    icon = Icons.Default.NotificationsActive,
+                    status = if (channels.whatsappEnabled) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
+                    action = { viewModel.onAction(ProfileAction.ToggleWhatsappChannel) },
+                ),
+                ProfileGridItem(
+                    id = "channel_slack",
+                    title = "Slack Channel",
+                    subtitle = if (channels.slackEnabled) "Enabled" else "Disabled",
+                    icon = Icons.Default.Link,
+                    status = if (channels.slackEnabled) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
+                    action = { viewModel.onAction(ProfileAction.ToggleSlackChannel) },
                 ),
                 ProfileGridItem(
                     id = "connected_accounts",

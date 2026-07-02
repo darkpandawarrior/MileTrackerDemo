@@ -23,6 +23,7 @@ import com.mileway.core.data.dao.LocationDao
 import com.mileway.core.data.dao.LogMilesDraftDao
 import com.mileway.core.data.dao.LogMilesFrequentRouteDao
 import com.mileway.core.data.dao.MockAccountDao
+import com.mileway.core.data.dao.NotificationDao
 import com.mileway.core.data.dao.PassportDetailsDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.SessionDao
@@ -274,6 +275,8 @@ class ScreenshotGalleryTest {
             single<DelegationDao> { FakeDelegationDao() }
             // P6.4: ActiveSessionsViewModel collects this in init(); same null-collector trap as above.
             single<SessionDao> { FakeSessionDao() }
+            // P6.5: NotificationViewModel collects this in init(); same null-collector trap as above.
+            single<NotificationDao> { FakeNotificationDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }
             single<AssistantEngine> { FakeAssistantEngine() }
             single<SpeechToText> { FakeSpeechToText() }
@@ -287,7 +290,16 @@ class ScreenshotGalleryTest {
             // P2.3: SwitchAccountViewModel.verify() reads this; a real in-memory fake avoids the
             // suspend-fun-on-a-relaxed-mockk trap (memory: screenshot Koin needs deterministic fakes).
             single<PinHashSource> { FakePinHashSource() }
-            single<DemoSettingsRepository> { mockk(relaxed = true) }
+            // P6.5: ProfileViewModel now collects `settings` eagerly in init() (Notification
+            // Center channel toggles); a relaxed mockk's auto-generated Flow<DemoSettings> is not
+            // guaranteed to behave like a real Flow under `.onEach{}.launchIn()` (memory:
+            // screenshot Koin needs deterministic fakes), so a real MutableStateFlow-backed stub
+            // is used instead.
+            single<DemoSettingsRepository> {
+                mockk {
+                    every { settings } returns MutableStateFlow(com.mileway.core.data.settings.DemoSettings())
+                }
+            }
             // P2.4: ProfileViewModel now depends on SessionRepository (SignOut's global-fallback path).
             single<SessionRepository> { mockk(relaxed = true) }
             // P3.4: ProfileViewModel now depends on MockAccountSessionCoordinator (pause/restore hook).

@@ -12,12 +12,16 @@ import com.mileway.core.ui.theme.ExperimentalFlags
 import com.mileway.core.ui.theme.MilewayThemeVariant
 import com.mileway.core.ui.theme.ThemeController
 import com.mileway.feature.profile.model.AccountAnalyticsSnapshot
+import com.mileway.feature.profile.model.NotificationChannels
 import com.mileway.feature.profile.model.ProfileUiState
 import com.mileway.feature.profile.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 sealed interface ProfileAction {
@@ -45,6 +49,13 @@ sealed interface ProfileAction {
     data object TogglePushNotifications : ProfileAction
 
     data object ToggleUsageAnalytics : ProfileAction
+
+    /** P6.5: Preferences' Notification Center channel toggles (DataStore-backed, see [DemoSettingsRepository]). */
+    data object TogglePushChannel : ProfileAction
+
+    data object ToggleWhatsappChannel : ProfileAction
+
+    data object ToggleSlackChannel : ProfileAction
 
     data class RaisePreferenceMessage(val message: String) : ProfileAction
 
@@ -155,6 +166,12 @@ class ProfileViewModel(
                 appliedPersistedId = true
             }
         }
+        // P6.5: Preferences' Notification Center channel toggles — live-synced from DataStore so
+        // they persist across restart, same as every other DemoSettingsRepository-backed toggle.
+        demoSettingsRepository.settings
+            .map { NotificationChannels(it.pushChannelEnabled, it.whatsappChannelEnabled, it.slackChannelEnabled) }
+            .onEach { channels -> setState { copy(notificationChannels = channels) } }
+            .launchIn(viewModelScope)
     }
 
     override fun onAction(action: ProfileAction) {
@@ -167,6 +184,9 @@ class ProfileViewModel(
                 setState { copy(preferences = preferences.copy(pushNotifications = !preferences.pushNotifications)) }
             ProfileAction.ToggleUsageAnalytics ->
                 setState { copy(preferences = preferences.copy(usageAnalytics = !preferences.usageAnalytics)) }
+            ProfileAction.TogglePushChannel -> viewModelScope.launch { demoSettingsRepository.togglePushChannel() }
+            ProfileAction.ToggleWhatsappChannel -> viewModelScope.launch { demoSettingsRepository.toggleWhatsappChannel() }
+            ProfileAction.ToggleSlackChannel -> viewModelScope.launch { demoSettingsRepository.toggleSlackChannel() }
             is ProfileAction.RaisePreferenceMessage -> setState { copy(preferenceMessage = action.message) }
             ProfileAction.ClearPreferenceMessage -> setState { copy(preferenceMessage = null) }
             is ProfileAction.AddDemoAccount -> addDemoAccount(action)
