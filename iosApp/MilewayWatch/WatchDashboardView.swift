@@ -7,8 +7,8 @@
 //  - [x] "Distance today" reads as one stop with a spoken-out value ("12.5 kilometers"), not two
 //        fragments ("12.5 km" then "today").
 //  - [x] "This week" reads as one stop with a spoken-out value, same pattern.
-//  - [x] Tracking pill announces as "Tracking status, Tracking/Paused/Idle" (isStaticText trait —
-//        not announced as a button, since it isn't tappable).
+//  - [x] Tracking pill (Z.5d: now tappable to start/stop) announces as a button with a label
+//        stating the current state and a hint naming the resulting action.
 //  - [x] "Trips" NavigationLink keeps its default button trait + a hint describing the destination.
 //  - [x] Trip list rows each read as one stop ("Commute, 8.2 kilometers") via SwiftUI's built-in
 //        NavigationLink button trait plus the merged label/value.
@@ -73,19 +73,26 @@ struct WatchDashboardView: View {
     }
 
     private var trackingPill: some View {
-        Text(pillLabel)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(pillColor.opacity(0.2))
-            .foregroundStyle(pillColor)
-            .clipShape(Capsule())
-            // P8.2: the pill is status, not a button — expose it as a VoiceOver "status" trait so
-            // it announces without implying it's tappable.
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Tracking status")
-            .accessibilityValue(pillLabel)
-            .accessibilityAddTraits(.isStaticText)
+        // Z.5d: tapping sends a watch->phone start/stop command over WCSession
+        // (`WatchTrackingCommandSender`) — the phone dispatches it through the same
+        // `IosIntentEntry` seam its own App Intents use. The pill's displayed state still comes
+        // from the synced `SurfaceSnapshot`, not from this tap's local effect.
+        Button(action: model.toggleTracking) {
+            Text(pillLabel)
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(pillColor.opacity(0.2))
+                .foregroundStyle(pillColor)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        // P8.2: the pill is now an action — expose it as a button with a label naming the current
+        // state and a hint naming the tap's effect.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Tracking status, \(pillLabel)")
+        .accessibilityHint(model.snapshot.isTracking ? "Stops the current trip" : "Starts a new trip")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var pillLabel: String {
