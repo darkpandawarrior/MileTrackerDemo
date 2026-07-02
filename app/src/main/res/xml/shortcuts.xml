@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    P7.2: static App Shortcuts (long-press the launcher icon) + an App Actions `capability` so the
+    Assistant/Google can trigger "start tracking" without opening the app UI first. Both shortcuts
+    resolve through the SAME `mileway://` deep-link scheme `LauncherActivity` already handles (see
+    `DeepLinkRouter`/`DeepLinkValidator`) — no new intent-routing surface, this only exposes the
+    existing routes at two more entry points.
+
+    No exact Built-In Intent (BII) matches "start a mileage trip" (the closest, actions.intent.
+    START_EXERCISE, models fitness workouts, not car-mileage tracking), so this declares a custom
+    capability (`actions.intent.START_TRACKING` — app-scoped, not a registered BII) per Assistant App
+    Actions' documented fallback for capabilities without a matching BII. Assistant invocation is
+    device/Assistant-gated (see PLAN_V23 Phase 7 preamble) — this only proves the manifest wiring.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="start_tracking"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_start_tracking_short"
+        android:shortcutLongLabel="@string/shortcut_start_tracking_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="mileway://track"
+            android:targetPackage="com.mileway"
+            android:targetClass="com.mileway.LauncherActivity" />
+        <capability-binding android:key="actions.intent.START_TRACKING" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="log_expense"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_log_expense_short"
+        android:shortcutLongLabel="@string/shortcut_log_expense_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="mileway://log/expense"
+            android:targetPackage="com.mileway"
+            android:targetClass="com.mileway.LauncherActivity" />
+    </shortcut>
+
+    <capability android:name="actions.intent.START_TRACKING">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="mileway://track"
+            android:targetPackage="com.mileway"
+            android:targetClass="com.mileway.LauncherActivity" />
+    </capability>
+</shortcuts>
