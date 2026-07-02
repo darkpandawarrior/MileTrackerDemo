@@ -7,6 +7,12 @@ import SwiftUI
 
 @main
 struct MilewayWatchApp: App {
+    init() {
+        // P4.5: activate WatchConnectivity so applicationContext pushes from the phone arrive
+        // even before the KMP-backed dashboard has completed its own first refresh.
+        WatchSyncBridge.shared.activate()
+    }
+
     var body: some Scene {
         WindowGroup {
             WatchRootView()

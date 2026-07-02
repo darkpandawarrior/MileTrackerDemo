@@ -64,6 +64,7 @@ targets:
         excludes:
           - Info.plist
           - "*.entitlements"
+      - path: Shared
     settings:
       base:
         SDKROOT: iphoneos
@@ -118,6 +119,7 @@ targets:
       - path: MilewayWatch
         excludes:
           - Info.plist
+      - path: Shared
     settings:
       base:
         SDKROOT: watchsimulator
