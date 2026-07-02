@@ -10,4 +10,7 @@
 
     <!-- P7.3: Quick Settings tile label. -->
     <string name="qs_tile_tracking_label">Mileway tracking</string>
+
+    <!-- P7.5: AppFunctions user-visible capability summary (shown in system UI, e.g. Settings). -->
+    <string name="app_functions_display_description">Start/stop trip tracking, log expenses, and get today\'s summary</string>
 </resources>

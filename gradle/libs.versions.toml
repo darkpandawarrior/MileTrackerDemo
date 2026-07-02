@@ -83,6 +83,9 @@ firebase-bom = "34.4.0"
 firebase-crashlytics-plugin = "3.0.3"
 install-referrer = "2.2"
 kmpworkmanager = "3.0.1"
+# P7.5: AppFunctions — exposes start/stop-tracking, log-expense, today-summary to on-device agents.
+appfunctions = "1.0.0-alpha10"
+appfunctions-service = "1.0.0-alpha09"
 
 [libraries]
 # Kotlin
@@ -220,6 +223,10 @@ profileinstaller = { module = "androidx.profileinstaller:profileinstaller", vers
 # G2: baseline-profile generator (macrobenchmark) deps — used only by the :baselineprofile test module.
 benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
 uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
+# P7.5: AppFunctions (Jetpack lib handles back-compat below API 36).
+androidx-appfunctions = { module = "androidx.appfunctions:appfunctions", version.ref = "appfunctions" }
+androidx-appfunctions-service = { module = "androidx.appfunctions:appfunctions-service", version.ref = "appfunctions-service" }
+androidx-appfunctions-compiler = { module = "androidx.appfunctions:appfunctions-compiler", version.ref = "appfunctions" }
 
 # --- V12 KMP storage + security ---
 # multiplatform-settings (russhwolf), KMP key-value store: NSUserDefaults/SharedPreferences plain,

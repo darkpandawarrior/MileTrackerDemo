@@ -2,6 +2,8 @@ package com.mileway
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import androidx.appfunctions.service.AppFunctionConfiguration
+import com.mileway.appfunctions.MileageAppFunctions
 import com.mileway.core.common.AppLog
 import coil3.ImageLoader
 import coil3.PlatformContext
@@ -110,7 +112,7 @@ val appModule = module {
     viewModel { com.mileway.ui.search.MasterSearchViewModel(get()) }
 }
 
-class MilewayApplication : Application(), SingletonImageLoader.Factory {
+class MilewayApplication : Application(), SingletonImageLoader.Factory, AppFunctionConfiguration.Provider {
 
     // Coil 3: SingletonImageLoader.Factory#newImageLoader now receives a PlatformContext.
     override fun newImageLoader(context: PlatformContext): ImageLoader = ImageLoader.Builder(context)
@@ -119,6 +121,22 @@ class MilewayApplication : Application(), SingletonImageLoader.Factory {
             add(SvgDecoder.Factory())
         }
         .build()
+
+    // P7.5: AppFunctions looks up the enclosing-class instance for @AppFunction methods through
+    // this factory (KSP-generated code calls it lazily, at execution time). The lambda resolves
+    // Koin at call time via KoinPlatform (not the `get()` Application extension), because this
+    // property is built during Application construction — BEFORE onCreate()/initKoin() runs.
+    override val appFunctionConfiguration: AppFunctionConfiguration =
+        AppFunctionConfiguration.Builder()
+            .addEnclosingClassFactory(MileageAppFunctions::class.java) {
+                val koin = org.koin.mp.KoinPlatform.getKoin()
+                MileageAppFunctions(
+                    watchFacade = koin.get(),
+                    expenseRepository = koin.get(),
+                    snapshotCache = koin.get(),
+                )
+            }
+            .build()
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

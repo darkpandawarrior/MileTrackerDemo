@@ -51,6 +51,11 @@
              Harmless in normal use; the platform also auto-adds this for debuggable builds. -->
         <profileable android:shell="true" />
 
+        <!-- P7.5: AppFunctions — describes this app's agentic capabilities to the system indexer. -->
+        <property
+            android:name="android.app.appfunctions.app_metadata"
+            android:resource="@xml/app_metadata" />
+
         <activity
             android:name=".LauncherActivity"
             android:exported="true"

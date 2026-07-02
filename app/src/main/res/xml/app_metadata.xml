@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- P7.5: server-level instructions for the on-device agent indexing this app's AppFunctions
+     (androidx.appfunctions). Not a user-visible screen — describes the app's whole AppFunctions
+     surface once, so per-function KDoc doesn't need to repeat cross-function relationships. -->
+<AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
+    appfn:description="This app tracks mileage trips and logs expenses, offline-only.
+
+    Operational Patterns:
+    - Call getTodaySummary first when asked about today's activity, before starting or logging
+    anything new, so the answer reflects the current distance/trip/expense totals.
+    - Call startTrackingTrip to begin a trip and stopTrackingTrip to end the currently active one;
+    only one trip can be active at a time, so calling startTrackingTrip again while a trip is
+    already active is a no-op on the existing trip.
+    - Call logExpense to record a completed expense (amount already known); it does not open any
+    UI or require further confirmation from the user for its own recording step.
+
+    Constraints:
+    - Expense amounts above ₹5,000 require manager approval after being logged; logExpense itself
+    always succeeds locally and returns the resulting status.
+    - All data is local to the device; no network calls are made by any function here."
+    appfn:displayDescription="@string/app_functions_display_description" />
