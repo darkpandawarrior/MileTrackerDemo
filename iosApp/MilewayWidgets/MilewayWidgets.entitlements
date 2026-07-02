@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- P6.3: same App Group as the host app (see iosApp.entitlements + core:data's
+	     SnapshotCacheStore.APP_GROUP_ID) so the widget-extension process can read the snapshot the
+	     host app writes via NSUserDefaults(suiteName:). -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.mileway.shared</string>
+	</array>
+</dict>
+</plist>
