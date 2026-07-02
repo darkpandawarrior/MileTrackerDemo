@@ -34,6 +34,13 @@ object WearPresentation {
      */
     fun toTodayDistanceLabel(snapshot: SurfaceSnapshot): String = "${formatOneDecimal(snapshot.todayDistanceKm)} km"
 
+    /**
+     * P2.7: the RANGED_VALUE complication's short text, e.g. `"58.7"` — the week's tracked distance
+     * (km) rendered without a unit suffix, since [androidx.wear.watchface.complications.data.RangedValueComplicationData]
+     * already conveys min/max/value; the text is just the numeric label shown inside the ring.
+     */
+    fun toWeekGoalValueLabel(snapshot: SurfaceSnapshot): String = formatOneDecimal(snapshot.weekDistanceKm)
+
     private fun formatOneDecimal(value: Double): String {
         val scaled = round(value * ONE_DECIMAL_SCALE) / ONE_DECIMAL_SCALE
         return scaled.toString()

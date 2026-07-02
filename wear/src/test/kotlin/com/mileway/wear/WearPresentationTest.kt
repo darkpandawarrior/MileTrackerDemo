@@ -107,4 +107,22 @@ class WearPresentationTest {
 
         assertEquals("0.0 km", label)
     }
+
+    // ─── P2.7: toWeekGoalValueLabel (RANGED_VALUE complication) ─────────────────────────────────
+
+    @Test
+    fun `week goal value label rounds week distance to one decimal without a unit suffix`() {
+        val snapshot = SurfaceSnapshot(weekDistanceKm = 32.449, weekGoalKm = 100.0)
+
+        val label = WearPresentation.toWeekGoalValueLabel(snapshot)
+
+        assertEquals("32.4", label)
+    }
+
+    @Test
+    fun `week goal value label for a zeroed snapshot is 0 point 0`() {
+        val label = WearPresentation.toWeekGoalValueLabel(SurfaceSnapshot())
+
+        assertEquals("0.0", label)
+    }
 }
