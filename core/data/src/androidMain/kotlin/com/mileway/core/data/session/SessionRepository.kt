@@ -23,6 +23,10 @@ private val Context.sessionDataStore by preferencesDataStore(name = "user_sessio
  * PLAN_V22 P7.1: [signInWithCredentials] now also runs [MockPostLoginInitializer] to synthesize a
  * post-login bootstrap block (still no network call) and sets [SessionState.isFirstLoginPending]
  * so the app shell can show a one-time welcome banner.
+ *
+ * PLAN_V22 P7.5: [markWelcomeDisclaimerShown] persists [SessionState.hasShownWelcomeDisclaimer] so
+ * `WelcomeDisclaimerSheet` surfaces on `LoginScreen` exactly once per install, not on every replay
+ * of the login screen (e.g. after a sign-out).
  */
 class SessionRepository(
     private val context: Context,
@@ -39,6 +43,7 @@ class SessionRepository(
     private val currencySymbolKey = stringPreferencesKey("session_currency_symbol")
     private val firstLoginPendingKey = booleanPreferencesKey("session_first_login_pending")
     private val hasPinKey = booleanPreferencesKey("session_has_pin")
+    private val hasShownWelcomeDisclaimerKey = booleanPreferencesKey("session_has_shown_welcome_disclaimer")
 
     override val sessionState: Flow<SessionState> =
         context.sessionDataStore.data.map { prefs ->
@@ -58,6 +63,7 @@ class SessionRepository(
                 currencySymbol = prefs[currencySymbolKey],
                 isFirstLoginPending = prefs[firstLoginPendingKey] ?: false,
                 hasPin = prefs[hasPinKey] ?: false,
+                hasShownWelcomeDisclaimer = prefs[hasShownWelcomeDisclaimerKey] ?: false,
             )
         }
 
@@ -116,6 +122,14 @@ class SessionRepository(
      */
     suspend fun markPinSet() {
         context.sessionDataStore.edit { prefs -> prefs[hasPinKey] = true }
+    }
+
+    /**
+     * PLAN_V22 P7.5: marks that `WelcomeDisclaimerSheet` has been shown once on `LoginScreen`, so
+     * it does not replay on subsequent compositions of the login screen (e.g. after sign-out).
+     */
+    suspend fun markWelcomeDisclaimerShown() {
+        context.sessionDataStore.edit { prefs -> prefs[hasShownWelcomeDisclaimerKey] = true }
     }
 
     /** Clear the session (sign out) — returns the app to the login screen on next launch. */

@@ -23,6 +23,10 @@ const val DEFAULT_SESSION_TENANT = "DEMO-TENANT"
  * [hasPin] is PLAN_V22 P7.4's local PIN-gate flag: true once the reviewer has completed
  * `SetPinScreen` for this session. `LauncherActivity` uses it to decide whether a fresh sign-in
  * routes to `AppStage.PIN`'s setup path (`SetPinScreen`) or its verify path (`CheckPinScreen`).
+ *
+ * [hasShownWelcomeDisclaimer] is PLAN_V22 P7.5's flag: true once `WelcomeDisclaimerSheet` has been
+ * shown on `LoginScreen` for this device/install, so the real location/notification permission
+ * disclaimer surfaces exactly once rather than replaying on every relaunch of the login screen.
  */
 data class SessionState(
     val kind: SessionKind = SessionKind.NONE,
@@ -36,6 +40,7 @@ data class SessionState(
     val currencySymbol: String? = null,
     val isFirstLoginPending: Boolean = false,
     val hasPin: Boolean = false,
+    val hasShownWelcomeDisclaimer: Boolean = false,
 ) {
     val isSignedIn: Boolean get() = kind != SessionKind.NONE
     val isGuest: Boolean get() = kind == SessionKind.GUEST

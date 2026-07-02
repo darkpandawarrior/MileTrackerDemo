@@ -133,17 +133,29 @@ private val ONBOARDING_SLIDES = listOf(
  * [navigationBarsPadding]. It is hosted full-screen by the integrator (no bottom bar), so it is
  * stateless apart from internal field/loading/animation state, no ViewModel is required.
  *
+ * PLAN_V22 P7.5: [WelcomeDisclaimerSheet] shows exactly once per install (gated by
+ * [com.mileway.core.data.session.SessionState.hasShownWelcomeDisclaimer]), before the reviewer
+ * ever signs in. It is non-blocking — dismissing it ("Not now") proceeds straight through — and
+ * queues any sign-in tap made while it's showing so the tap resumes automatically once the sheet
+ * (and, if "Continue" was chosen, the real system permission dialog) finishes.
+ *
  * @param onSignInWithCredentials invoked with the entered email once a credentials sign-in
  *   completes. Captured via [rememberUpdatedState] so the fake-loading coroutine always calls the
  *   latest lambda.
  * @param onContinueAsGuest invoked when the user chooses the guest path. The integrator persists
  *   the session so it survives navigation, deep links and process recreation.
+ * @param hasShownWelcomeDisclaimer whether [WelcomeDisclaimerSheet] has already been shown on a
+ *   prior composition of this screen (persisted session state); when false the sheet shows once.
+ * @param onWelcomeDisclaimerShown invoked the first time the sheet is dismissed (either path), so
+ *   the integrator can persist [hasShownWelcomeDisclaimer] and never show it again this session.
  */
 @Composable
 fun LoginScreen(
     onSignInWithCredentials: (email: String) -> Unit,
     onContinueAsGuest: () -> Unit,
     modifier: Modifier = Modifier,
+    hasShownWelcomeDisclaimer: Boolean = true,
+    onWelcomeDisclaimerShown: () -> Unit = {},
     authViewModel: AuthViewModel = koinViewModel(),
 ) {
     val currentOnCredentials by rememberUpdatedState(onSignInWithCredentials)
@@ -165,9 +177,25 @@ fun LoginScreen(
     val selectedPersonaId by authViewModel.selectedPersonaId.collectAsStateWithLifecycle()
     var showPersonaPicker by remember { mutableStateOf(false) }
 
+    // P7.5: gates WelcomeDisclaimerSheet + queues a sign-in tap made while it's showing.
+    val disclaimerState = rememberWelcomeDisclaimerState(
+        initiallyShown = hasShownWelcomeDisclaimer,
+        onShown = onWelcomeDisclaimerShown,
+        onResumeSignIn = { isGuest ->
+            isGuestPath = isGuest
+            authViewModel.beginSignIn()
+        },
+    )
+    val permissionsController = rememberPermissionsController(onResult = {})
+
     val emailValid = email.isNotBlank()
     val passwordValid = password.isNotBlank()
     val canSubmit = emailValid && passwordValid && !isSigningIn
+
+    fun attemptCredentialsSignIn() {
+        attemptedSubmit = true
+        if (emailValid && passwordValid) disclaimerState.beginSignInOrQueue(isGuest = false)
+    }
 
     // P7.2: staged sign-in. AuthViewModel steps MilewayAuthState through named Loading stages;
     // once it reports Success, report completion down the path the user actually took (guest vs
@@ -218,19 +246,13 @@ fun LoginScreen(
                 emailError = attemptedSubmit && !emailValid,
                 passwordError = attemptedSubmit && !passwordValid,
                 enabled = !isSigningIn,
-                onImeDone = {
-                    attemptedSubmit = true
-                    if (emailValid && passwordValid) authViewModel.beginSignIn()
-                },
+                onImeDone = ::attemptCredentialsSignIn,
             )
 
             Spacer(Modifier.height(DesignTokens.Spacing.xl))
 
             Button(
-                onClick = {
-                    attemptedSubmit = true
-                    if (emailValid && passwordValid) authViewModel.beginSignIn()
-                },
+                onClick = ::attemptCredentialsSignIn,
                 enabled = canSubmit,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -261,10 +283,7 @@ fun LoginScreen(
 
             TextButton(
                 onClick = {
-                    if (!isSigningIn) {
-                        isGuestPath = true
-                        authViewModel.beginSignIn()
-                    }
+                    if (!isSigningIn) disclaimerState.beginSignInOrQueue(isGuest = true)
                 },
                 enabled = !isSigningIn,
                 modifier = Modifier.fillMaxWidth(),
@@ -285,6 +304,16 @@ fun LoginScreen(
                 showPersonaPicker = false
             },
             onDismiss = { showPersonaPicker = false },
+        )
+    }
+
+    if (disclaimerState.isShowing) {
+        WelcomeDisclaimerSheet(
+            onRequestPermissions = {
+                permissionsController.request()
+                disclaimerState.dismiss()
+            },
+            onDismiss = { disclaimerState.dismiss() },
         )
     }
 }

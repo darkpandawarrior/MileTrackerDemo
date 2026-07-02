@@ -178,6 +178,12 @@ private fun AppEntry(
                                     sessionScope.launch { sessionRepository.continueAsGuest() }
                                     stage = AppStage.PIN
                                 },
+                                // P7.5: show WelcomeDisclaimerSheet once per install, persisted so
+                                // it never replays after this first shown-and-dismissed session.
+                                hasShownWelcomeDisclaimer = session?.hasShownWelcomeDisclaimer == true,
+                                onWelcomeDisclaimerShown = {
+                                    sessionScope.launch { sessionRepository.markWelcomeDisclaimerShown() }
+                                },
                             )
                         AppStage.PIN ->
                             PinGateStage(hasPin = session?.hasPin == true, onPassed = { stage = AppStage.APP })
