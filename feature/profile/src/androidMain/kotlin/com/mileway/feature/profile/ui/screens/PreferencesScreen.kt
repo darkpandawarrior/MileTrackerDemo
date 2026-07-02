@@ -1,5 +1,7 @@
 package com.mileway.feature.profile.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,8 +29,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.mileway.core.ui.components.GridProfileTile
 import com.mileway.core.ui.components.ProfileGridItem
 import com.mileway.core.ui.components.ProfileItemStatus
@@ -39,16 +44,18 @@ import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
 import com.mileway.feature.profile.viewmodel.ProfileAction
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import android.provider.Settings as SystemSettings
 
 /**
  * Preferences: a focused service/system preferences screen pushed from the Account hub.
  *
- * A 2-column grid of large tonal tiles under a single "Settings" section header. Five stateful
- * tiles (Push Notifications, Usage Analytics, and P6.5's Push/WhatsApp/Slack channel toggles)
- * flip a ViewModel-held toggle — the channel toggles persist via
- * [com.mileway.core.data.settings.DemoSettingsRepository] (DataStore) — and update their
- * "Enabled / Disabled" subtitle; the remaining tiles raise a one-shot demo snackbar (in the real
- * app they deep-link into system screens or bottom sheets).
+ * A 2-column grid of large tonal tiles under a single "Settings" section header. Push
+ * Notifications/Usage Analytics/P6.5's channel toggles flip a ViewModel-held toggle — the
+ * channel toggles persist via [com.mileway.core.data.settings.DemoSettingsRepository]
+ * (DataStore); Notification Center and Connected Accounts push their own real destinations;
+ * Permissions launches the real system app-details intent; Storage opens
+ * [StorageSheet]'s live on-device byte-count readout + clear-cache action — no tile fires a
+ * demo-placeholder snackbar anymore (P6.6).
  *
  * Full-screen flow (no bubble bar): the grid's content insets carry the bottom padding.
  */
@@ -56,10 +63,14 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun PreferencesScreen(
     onBack: () -> Unit,
+    onOpenNotificationCenter: () -> Unit = {},
+    onOpenConnectedAccounts: () -> Unit = {},
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    var showStorageSheet by remember { mutableStateOf(false) }
 
     // Surface any one-shot preference demo message as a snackbar, then clear it.
     LaunchedEffect(state.preferenceMessage) {
@@ -104,13 +115,14 @@ fun PreferencesScreen(
                     status = if (prefs.usageAnalytics) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
                     action = { viewModel.onAction(ProfileAction.ToggleUsageAnalytics) },
                 ),
+                // P6.6: routes to P6.5's real NotificationCentreScreen instead of a placeholder snackbar.
                 ProfileGridItem(
                     id = "notification_center",
                     title = "Notification Center",
                     subtitle = "WhatsApp, Slack",
                     icon = Icons.Default.NotificationsActive,
                     status = ProfileItemStatus.COMPLETE,
-                    action = { viewModel.onAction(ProfileAction.RaisePreferenceMessage("Notification Center is a demo placeholder.")) },
+                    action = onOpenNotificationCenter,
                 ),
                 // P6.5: Notification Center channel toggles — Mileway's local/offline equivalent
                 // of connect/disconnect switches, DataStore-backed so state survives restart.
@@ -138,29 +150,39 @@ fun PreferencesScreen(
                     status = if (channels.slackEnabled) ProfileItemStatus.COMPLETE else ProfileItemStatus.INCOMPLETE,
                     action = { viewModel.onAction(ProfileAction.ToggleSlackChannel) },
                 ),
+                // P6.6: routes to the new Room-backed ConnectedAccountsScreen instead of a placeholder snackbar.
                 ProfileGridItem(
                     id = "connected_accounts",
                     title = "Connected Accounts",
                     subtitle = "Cabs, Passport",
                     icon = Icons.Default.Link,
                     status = ProfileItemStatus.COMPLETE,
-                    action = { viewModel.onAction(ProfileAction.RaisePreferenceMessage("Connected Accounts is a demo placeholder.")) },
+                    action = onOpenConnectedAccounts,
                 ),
+                // P6.6: launches the real system app-details intent instead of a placeholder snackbar.
                 ProfileGridItem(
                     id = "permissions",
                     title = "Permissions",
                     subtitle = "System settings",
                     icon = Icons.Default.Security,
                     status = ProfileItemStatus.COMPLETE,
-                    action = { viewModel.onAction(ProfileAction.RaisePreferenceMessage("Opens system settings in the full app.")) },
+                    action = {
+                        val intent =
+                            Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            }
+                        context.startActivity(intent)
+                    },
                 ),
+                // P6.6: opens StorageSheet's live byte-count readout + clear-cache action instead of
+                // a placeholder snackbar.
                 ProfileGridItem(
                     id = "storage",
                     title = "Storage",
                     subtitle = "Manage data",
                     icon = Icons.Default.Storage,
                     status = ProfileItemStatus.COMPLETE,
-                    action = { viewModel.onAction(ProfileAction.RaisePreferenceMessage("Manage local data in the full app.")) },
+                    action = { showStorageSheet = true },
                 ),
             )
 
@@ -185,5 +207,9 @@ fun PreferencesScreen(
                 GridProfileTile(item = item)
             }
         }
+    }
+
+    if (showStorageSheet) {
+        StorageSheet(onDismiss = { showStorageSheet = false })
     }
 }

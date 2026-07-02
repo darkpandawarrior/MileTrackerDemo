@@ -11,6 +11,7 @@ import com.mileway.feature.profile.ui.screens.AdvanceRequestDetailsScreen
 import com.mileway.feature.profile.ui.screens.AnalyticsDetailScreen
 import com.mileway.feature.profile.ui.screens.AnalyticsHomeScreen
 import com.mileway.feature.profile.ui.screens.AskAdvanceFormScreen
+import com.mileway.feature.profile.ui.screens.ConnectedAccountsScreen
 import com.mileway.feature.profile.ui.screens.DelegationScreen
 import com.mileway.feature.profile.ui.screens.DemoSettingsScreen
 import com.mileway.feature.profile.ui.screens.HelpScreen
@@ -37,6 +38,7 @@ object ProfileRoutes {
     const val ANALYTICS_DETAIL = "profile/analytics/{category}"
     const val DELEGATION = "profile/delegation"
     const val ACTIVE_SESSIONS = "profile/sessions"
+    const val CONNECTED_ACCOUNTS = "profile/connected_accounts"
     const val QR_HOME = "profile/qr"
     const val DEMO_SETTINGS = "profile/demo_settings"
     const val ROOT_GUARD = "profile/root_guard"
@@ -101,6 +103,13 @@ fun NavGraphBuilder.profileGraph(
     }
     composable(ProfileRoutes.PREFERENCES) {
         PreferencesScreen(
+            onBack = { navController.popBackStack() },
+            onOpenNotificationCenter = { navController.navigate(ProfileRoutes.NOTIFICATIONS) },
+            onOpenConnectedAccounts = { navController.navigate(ProfileRoutes.CONNECTED_ACCOUNTS) },
+        )
+    }
+    composable(ProfileRoutes.CONNECTED_ACCOUNTS) {
+        ConnectedAccountsScreen(
             onBack = { navController.popBackStack() },
         )
     }

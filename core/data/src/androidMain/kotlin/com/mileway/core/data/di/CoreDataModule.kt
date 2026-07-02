@@ -19,6 +19,7 @@ import com.mileway.core.data.session.SessionSource
 import com.mileway.core.data.settings.AgentSessionStore
 import com.mileway.core.data.settings.AgentSessionStoreImpl
 import com.mileway.core.data.settings.DemoSettingsRepository
+import com.mileway.core.data.settings.StorageRepository
 import kotlinx.serialization.json.Json
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -43,6 +44,7 @@ val coreDataModule =
         single { get<MilewayDatabase>().delegationDao() }
         single { get<MilewayDatabase>().sessionDao() }
         single { get<MilewayDatabase>().notificationDao() }
+        single { get<MilewayDatabase>().connectedAccountDao() }
         single { SessionRepository(androidContext()) }
         single<SessionSource> { get<SessionRepository>() }
         single { CurrentTrackDataStore(androidContext(), get()) }
@@ -52,6 +54,8 @@ val coreDataModule =
         single { PinHashStore(androidContext()) }
         single<PinHashSource> { get<PinHashStore>() }
         single { DemoSettingsRepository(androidContext()) }
+        // P6.6: Preferences' Storage tile — real on-device cache-size readout + clear-cache action.
+        single { StorageRepository(androidContext()) }
         // P3.4: pause/restore hook run before ProfileViewModel.CommitAccountSwitch flips the
         // active-account pointer.
         single { MockAccountSessionCoordinator(get(), get(), get()) }

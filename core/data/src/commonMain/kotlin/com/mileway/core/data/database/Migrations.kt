@@ -5,6 +5,31 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 15 → 16 (PLAN_V22 P6.6): additive `connected_accounts` table — a real, persisted
+ * "Connected Accounts" list backing Preferences' tile of the same name, replacing its previous
+ * `RaisePreferenceMessage("... is a demo placeholder.")` snackbar-only tap. Seeded once (mock
+ * cab/passport-style integrations) by `ConnectedAccountsRepository` on first run, mirroring
+ * [MIGRATION_14_15]'s seed-on-first-run shape. See
+ * [com.mileway.core.data.model.db.ConnectedAccountEntity].
+ */
+val MIGRATION_15_16 =
+    object : Migration(15, 16) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `connected_accounts` (
+                    `id`            TEXT    NOT NULL PRIMARY KEY,
+                    `providerName`  TEXT    NOT NULL,
+                    `category`      TEXT    NOT NULL,
+                    `isConnected`   INTEGER NOT NULL,
+                    `updatedAtMs`   INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 14 → 15 (PLAN_V22 P6.5): additive `notifications` table — a real, persisted
  * Notification Centre feed, replacing `NotificationCentreScreen`'s `remember { mutableStateOf(
  * NOTIFICATIONS) }` seed (reset on navigation away) and its hardcoded "174 unread" topbar

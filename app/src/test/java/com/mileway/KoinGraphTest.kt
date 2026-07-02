@@ -2,6 +2,7 @@ package com.mileway
 
 import android.content.Context
 import com.mileway.core.data.dao.AgentDao
+import com.mileway.core.data.dao.ConnectedAccountDao
 import com.mileway.core.data.dao.DelegationDao
 import com.mileway.core.data.dao.DraftExpenseDao
 import com.mileway.core.data.dao.HardwareEventDao
@@ -50,11 +51,13 @@ import com.mileway.feature.profile.di.profileModule
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.feature.profile.viewmodel.ActiveSessionsViewModel
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
+import com.mileway.feature.profile.viewmodel.ConnectedAccountsViewModel
 import com.mileway.feature.profile.viewmodel.DelegationViewModel
 import com.mileway.feature.profile.viewmodel.DemoSettingsViewModel
 import com.mileway.feature.profile.viewmodel.NotificationViewModel
 import com.mileway.feature.profile.viewmodel.PersonalDetailsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import com.mileway.feature.profile.viewmodel.StorageViewModel
 import com.mileway.feature.profile.viewmodel.SwitchAccountViewModel
 import com.mileway.feature.tracking.debug.DebugMenuComposeViewModel
 import com.mileway.feature.tracking.di.trackingModule
@@ -131,6 +134,11 @@ class KoinGraphTest : KoinTest {
         single<SessionDao> { FakeSessionDao() }
         // P6.5: NotificationViewModel collects this in init(); same null-collector trap as above.
         single<NotificationDao> { FakeNotificationDao() }
+        // P6.6: ConnectedAccountsViewModel collects this in init(); same null-collector trap as above.
+        single<ConnectedAccountDao> { FakeConnectedAccountDao() }
+        // P6.6: StorageViewModel reads real on-device byte counts; the app-under-test's real
+        // Context/cacheDir/getDatabasePath work fine on Robolectric, unlike a relaxed mockk Context.
+        single { com.mileway.core.data.settings.StorageRepository(androidContext()) }
         single<AgentSessionStore> { FakeAgentSessionStore() }
         single<AssistantEngine> { FakeAssistantEngine() }
         single<SpeechToText> { FakeSpeechToText() }
@@ -220,6 +228,8 @@ class KoinGraphTest : KoinTest {
         assertNotNull(get<DelegationViewModel>())
         assertNotNull(get<ActiveSessionsViewModel>())
         assertNotNull(get<NotificationViewModel>())
+        assertNotNull(get<ConnectedAccountsViewModel>())
+        assertNotNull(get<StorageViewModel>())
         assertNotNull(get<CheckInViewModel>())
         assertNotNull(get<ApprovalsViewModel>())
         assertNotNull(get<PayablesViewModel>())

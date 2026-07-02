@@ -2,6 +2,7 @@ package com.mileway.feature.profile.di
 
 import com.mileway.feature.profile.repository.ActiveSessionsRepository
 import com.mileway.feature.profile.repository.AdvanceRepository
+import com.mileway.feature.profile.repository.ConnectedAccountsRepository
 import com.mileway.feature.profile.repository.DelegationRepository
 import com.mileway.feature.profile.repository.FakeProfileRepository
 import com.mileway.feature.profile.repository.MockAccountRepository
@@ -11,11 +12,13 @@ import com.mileway.feature.profile.repository.ProfileRepository
 import com.mileway.feature.profile.repository.VehicleDetailsRepository
 import com.mileway.feature.profile.viewmodel.ActiveSessionsViewModel
 import com.mileway.feature.profile.viewmodel.AdvanceViewModel
+import com.mileway.feature.profile.viewmodel.ConnectedAccountsViewModel
 import com.mileway.feature.profile.viewmodel.DelegationViewModel
 import com.mileway.feature.profile.viewmodel.DemoSettingsViewModel
 import com.mileway.feature.profile.viewmodel.NotificationViewModel
 import com.mileway.feature.profile.viewmodel.PersonalDetailsViewModel
 import com.mileway.feature.profile.viewmodel.ProfileViewModel
+import com.mileway.feature.profile.viewmodel.StorageViewModel
 import com.mileway.feature.profile.viewmodel.SwitchAccountViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
@@ -35,6 +38,8 @@ val profileModule =
         single { ActiveSessionsRepository(get()) }
         // P6.5: Notification Centre's Room-backed repository (see NotificationCentreScreen).
         single { NotificationRepository(get()) }
+        // P6.6: Connected Accounts' Room-backed repository (see ConnectedAccountsScreen).
+        single { ConnectedAccountsRepository(get()) }
         viewModelOf(::ProfileViewModel)
         viewModel { AdvanceViewModel(get()) }
         viewModelOf(::DemoSettingsViewModel)
@@ -43,4 +48,7 @@ val profileModule =
         viewModelOf(::DelegationViewModel)
         viewModelOf(::ActiveSessionsViewModel)
         viewModelOf(::NotificationViewModel)
+        viewModelOf(::ConnectedAccountsViewModel)
+        // P6.6: Preferences' Storage tile/sheet (real cache-size readout + clear-cache action).
+        viewModelOf(::StorageViewModel)
     }

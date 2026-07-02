@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.mileway.core.data.dao.AgentDao
+import com.mileway.core.data.dao.ConnectedAccountDao
 import com.mileway.core.data.dao.DelegationDao
 import com.mileway.core.data.dao.DraftExpenseDao
 import com.mileway.core.data.dao.HardwareEventDao
@@ -104,6 +105,7 @@ import com.mileway.feature.profile.ui.screens.AnalyticsDetailScreen
 import com.mileway.feature.profile.ui.screens.AnalyticsHomeScreen
 import com.mileway.feature.profile.ui.screens.AskAdvanceFormScreen
 import com.mileway.feature.profile.ui.screens.ActiveSessionsScreen
+import com.mileway.feature.profile.ui.screens.ConnectedAccountsScreen
 import com.mileway.feature.profile.ui.screens.DelegationScreen
 import com.mileway.feature.profile.ui.screens.DemoSettingsScreen
 import com.mileway.feature.profile.ui.screens.HelpScreen
@@ -277,6 +279,8 @@ class ScreenshotGalleryTest {
             single<SessionDao> { FakeSessionDao() }
             // P6.5: NotificationViewModel collects this in init(); same null-collector trap as above.
             single<NotificationDao> { FakeNotificationDao() }
+            // P6.6: ConnectedAccountsViewModel collects this in init(); same null-collector trap as above.
+            single<ConnectedAccountDao> { FakeConnectedAccountDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }
             single<AssistantEngine> { FakeAssistantEngine() }
             single<SpeechToText> { FakeSpeechToText() }
@@ -1078,6 +1082,16 @@ class ScreenshotGalleryTest {
             }
         }
         capture("notification_centre_screen")
+    }
+
+    @Test
+    fun connectedAccountsScreen() {
+        composeRule.setContent {
+            MilewayTheme {
+                ConnectedAccountsScreen(onBack = {})
+            }
+        }
+        capture("connected_accounts_screen")
     }
 
     // ── Media ──────────────────────────────────────────────────────────────────────
