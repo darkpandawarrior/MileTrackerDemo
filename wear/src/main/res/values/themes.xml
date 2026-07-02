@@ -1,0 +1,7 @@
+<resources>
+    <!-- P2.1: feature:tracking's manifest (TrackMilesActivity, phone-only, never launched from the
+         watch) references @style/Theme.Mileway; the consuming application module must resolve it or
+         manifest-merging fails. :app defines the real Material3 phone theme under this name; :wear
+         only needs a resolvable placeholder since it never starts that activity. -->
+    <style name="Theme.Mileway" parent="@android:style/Theme.DeviceDefault" />
+</resources>

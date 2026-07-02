@@ -75,6 +75,10 @@ doctor {
         ensureJavaHomeMatches = true
         failOnError = false // warn only until team is aligned on JDK toolchain
     }
+    // P2.1: :wear is now a second com.android.application module (phone :app + watch :wear), so the
+    // repo-wide `assembleNoGmsDebug`/`assembleGmsDebug` gate legitimately fans out to both — Doctor's
+    // "did you really mean to build multiple apps" heuristic would otherwise fail every gate run.
+    allowBuildingAllAndroidAppsSimultaneously = true
 }
 
 // --------------------------------------------------------------------------

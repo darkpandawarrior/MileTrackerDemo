@@ -2,6 +2,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-feature android:name="android.hardware.type.watch" />
     <application>
+        <!-- P2.1: standalone = true — the watch app works fully offline against its own local
+             Room/DataStore graph (see WearAppGraph), it does not require the paired phone app to be
+             installed to launch (P2.9's DataLayer sync is an enhancement, not a hard dependency). -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+
+        <activity
+            android:name="com.mileway.wear.WearActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name="com.mileway.wear.MileageTileService"
             android:exported="true"

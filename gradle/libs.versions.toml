@@ -10,6 +10,10 @@ ui = "1.11.1"
 wear-tiles = "1.6.0"
 wear-complications = "1.2.1"
 wear-ongoing = "1.0.0"
+# P2.1: Compose for Wear OS (latest stable — material3/foundation/navigation ship in lockstep) +
+# protolayout core (P2.6's tile rewrite target).
+wear-compose = "1.6.2"
+wear-protolayout = "1.4.1"
 ksp = "2.3.9"
 room = "2.8.4"
 sqlite-bundled = "2.6.2"
@@ -191,6 +195,11 @@ wear-tiles = { module = "androidx.wear.tiles:tiles", version.ref = "wear-tiles" 
 wear-tiles-material = { module = "androidx.wear.tiles:tiles-material", version.ref = "wear-tiles" }
 wear-complications-datasource = { module = "androidx.wear.watchface:watchface-complications-data-source-ktx", version.ref = "wear-complications" }
 wear-ongoing = { module = "androidx.wear:wear-ongoing", version.ref = "wear-ongoing" }
+# P2.1: Compose for Wear OS.
+wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wear-compose" }
+wear-compose-material3 = { module = "androidx.wear.compose:compose-material3", version.ref = "wear-compose" }
+wear-compose-navigation = { module = "androidx.wear.compose:compose-navigation", version.ref = "wear-compose" }
+wear-protolayout = { module = "androidx.wear.protolayout:protolayout", version.ref = "wear-protolayout" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 androidx-test-core = { module = "androidx.test:core-ktx", version = "1.7.0" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version = "1.2.1" }
