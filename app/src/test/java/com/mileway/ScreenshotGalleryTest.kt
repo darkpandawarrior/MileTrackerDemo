@@ -28,6 +28,7 @@ import com.mileway.core.data.dao.NotificationDao
 import com.mileway.core.data.dao.PassportDetailsDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.SessionDao
+import com.mileway.core.data.dao.SupportTicketDao
 import com.mileway.core.data.dao.TripAttachmentDao
 import com.mileway.core.data.dao.VehicleDetailsDao
 import com.mileway.core.data.dao.VoucherDao
@@ -109,6 +110,7 @@ import com.mileway.feature.profile.ui.screens.ConnectedAccountsScreen
 import com.mileway.feature.profile.ui.screens.DelegationScreen
 import com.mileway.feature.profile.ui.screens.DemoSettingsScreen
 import com.mileway.feature.profile.ui.screens.HelpScreen
+import com.mileway.feature.profile.ui.screens.MyTicketsScreen
 import com.mileway.feature.profile.ui.screens.NotificationCentreScreen
 import com.mileway.feature.profile.ui.screens.PreferencesScreen
 import com.mileway.feature.profile.ui.screens.ProfileDetailsScreen
@@ -281,6 +283,9 @@ class ScreenshotGalleryTest {
             single<NotificationDao> { FakeNotificationDao() }
             // P6.6: ConnectedAccountsViewModel collects this in init(); same null-collector trap as above.
             single<ConnectedAccountDao> { FakeConnectedAccountDao() }
+            // P6.8: SupportTicketViewModel collects this in init() (HelpScreen + MyTicketsScreen);
+            // same null-collector trap as above.
+            single<SupportTicketDao> { FakeSupportTicketDao() }
             single<AgentSessionStore> { FakeAgentSessionStore() }
             single<AssistantEngine> { FakeAssistantEngine() }
             single<SpeechToText> { FakeSpeechToText() }
@@ -1068,10 +1073,20 @@ class ScreenshotGalleryTest {
     fun helpSupportScreen() {
         composeRule.setContent {
             MilewayTheme {
-                HelpScreen(onBack = {})
+                HelpScreen(onBack = {}, onOpenMyTickets = {})
             }
         }
         capture("help_support_screen")
+    }
+
+    @Test
+    fun myTicketsScreen() {
+        composeRule.setContent {
+            MilewayTheme {
+                MyTicketsScreen(onBack = {})
+            }
+        }
+        capture("my_tickets_screen")
     }
 
     @Test

@@ -18,6 +18,7 @@ import com.mileway.core.data.dao.PassportDetailsDao
 import com.mileway.core.data.dao.SavedTrackDao
 import com.mileway.core.data.dao.SessionDao
 import com.mileway.core.data.dao.SubmitDraftDao
+import com.mileway.core.data.dao.SupportTicketDao
 import com.mileway.core.data.dao.TripAttachmentDao
 import com.mileway.core.data.dao.VehicleDetailsDao
 import com.mileway.core.data.dao.VoucherDao
@@ -38,6 +39,7 @@ import com.mileway.core.data.model.db.PassportDetailsEntity
 import com.mileway.core.data.model.db.SavedTrack
 import com.mileway.core.data.model.db.SessionEntity
 import com.mileway.core.data.model.db.SubmitDraftEntity
+import com.mileway.core.data.model.db.SupportTicketEntity
 import com.mileway.core.data.model.db.TripAttachmentEntity
 import com.mileway.core.data.model.db.VehicleDetailsEntity
 import com.mileway.core.data.model.db.VoucherEntity
@@ -63,8 +65,9 @@ import com.mileway.core.data.model.db.VoucherEntity
         SessionEntity::class,
         NotificationEntity::class,
         ConnectedAccountEntity::class,
+        SupportTicketEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = false,
 )
 @ConstructedBy(MilewayDatabaseConstructor::class)
@@ -104,6 +107,8 @@ abstract class MilewayDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
 
     abstract fun connectedAccountDao(): ConnectedAccountDao
+
+    abstract fun supportTicketDao(): SupportTicketDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

@@ -5,6 +5,30 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
+ * Migration 16 → 17 (PLAN_V22 P6.8): additive `support_tickets` table — a real, persisted "My
+ * Tickets" store backing `HelpScreen`'s "Contact Support" form, replacing its previous
+ * fire-and-forget `snackbarHostState.showSnackbar(...)`-only tap with nothing inspectable
+ * afterward. Seeded lazily (no first-run seed — an empty ticket list is the correct initial
+ * state, mirroring a fresh support inbox). See [com.mileway.core.data.model.db.SupportTicketEntity].
+ */
+val MIGRATION_16_17 =
+    object : Migration(16, 17) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `support_tickets` (
+                    `id`          TEXT    NOT NULL PRIMARY KEY,
+                    `subject`     TEXT    NOT NULL,
+                    `body`        TEXT    NOT NULL,
+                    `createdAtMs` INTEGER NOT NULL,
+                    `status`      TEXT    NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+/**
  * Migration 15 → 16 (PLAN_V22 P6.6): additive `connected_accounts` table — a real, persisted
  * "Connected Accounts" list backing Preferences' tile of the same name, replacing its previous
  * `RaisePreferenceMessage("... is a demo placeholder.")` snackbar-only tap. Seeded once (mock

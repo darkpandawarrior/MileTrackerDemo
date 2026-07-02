@@ -15,6 +15,7 @@ import com.mileway.feature.profile.ui.screens.ConnectedAccountsScreen
 import com.mileway.feature.profile.ui.screens.DelegationScreen
 import com.mileway.feature.profile.ui.screens.DemoSettingsScreen
 import com.mileway.feature.profile.ui.screens.HelpScreen
+import com.mileway.feature.profile.ui.screens.MyTicketsScreen
 import com.mileway.feature.profile.ui.screens.NotificationCentreScreen
 import com.mileway.feature.profile.ui.screens.OrgChartScreen
 import com.mileway.feature.profile.ui.screens.PreferencesScreen
@@ -30,6 +31,7 @@ object ProfileRoutes {
     const val PREFERENCES = "preferences"
     const val SETTINGS = "profile_settings"
     const val HELP = "profile_help"
+    const val MY_TICKETS = "profile/help/my_tickets"
     const val NOTIFICATIONS = "profile/notifications"
     const val ADVANCE_HISTORY = "profile/advance"
     const val ASK_ADVANCE = "profile/advance/new"
@@ -121,6 +123,12 @@ fun NavGraphBuilder.profileGraph(
     }
     composable(ProfileRoutes.HELP) {
         HelpScreen(
+            onBack = { navController.popBackStack() },
+            onOpenMyTickets = { navController.navigate(ProfileRoutes.MY_TICKETS) },
+        )
+    }
+    composable(ProfileRoutes.MY_TICKETS) {
+        MyTicketsScreen(
             onBack = { navController.popBackStack() },
         )
     }

@@ -4,19 +4,27 @@ package com.mileway.feature.profile.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,19 +33,24 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,7 +58,12 @@ import com.mileway.core.ui.components.CollapsibleSectionCard
 import com.mileway.core.ui.components.topbar.DepthAwareTopBar
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.DesignTokens.NavigationDepth
+import com.mileway.feature.profile.data.VIDEO_TUTORIALS
+import com.mileway.feature.profile.data.VideoTutorial
+import com.mileway.feature.profile.viewmodel.SupportTicketViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
 
 private data class Faq(val q: String, val a: String, val category: String)
 
@@ -157,10 +175,18 @@ private val CATEGORIES = listOf("Getting Started", "Track Miles", "Log Miles", "
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HelpScreen(onBack: () -> Unit) {
+fun HelpScreen(
+    onBack: () -> Unit,
+    onOpenMyTickets: () -> Unit = {},
+    viewModel: SupportTicketViewModel = koinViewModel(),
+) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val ticketState by viewModel.state.collectAsState()
+    var showContactForm by rememberSaveable { mutableStateOf(false) }
+    var subjectInput by rememberSaveable { mutableStateOf("") }
+    var bodyInput by rememberSaveable { mutableStateOf("") }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -244,6 +270,13 @@ fun HelpScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(8.dp))
 
+            Text("Video Tutorials", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m)) {
+                items(VIDEO_TUTORIALS, key = { it.id }) { tutorial -> VideoTutorialCard(tutorial) }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
@@ -257,20 +290,76 @@ fun HelpScreen(onBack: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Button(
-                        onClick = { scope.launch { snackbarHostState.showSnackbar("Email sent to support@mileway.app") } },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(8.dp))
-                        Text("Contact Support")
+
+                    if (ticketState.submitError != null) {
+                        Text(
+                            ticketState.submitError.orEmpty(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
                     }
-                    Button(
-                        onClick = { scope.launch { snackbarHostState.showSnackbar("Bug report submitted: thank you!") } },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                    ) {
-                        Text("Report a Bug")
+
+                    if (showContactForm) {
+                        OutlinedTextField(
+                            value = subjectInput,
+                            onValueChange = { subjectInput = it },
+                            label = { Text("Subject") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = bodyInput,
+                            onValueChange = { bodyInput = it },
+                            label = { Text("Describe the issue") },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Button(
+                            onClick = {
+                                viewModel.submit(subject = subjectInput, body = bodyInput)
+                                if (subjectInput.isNotBlank() && bodyInput.isNotBlank()) {
+                                    subjectInput = ""
+                                    bodyInput = ""
+                                    showContactForm = false
+                                    scope.launch { snackbarHostState.showSnackbar("Ticket submitted — view it in My Tickets") }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Submit Ticket")
+                        }
+                        TextButton(onClick = {
+                            showContactForm = false
+                            viewModel.clearSubmitError()
+                        }) {
+                            Text("Cancel")
+                        }
+                    } else {
+                        Button(
+                            onClick = { showContactForm = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.size(8.dp))
+                            Text("Contact Support")
+                        }
+                        Button(
+                            onClick = {
+                                viewModel.submit(
+                                    subject = "Bug report",
+                                    body = "Auto-filed from Help & Support's Report a Bug action.",
+                                )
+                                scope.launch { snackbarHostState.showSnackbar("Bug report submitted — view it in My Tickets") }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                        ) {
+                            Text("Report a Bug")
+                        }
+                        TextButton(onClick = onOpenMyTickets, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.ConfirmationNumber, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.size(8.dp))
+                            Text("My Tickets (${ticketState.tickets.size})")
+                        }
                     }
                 }
             }
@@ -278,6 +367,85 @@ fun HelpScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(16.dp))
         }
     }
+}
+
+/**
+ * A single "Video Tutorials" card — tapping toggles a locally simulated playback progress
+ * (see [rememberSimulatedPlayback]), not a real video stream (see [VideoTutorial]'s doc for why).
+ */
+@Composable
+private fun VideoTutorialCard(tutorial: VideoTutorial) {
+    val (isPlaying, progress, toggle) = rememberSimulatedPlayback()
+
+    Card(modifier = Modifier.width(180.dp)) {
+        Column(
+            modifier = Modifier.padding(DesignTokens.Spacing.m),
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.xs),
+        ) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayCircle,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    modifier = Modifier.size(28.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(tutorial.category, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(tutorial.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(tutorial.durationLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (isPlaying || progress > 0f) {
+                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+            }
+            TextButton(onClick = toggle, modifier = Modifier.fillMaxWidth()) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.size(4.dp))
+                Text(
+                    if (isPlaying) {
+                        "Pause"
+                    } else if (progress > 0f) {
+                        "Resume"
+                    } else {
+                        "Play"
+                    },
+                )
+            }
+        }
+    }
+}
+
+private data class SimulatedPlayback(val isPlaying: Boolean, val progress: Float, val toggle: () -> Unit)
+
+/**
+ * Local playback-state simulation for [VideoTutorialCard]: while "playing", [progress] advances
+ * from its current value to 1f over a few seconds, then stops — a working local play/pause state
+ * without a real video stream or codec dependency (see [VideoTutorial]'s doc).
+ */
+@Composable
+private fun rememberSimulatedPlayback(): SimulatedPlayback {
+    var isPlaying by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(isPlaying) {
+        if (!isPlaying) return@LaunchedEffect
+        while (isPlaying && progress < 1f) {
+            delay(200L)
+            progress = (progress + 0.05f).coerceAtMost(1f)
+        }
+        if (progress >= 1f) isPlaying = false
+    }
+
+    return SimulatedPlayback(
+        isPlaying = isPlaying,
+        progress = progress,
+        toggle = {
+            if (progress >= 1f) progress = 0f
+            isPlaying = !isPlaying
+        },
+    )
 }
 
 @Composable
@@ -302,7 +470,7 @@ private fun FaqItem(faq: Faq) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        androidx.compose.material3.TextButton(onClick = { expanded = !expanded }) {
+        TextButton(onClick = { expanded = !expanded }) {
             Text(if (expanded) "Show less" else "Show answer", style = MaterialTheme.typography.labelSmall)
         }
     }
