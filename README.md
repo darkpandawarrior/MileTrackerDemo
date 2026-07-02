@@ -39,7 +39,7 @@ Every screen draws from deterministic mock data, so there are zero backend calls
 - [Ralph-loop development](#ralph-loop-development)
 - [Testing and quality](#testing-and-quality)
 - [Roadmap](#roadmap)
-- [iOS and Wear OS](#ios-and-wear-os)
+- [iOS, Wear OS and watchOS](#ios-wear-os-and-watchos)
 - [The location engine](#the-location-engine)
 
 </details>
@@ -274,11 +274,15 @@ graph TD
     end
 
     STUB[":stub · deterministic mock data"]
-    WEAR[":wear · Wear OS tile"]
+    WEAR[":wear · Wear OS app"]
+    SWATCH[":sharedWatch · headless watchOS framework"]
+    WIDGET[":widget · Glance home-screen widget"]
 
     APP --> Features
     APP --> STUB
     APP --> WEAR
+    APP --> WIDGET
+    SWATCH --> DATA
     Features --> Core
     STUB --> DATA
     STUB --> NET
@@ -311,9 +315,10 @@ graph TD
 | `:core:common` | Shared utilities / primitives |
 | `:feature:*` | tracking · logging · media · profile · approvals · payables · travel · agent · cards · payments · events |
 | `:stub` | Deterministic mock data for every repository (no backend) |
-| `:wear` | Wear OS companion tile |
-| `:shared` | iOS umbrella framework — re-exports `core:ui`, `feature:tracking` and `feature:agent` as the single `Mileway.framework` Xcode links against |
-| `:widget` | Glance home-screen widget (mileage summary) |
+| `:wear` | Wear OS app — dashboard, trip list/detail, tile, complication, ongoing activity, phone sync |
+| `:sharedWatch` | Headless KMP static framework (no Compose) consumed by the native SwiftUI watchOS app |
+| `:shared` | iOS umbrella framework — re-exports `core:ui`, `feature:tracking`, `feature:agent` and `feature:logging` as the single `Mileway.framework` Xcode links against |
+| `:widget` | Glance home-screen widget (mileage summary + quick start/stop) |
 | `:baselineprofile` | Macrobenchmark module generating the Baseline Profile via `:app:generateNoGmsReleaseBaselineProfile` |
 | `build-logic` | Gradle convention plugins (centralised AGP / Kotlin / Compose config) |
 
@@ -333,9 +338,10 @@ Mileway/
 ├── feature/                  # tracking · logging · media · profile · approvals
 │                             # payables · travel · agent · cards · payments · events
 ├── stub/                     # deterministic mock data for every repository
-├── wear/                     # Wear OS companion tile
-├── shared/                   # iOS umbrella framework (re-exports core:ui, feature:tracking, feature:agent)
-├── widget/                   # Glance home-screen widget
+├── wear/                     # Wear OS app (dashboard, trip list/detail, tile, complication)
+├── sharedWatch/              # headless KMP framework for the native SwiftUI watchOS app
+├── shared/                   # iOS umbrella framework (re-exports core:ui, feature:tracking, feature:agent, feature:logging)
+├── widget/                   # Glance home-screen widget + quick start/stop
 ├── baselineprofile/          # macrobenchmark module for Baseline Profile generation
 ├── build-logic/              # Gradle convention plugins
 ├── docs/                     # README assets, screenshots, release & brand docs
@@ -473,23 +479,58 @@ roadmap reflects direction rather than commitments.
 - [x] **Login / onboarding depth (V22).** Staged sign-in loading states, a demo-mode persona picker,
       an app-wide local PIN gate (set/check with biometric fallback), and a welcome disclaimer sheet
       requesting real location/notification permissions before first use.
+- [x] **Watch platform build-out (V23).** Shared `SurfaceSnapshot`/`WatchSyncPayload` domain contract
+      in `core:data`; a full Wear OS app (dashboard, trip list/detail, tile, complication, ongoing
+      activity, phone→watch `DataClient` sync); a native SwiftUI watchOS app over the new headless
+      `:sharedWatch` KMP framework with two-way `WatchConnectivity` sync; Android Glance widget +
+      App Shortcuts + Quick Settings tile + AppFunctions; iOS WidgetKit widgets, Live Activity/Dynamic
+      Island, and App Intents/Siri Shortcuts; an accessibility sweep across every new surface on both
+      platforms.
 
 **Exploring**
 
-- [ ] Baseline Profiles for startup/scroll performance
-- [ ] watchOS companion &amp; iOS WidgetKit surfaces
+- [ ] Baseline Profiles real on-device generation (device-gated; static profile ships today)
 - [ ] Instrumented (on-device) UI test tier alongside the JVM suite
-- [ ] Accessibility pass (TalkBack, semantics, large-font / RTL)
 - [ ] Larger bundled offline map packs
 - [ ] Expand Roborazzi catalog to remaining edge-case states
+- [ ] watchOS live device verification, AppFunctions ADB invocation, Siri phrase invocation — all
+      compile/build-verified here, pending real-device/simulator-runtime confirmation
 
-## iOS and Wear OS
+## iOS, Wear OS and watchOS
 
 - **iOS.** Every `:core:*` module compiles to an iOS framework, with `expect`/`actual` services
   backed by CoreLocation, Vision (OCR), UserNotifications, LocalAuthentication and BackgroundTasks.
   A few proprietary integrations (in-app update, install-referrer) are stubbed with `TODO(ios)`
-  markers, and the shared Compose UI renders through a minimal SwiftUI host.
-- **Wear OS.** `:wear` ships a `MileageTileService` tile that surfaces today's distance.
+  markers, and the shared Compose UI renders through a minimal SwiftUI host. Home/Lock Screen
+  WidgetKit widgets, a Live Activity/Dynamic Island for active tracking, and App Intents/Siri
+  Shortcuts (start/stop/log) round out the iOS surface, all reading the same offline
+  `SurfaceSnapshot`/`WatchFacade` seam as the phone app.
+- **Wear OS.** `:wear` is a full Compose-for-Wear-OS app: a `ScalingLazyColumn` dashboard (today/week
+  distance, tracking state, goal progress), trip list + detail, a real tile and complication backed
+  by the shared snapshot, an ongoing activity wired to live tracking, and a phone→watch `DataClient`
+  sync (gms flavor only; noGms stays FOSS-pure).
+- **watchOS.** A native SwiftUI app (`iosApp/MilewayWatch`) over `:sharedWatch`, a headless KMP
+  static framework exposing the same domain facade with no Compose/UI dependency — dashboard, trip
+  list, and two-way `WatchConnectivity` sync with the iPhone app. Built via XcodeGen
+  (`iosApp/project.yml`); verified with `xcodebuild`, not the Gradle gate.
+- **Both watch platforms** share one commonMain contract: `SurfaceSnapshot` (trip stats) and
+  `WatchSyncPayload`/`WatchSyncBridge` (the serializable phone↔watch wire format) live in
+  `core:data`, so Wear's `DataClient` push and watchOS's `WatchConnectivity` session drive off the
+  identical shared model — no per-platform reimplementation of the sync contract.
+
+**Verification status by surface** (what's gate-verified here vs. pending real hardware):
+
+| Surface | Build/compile | Automated tests | Live/device verification |
+|---|---|---|---|
+| Wear OS app (dashboard, trips, tile, complication, ongoing activity) | ✅ `assembleNoGmsDebug`/`assembleGmsDebug` | ✅ `testNoGmsDebugUnitTest` | ⏸ on-watch GPS + Roborazzi screenshots opportunistically skipped (backlog) |
+| Phone→watch DataLayer sync (gms) | ✅ compiles, FOSS-purity guard passes | ✅ unit-tested | ⏸ needs a paired physical/emulated Wear device |
+| watchOS app (SwiftUI + `:sharedWatch`) | ✅ `xcodebuild … -scheme MilewayWatch build` | — (no watch XCTest target yet) | ⏸ needs a watchOS simulator/device run, not just a build |
+| WatchConnectivity sync (iOS ↔ watchOS) | ✅ compiles both schemes | — | ⏸ needs a live paired simulator/device session |
+| Android Glance widget + quick start/stop | ✅ `assembleNoGmsDebug` | ✅ `MileageSummaryWidgetTest` | — (in-process Glance render, no home-screen manual check done here) |
+| Android App Shortcuts / Quick Settings tile / AppFunctions | ✅ compiles | ✅ unit-tested | ⏸ AppFunctions invocation needs `adb shell` on an API-36 emulator (device-gated) |
+| iOS WidgetKit + Live Activity/Dynamic Island | ✅ `xcodebuild -scheme MilewayWidgets build` | — | ⏸ Lock Screen/Dynamic Island rendering needs a real device or simulator run |
+| iOS App Intents / Siri Shortcuts | ✅ compiles, `AppShortcutsProvider` registered | — | ⏸ Siri phrase invocation needs a device/simulator with Siri running |
+| Accessibility sweep (Android + iOS/watchOS surfaces) | ✅ compiles | — | ⏸ manual VoiceOver/TalkBack walkthrough documented inline; no automated a11y audit target yet |
 
 ## The location engine
 
