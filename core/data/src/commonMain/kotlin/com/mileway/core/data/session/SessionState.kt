@@ -19,6 +19,10 @@ const val DEFAULT_SESSION_TENANT = "DEMO-TENANT"
  * shaped like a real `profile/me` response instead of the two bare fields sign-in used to write.
  * [isFirstLoginPending] gates the one-shot welcome banner `FirstLoginBannerViewModel` clears after
  * its first display.
+ *
+ * [hasPin] is PLAN_V22 P7.4's local PIN-gate flag: true once the reviewer has completed
+ * `SetPinScreen` for this session. `LauncherActivity` uses it to decide whether a fresh sign-in
+ * routes to `AppStage.PIN`'s setup path (`SetPinScreen`) or its verify path (`CheckPinScreen`).
  */
 data class SessionState(
     val kind: SessionKind = SessionKind.NONE,
@@ -31,6 +35,7 @@ data class SessionState(
     val themeColorHex: String? = null,
     val currencySymbol: String? = null,
     val isFirstLoginPending: Boolean = false,
+    val hasPin: Boolean = false,
 ) {
     val isSignedIn: Boolean get() = kind != SessionKind.NONE
     val isGuest: Boolean get() = kind == SessionKind.GUEST

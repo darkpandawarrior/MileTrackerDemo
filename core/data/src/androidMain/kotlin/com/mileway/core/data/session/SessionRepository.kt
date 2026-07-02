@@ -38,6 +38,7 @@ class SessionRepository(
     private val themeColorHexKey = stringPreferencesKey("session_theme_color_hex")
     private val currencySymbolKey = stringPreferencesKey("session_currency_symbol")
     private val firstLoginPendingKey = booleanPreferencesKey("session_first_login_pending")
+    private val hasPinKey = booleanPreferencesKey("session_has_pin")
 
     override val sessionState: Flow<SessionState> =
         context.sessionDataStore.data.map { prefs ->
@@ -56,6 +57,7 @@ class SessionRepository(
                 themeColorHex = prefs[themeColorHexKey],
                 currencySymbol = prefs[currencySymbolKey],
                 isFirstLoginPending = prefs[firstLoginPendingKey] ?: false,
+                hasPin = prefs[hasPinKey] ?: false,
             )
         }
 
@@ -104,6 +106,16 @@ class SessionRepository(
         context.sessionDataStore.edit { prefs ->
             prefs[firstLoginPendingKey] = false
         }
+    }
+
+    /**
+     * PLAN_V22 P7.4: marks this session as having completed `SetPinScreen`, so subsequent app
+     * launches (until sign-out) route `AppStage.PIN` to `CheckPinScreen`'s verify path instead of
+     * `SetPinScreen`'s setup path. The PIN digest itself lives in [PinHashSource], keyed by
+     * [PIN_GATE_ACCOUNT_ID] — this flag is only the "has one been set" bit.
+     */
+    suspend fun markPinSet() {
+        context.sessionDataStore.edit { prefs -> prefs[hasPinKey] = true }
     }
 
     /** Clear the session (sign out) — returns the app to the login screen on next launch. */

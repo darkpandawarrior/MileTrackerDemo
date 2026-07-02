@@ -32,6 +32,7 @@ class SessionRepository(
     private val themeColorHexKey = stringPreferencesKey("session_theme_color_hex")
     private val currencySymbolKey = stringPreferencesKey("session_currency_symbol")
     private val firstLoginPendingKey = booleanPreferencesKey("session_first_login_pending")
+    private val hasPinKey = booleanPreferencesKey("session_has_pin")
 
     private val store: DataStore<Preferences> =
         PreferenceDataStoreFactory.createWithPath(
@@ -55,6 +56,7 @@ class SessionRepository(
                 themeColorHex = prefs[themeColorHexKey],
                 currencySymbol = prefs[currencySymbolKey],
                 isFirstLoginPending = prefs[firstLoginPendingKey] ?: false,
+                hasPin = prefs[hasPinKey] ?: false,
             )
         }
 
@@ -94,6 +96,11 @@ class SessionRepository(
         store.edit { prefs ->
             prefs[firstLoginPendingKey] = false
         }
+    }
+
+    /** PLAN_V22 P7.4: marks this session as having completed `SetPinScreen` (see androidMain doc). */
+    suspend fun markPinSet() {
+        store.edit { prefs -> prefs[hasPinKey] = true }
     }
 
     suspend fun signOut() {

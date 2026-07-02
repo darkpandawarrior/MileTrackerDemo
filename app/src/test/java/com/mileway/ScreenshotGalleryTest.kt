@@ -379,6 +379,7 @@ class ScreenshotGalleryTest {
                     eventsModule,
                     homeModule,
                     authModule,
+                    com.mileway.ui.auth.pinModule,
                     appModule,
                     fakeOverrides,
                 )
@@ -1377,6 +1378,26 @@ class ScreenshotGalleryTest {
             }
         }
         capture("splash_screen")
+    }
+
+    @Test
+    fun setPinScreen() {
+        composeRule.setContent {
+            MilewayTheme {
+                com.mileway.ui.auth.SetPinScreen(onCompleted = {}, onSkip = {})
+            }
+        }
+        capture("set_pin_screen")
+    }
+
+    @Test
+    fun checkPinScreen() {
+        composeRule.setContent {
+            MilewayTheme {
+                com.mileway.ui.auth.CheckPinScreen(onUnlocked = {})
+            }
+        }
+        capture("check_pin_screen")
     }
 
     @Test

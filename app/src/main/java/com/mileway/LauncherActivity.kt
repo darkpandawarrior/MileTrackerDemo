@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mileway.core.common.deeplink.DeepLinkRouter
 import com.mileway.core.common.deeplink.DeepLinkValidator
 import com.mileway.core.data.session.SessionRepository
+import com.mileway.core.data.session.SessionState
 import com.mileway.core.network.config.ConfigProvider
 import kotlinx.coroutines.launch
 import com.mileway.core.ui.platform.LocalManagerProvider
@@ -31,13 +32,21 @@ import com.mileway.core.ui.platform.isUnderMaintenance
 import com.mileway.core.ui.theme.MilewayTheme
 import com.mileway.core.ui.theme.ThemeController
 import com.mileway.ui.MilewayAppRoot
+import com.mileway.ui.auth.CheckPinScreen
 import com.mileway.ui.auth.LoginScreen
+import com.mileway.ui.auth.SetPinScreen
 import com.mileway.ui.auth.SplashScreen
 import com.mileway.ui.toAppRoute
 import org.koin.compose.koinInject
 
-/** App startup stages: splash → fake login → the bottom-navigation shell. */
-private enum class AppStage { SPLASH, LOGIN, APP }
+/**
+ * App startup stages: splash → fake login → PLAN_V22 P7.4's local PIN/biometric gate → the
+ * bottom-navigation shell. [PIN] sits between [LOGIN] and [APP] on every path into the app
+ * (fresh sign-in and a returning already-signed-in session both pass through it), rendering
+ * `SetPinScreen` the first time (`SessionState.hasPin == false`) or `CheckPinScreen` on every
+ * later launch until sign-out.
+ */
+private enum class AppStage { SPLASH, LOGIN, PIN, APP }
 
 /**
  * Single entry point for the app. Plays the splash and fake-login theatre, then hosts the
@@ -68,6 +77,33 @@ private fun Intent.deepLinkRoute(): String? {
     // DL.2/DL.4: route both mileway:// and verified https App Links through the shared router, then map
     // to a concrete nav route (including sub-destinations: checkin / expense / settings) via toAppRoute().
     return DeepLinkRouter.resolve(raw).toAppRoute()
+}
+
+/**
+ * Pure reconciliation of [AppStage] against the persisted [session] — extracted from [AppEntry]'s
+ * `LaunchedEffect` so the branching lives in a small, directly-testable function rather than
+ * inflating that composable's cyclomatic complexity.
+ *
+ * A.1: once a session resolves as already-signed-in, splash/login should never replay for it.
+ * P7.4: a signed-in session still has to pass the PIN gate — only jumps straight to [AppStage.APP]
+ * once [SessionState.hasPin] is true; a fresh sign-in with no PIN yet routes to [AppStage.PIN]
+ * instead. P2.4: the reverse transition — a session flipping back to signed-out while past LOGIN
+ * falls back to [AppStage.LOGIN].
+ *
+ * @return the stage [AppEntry] should move to, or `null` if [currentStage] already reflects [session].
+ */
+private fun nextStageForSession(
+    session: SessionState?,
+    currentStage: AppStage,
+): AppStage? {
+    if (session == null) return null
+    return when {
+        session.isSignedIn && session.hasPin && currentStage != AppStage.PIN && currentStage != AppStage.APP ->
+            AppStage.APP
+        session.isSignedIn && !session.hasPin && currentStage == AppStage.SPLASH -> AppStage.PIN
+        !session.isSignedIn && (currentStage == AppStage.PIN || currentStage == AppStage.APP) -> AppStage.LOGIN
+        else -> null
+    }
 }
 
 @Composable
@@ -102,20 +138,11 @@ private fun AppEntry(
 
     var stage by rememberSaveable { mutableStateOf(AppStage.SPLASH) }
 
-    // A.1: once the persisted session resolves as already-signed-in, skip splash + login entirely.
-    // This makes a guest session survive process recreation and lets deep links resolve for a guest
-    // without bouncing back to the login screen. A signed-out user falls through to the normal flow.
-    // P2.4: the reverse transition — `ProfileViewModel.SignOut` clears the session (via
-    // `SessionRepository.signOut()`) when the last persona is signed out of; once that persisted
-    // state flips to signed-out while still in the APP stage, fall back to LOGIN. This is the
-    // durable, process-death-safe path; `MilewayAppRoot`'s `onSignedOut` above is the fast path for
-    // the live composition.
+    // See nextStageForSession's doc for the full A.1/P7.4/P2.4 reconciliation rationale;
+    // `MilewayAppRoot`'s `onSignedOut` below is the fast path for the live composition, this is
+    // the durable, process-death-safe path.
     LaunchedEffect(session) {
-        val current = session
-        when {
-            current != null && current.isSignedIn && stage != AppStage.APP -> stage = AppStage.APP
-            current != null && !current.isSignedIn && stage == AppStage.APP -> stage = AppStage.LOGIN
-        }
+        nextStageForSession(session, stage)?.let { stage = it }
     }
 
     // PF.4: seed the Activity-scoped platform managers (in-app update / review / share / …) so any
@@ -141,15 +168,19 @@ private fun AppEntry(
                             LoginScreen(
                                 // A.1: persist how the user signed in BEFORE entering the app, so the
                                 // session (guest or credentials) survives recreation and deep links.
+                                // P7.4: land on the PIN gate next, not the app shell directly — every
+                                // sign-in (fresh or guest) passes through SetPinScreen/CheckPinScreen.
                                 onSignInWithCredentials = { email ->
                                     sessionScope.launch { sessionRepository.signInWithCredentials(email) }
-                                    stage = AppStage.APP
+                                    stage = AppStage.PIN
                                 },
                                 onContinueAsGuest = {
                                     sessionScope.launch { sessionRepository.continueAsGuest() }
-                                    stage = AppStage.APP
+                                    stage = AppStage.PIN
                                 },
                             )
+                        AppStage.PIN ->
+                            PinGateStage(hasPin = session?.hasPin == true, onPassed = { stage = AppStage.APP })
                         AppStage.APP ->
                             UpdateGate(config = updateConfig) {
                                 MilewayAppRoot(
@@ -165,5 +196,24 @@ private fun AppEntry(
                 }
             }
         }
+    }
+}
+
+/**
+ * `AppStage.PIN`'s screen picker, extracted from [AppEntry] to keep that composable's branching
+ * flat. `SetPinScreen` the first time this session has ever passed the gate ([hasPin] false),
+ * `CheckPinScreen` on every later launch until sign-out. The session can briefly be null right
+ * after a fresh sign-in (DataStore write still in flight) — [AppEntry] treats that as "no PIN yet"
+ * ([hasPin] false) so the reviewer sees setup rather than a flash of the verify screen.
+ */
+@Composable
+private fun PinGateStage(
+    hasPin: Boolean,
+    onPassed: () -> Unit,
+) {
+    if (hasPin) {
+        CheckPinScreen(onUnlocked = onPassed)
+    } else {
+        SetPinScreen(onCompleted = onPassed, onSkip = onPassed)
     }
 }

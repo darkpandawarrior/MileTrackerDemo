@@ -71,6 +71,10 @@ import com.mileway.feature.tracking.viewmodel.SavedTracksViewModel
 import com.mileway.feature.tracking.viewmodel.TrackDetailViewModel
 import com.mileway.feature.tracking.viewmodel.TrackInsightsViewModel
 import com.mileway.feature.tracking.viewmodel.TrackMilesViewModel
+import com.mileway.ui.auth.authModule
+import com.mileway.ui.auth.pinModule
+import com.mileway.ui.auth.AuthViewModel
+import com.mileway.ui.auth.PinViewModel
 import com.mileway.ui.search.MasterSearchViewModel
 import com.mileway.core.platform.NotificationScheduler
 import com.mileway.core.platform.PermissionsProvider
@@ -193,6 +197,8 @@ class KoinGraphTest : KoinTest {
                 paymentsModule,
                 eventsModule,
                 appModule,
+                authModule,
+                pinModule,
                 // Override platform-backed agent services last so fakes win over agentPlatformModule
                 module { single<AgentAnalyticsStore> { FakeAgentAnalyticsStore() } },
             )
@@ -241,6 +247,8 @@ class KoinGraphTest : KoinTest {
         assertNotNull(get<CreateEventViewModel>())
         assertNotNull(get<EventsHistoryViewModel>())
         assertNotNull(get<MasterSearchViewModel>())
+        assertNotNull(get<AuthViewModel>())
+        assertNotNull(get<PinViewModel>())
     }
 
     @Test
