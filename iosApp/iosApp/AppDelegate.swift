@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             using: nil
         ) { task in
             IosBgTaskDispatcher.shared.runTask(taskId: task.identifier) { success in
-                task.setTaskCompleted(success: success)
+                task.setTaskCompleted(success: success.boolValue)
             }
             // Reschedule next weekly run.
             let req = BGProcessingTaskRequest(identifier: "com.mileway.maintenance")
@@ -48,7 +48,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             using: nil
         ) { task in
             IosBgTaskDispatcher.shared.runTask(taskId: task.identifier) { success in
-                task.setTaskCompleted(success: success)
+                task.setTaskCompleted(success: success.boolValue)
             }
             // Reschedule next daily check.
             let req = BGAppRefreshTaskRequest(identifier: "com.mileway.autodiscard")
