@@ -102,6 +102,10 @@ tasks.register("fullCheck") {
         "ktlintCheck",
         "detekt",
         ":app:testNoGmsDebugUnitTest",
+        // Z.5b: the @GraphicsMode(NATIVE) Roborazzi screenshot tests are excluded from the task above
+        // (native Skia + forkEvery restart boundaries crash the JVM); they run in their own isolated
+        // single fork here so they still gate but never destabilise the main unit-test fork.
+        ":app:screenshotTestNoGmsDebug",
         // KMP modules name their JVM unit-test task `testAndroidHostTest`, not the variant-specific
         // `testNoGmsDebugUnitTest`, so the :app aggregate above never ran them. The unqualified task
         // name doesn't resolve at the root project (Z.5a) — a broken core:data commonTest compile
