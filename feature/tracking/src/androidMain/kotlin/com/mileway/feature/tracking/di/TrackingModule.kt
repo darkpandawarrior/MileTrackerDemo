@@ -28,6 +28,7 @@ import com.mileway.feature.tracking.viewmodel.SavedTracksViewModel
 import com.mileway.feature.tracking.viewmodel.TrackDetailViewModel
 import com.mileway.feature.tracking.viewmodel.TrackInsightsViewModel
 import com.mileway.feature.tracking.viewmodel.TrackMilesViewModel
+import com.mileway.feature.tracking.watch.WatchFacade
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
@@ -66,6 +67,11 @@ val trackingModule =
                 savedTrackRepository = get(),
             )
         }
+
+        // P1.2/P2.4: the shared watch-domain facade (Wear OS Compose today; the headless watchOS
+        // KMP framework later) — resolves through the same SnapshotPublisher/SavedTrackRepository/
+        // TrackingController bindings above, so :wear's WearAppGraph gets it for free.
+        single { WatchFacade(snapshotPublisher = get(), trackRepository = get(), trackingController = get()) }
 
         viewModelOf(::SavedTracksViewModel)
         // Explicit definition (not viewModelOf): LocationNameResolver is bound in platformModule,

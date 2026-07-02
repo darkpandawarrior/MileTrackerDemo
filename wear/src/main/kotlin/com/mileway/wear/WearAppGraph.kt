@@ -10,7 +10,19 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.core.logger.Level
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.module
 import org.koin.mp.KoinPlatform
+
+/**
+ * P2.4: `:wear`'s own module for its Compose screens' ViewModels — kept separate from
+ * `trackingModule` (which is shared with the phone/iOS graph and knows nothing about Wear-specific
+ * presentation types like [com.mileway.wear.WearViewModel]).
+ */
+private val wearModule =
+    module {
+        viewModelOf(::WearViewModel)
+    }
 
 /**
  * P2.1: the Wear app's own Koin bootstrap.
@@ -38,6 +50,7 @@ object WearAppGraph {
                 coreDataModule,
                 stubModule,
                 trackingModule,
+                wearModule,
             )
         }
     }

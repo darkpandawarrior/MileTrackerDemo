@@ -44,6 +44,9 @@ dependencies {
     // P2.3: WearMilewayTheme's @Preview (round-watch device preview).
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
+    // P2.4: WearViewModel (androidx.lifecycle.ViewModel) + collectAsStateWithLifecycle in WearRootScreen.
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.lifecycle.runtime.compose)
 
     // Tile / complication / ongoing-activity surfaces (already present before this task).
     implementation(libs.wear.protolayout)
