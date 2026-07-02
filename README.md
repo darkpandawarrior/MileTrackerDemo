@@ -51,7 +51,7 @@ you track trips, log expenses, route approvals, and the data is still there afte
 tracked code reaches for the network.
 
 I also use it as a reference for how I build Android and KMP apps. That means Compose Multiplatform,
-a multi-module clean architecture across 23 Gradle modules, MVI-style unidirectional state, Koin for
+a multi-module clean architecture across 27 Gradle modules, MVI-style unidirectional state, Koin for
 DI, Room (KMP) with DataStore, and a `gms`/`noGms` flavor split so the same code ships to both the
 Play Store and F-Droid.
 
@@ -61,7 +61,7 @@ Play Store and F-Droid.
   with spike detection, four-bucket distance accounting and IMU fusion.
 - 📴 **Genuinely offline.** No backend URLs, no API keys, no network calls in tracked code. It runs in
   airplane mode and keeps its state in Room and DataStore.
-- 🧩 **23-module clean architecture.** Feature modules never touch each other. They meet only at the
+- 🧩 **27-module clean architecture.** Feature modules never touch each other. They meet only at the
   `:app` composition root, wired through Koin.
 - 🌍 **Kotlin Multiplatform — iOS live (V19).** All feature screens run on Android *and* iOS from
   `commonMain`. Background scheduling uses [kmpworkmanager](https://github.com/brewkits/kmpworkmanager)
@@ -453,7 +453,7 @@ roadmap reflects direction rather than commitments.
 **Shipped**
 
 - [x] Offline-first app on deterministic mock data (zero backend calls)
-- [x] 23-module clean architecture with Koin DI
+- [x] 27-module clean architecture with Koin DI
 - [x] Compose Multiplatform UI; `commonMain` core compiles for Android + iOS
 - [x] `gms` / `noGms` flavor split + FOSS dependency-prefix guard
 - [x] Room (KMP) + DataStore persistence
