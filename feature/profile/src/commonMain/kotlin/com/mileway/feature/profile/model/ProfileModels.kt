@@ -117,6 +117,12 @@ data class ProfileUiState(
      * trip never sets this, so the notice is silent in the common case.
      */
     val pausedTripNotice: String? = null,
+    /**
+     * P3.2: true when [com.mileway.core.data.session.isSessionFresh] reports the session as stale
+     * and [com.mileway.feature.profile.ui.screens.ReconfirmIdentitySheet] should show. Dismissing
+     * it resets the staleness window rather than requiring a real credential (see `ProfileViewModel`).
+     */
+    val showReconfirmIdentity: Boolean = false,
 )
 
 data class SettingsUiState(

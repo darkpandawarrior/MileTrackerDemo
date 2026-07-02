@@ -291,6 +291,10 @@ fun ProfileScreen(
     if (state.pausedTripNotice != null) {
         PausedTripNoticeSheet(onDismiss = { viewModel.onAction(ProfileAction.DismissPausedTripNotice) })
     }
+
+    if (state.showReconfirmIdentity) {
+        ReconfirmIdentitySheet(onDismiss = { viewModel.onAction(ProfileAction.DismissReconfirmIdentity) })
+    }
 }
 
 /** Badge count shown on the Notifications tile (matches the reference "174"). */

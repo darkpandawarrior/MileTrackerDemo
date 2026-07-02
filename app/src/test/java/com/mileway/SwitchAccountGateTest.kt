@@ -1,6 +1,7 @@
 package com.mileway
 
 import com.mileway.core.data.session.SessionRepository
+import com.mileway.core.data.session.SessionState
 import com.mileway.core.data.settings.DemoSettings
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
@@ -40,7 +41,7 @@ class SwitchAccountGateTest {
             mockk<DemoSettingsRepository> {
                 every { settings } returns MutableStateFlow(DemoSettings(biometricGuardEnabled = biometricGuardEnabled))
             },
-            mockk<SessionRepository>(relaxed = true),
+            mockk<SessionRepository>(relaxed = true) { every { sessionState } returns MutableStateFlow(SessionState()) },
         )
 
     @Test

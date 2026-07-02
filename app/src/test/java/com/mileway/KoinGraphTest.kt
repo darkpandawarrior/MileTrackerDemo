@@ -167,7 +167,15 @@ class KoinGraphTest : KoinTest {
             }
         }
         // P2.4: ProfileViewModel now depends on SessionRepository (SignOut's global-fallback path).
-        single<SessionRepository> { mockk(relaxed = true) }
+        // P3.2: ProfileViewModel now also collects `sessionState.first()` in init() for the
+        // staleness check; a relaxed mockk's auto-generated Flow<SessionState> never emits
+        // (memory: screenshot Koin needs deterministic fakes, same null-collector trap as
+        // ActiveAccountSource above), so `sessionState` is stubbed with a real MutableStateFlow.
+        single<SessionRepository> {
+            mockk(relaxed = true) {
+                every { sessionState } returns MutableStateFlow(com.mileway.core.data.session.SessionState())
+            }
+        }
         // P3.4: ProfileViewModel now depends on MockAccountSessionCoordinator (pause/restore hook);
         // its own DAO deps above are already deterministic fakes, not relaxed mocks.
         single { MockAccountSessionCoordinator(get(), get(), get()) }
