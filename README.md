@@ -82,7 +82,7 @@ Play Store and F-Droid.
 | ![Track Miles ready-to-start screen with vehicle selector and distance card](docs/screenshots/track_miles_idle_screen.png) | ![Track detail with route stats, journey overview and GPS-point breakdown](docs/screenshots/track_detail_screen.png) | ![Tracking success summary with distance, reimbursement amount and voucher](docs/screenshots/tracking_success_screen.png) |
 
 <details>
-<summary><b>Full screen gallery</b>: every screen across the feature modules, grouped by area (96 images)</summary>
+<summary><b>Full screen gallery</b>: every screen across the feature modules, grouped by area (121 images)</summary>
 
 <br/>
 
@@ -182,9 +182,13 @@ Play Store and F-Droid.
 |:---:|:---:|:---:|
 | ![Delegation screen assigning approver authority](docs/screenshots/delegation_screen.png) | ![Notification centre with grouped alerts](docs/screenshots/notification_centre_screen.png) | ![QR home for scan-to-pay and identity](docs/screenshots/qr_home_screen.png) |
 
+| &nbsp; | &nbsp; | &nbsp; |
+|:---:|:---:|:---:|
+| ![Help and support with FAQs and contact](docs/screenshots/help_support_screen.png) | ![My tickets with a submitted-support-ticket list and empty state](docs/screenshots/my_tickets_screen.png) | ![Active sessions with per-device revoke and sign-out-all-others](docs/screenshots/active_sessions_screen.png) |
+
 | &nbsp; |
 |:---:|
-| ![Help and support with FAQs and contact](docs/screenshots/help_support_screen.png) |
+| ![Connected accounts with per-integration connect/disconnect toggles](docs/screenshots/connected_accounts_screen.png) |
 
 #### Search
 
@@ -215,6 +219,10 @@ Play Store and F-Droid.
 | &nbsp; | &nbsp; | &nbsp; |
 |:---:|:---:|:---:|
 | ![Shell placeholder for an in-progress destination](docs/screenshots/shell_placeholder_screen.png) | ![Root guard showing detected root signals in red](docs/screenshots/root_guard_screen.png) | ![Root guard confirming a clean, secure device](docs/screenshots/root_guard_screen_clean.png) |
+
+| &nbsp; | &nbsp; |
+|:---:|:---:|
+| ![Set-PIN screen with a numeric keypad and step dots](docs/screenshots/set_pin_screen.png) | ![Check-PIN screen unlocking the app with biometric fallback](docs/screenshots/check_pin_screen.png) |
 
 <sub>Plus component matrices (status cards, booking cards, PO cards, success-state variants) in
 <a href="docs/screenshots"><code>docs/screenshots/</code></a>, rendered from <code>@Preview</code> composables by
@@ -445,7 +453,7 @@ roadmap reflects direction rather than commitments.
 - [x] Room (KMP) + DataStore persistence
 - [x] Location engine (jitter / spike / four-bucket / IMU fusion) with a simulated drive source
 - [x] Master search: a registry across feature modules with an aggregator, results screen and navigation
-- [x] Roborazzi screenshot suite (96 screens, JVM-only), detekt / ktlint / Kover, CI + release workflows
+- [x] Roborazzi screenshot suite (121 screens, JVM-only), detekt / ktlint / Kover, CI + release workflows
 - [x] Wear OS companion tile
 - [x] **iOS UI parity (V19).** All feature screens in `commonMain`; background scheduling via
       kmpworkmanager; AppDelegate + BGTask dispatcher; iOS builds and passes all CI gates.
@@ -455,6 +463,16 @@ roadmap reflects direction rather than commitments.
       voice I/O (STT/TTS); feedback, export and local usage analytics; full `commonMain` + iOS parity.
 - [x] Matrix / terminal design-language pass across the whole UI (theme tokens, topbar, screenshots)
 - [x] Renamed the project and package from MileTracker(Demo) to Mileway end-to-end
+- [x] **Multi-account depth (V22).** Room-backed multi-persona account store with a real
+      switch-account mechanism, PIN/biometric gate, and per-account session isolation (trip/expense
+      queries re-scoped, cross-persona cold-start reconciliation).
+- [x] **Profile / Settings depth (V22).** Room-backed approval delegation, a full Active Sessions
+      screen (per-device revoke), a real local Notification Centre with unread counts and channel
+      toggles, connected-account integration toggles, real permission-state checks, and a local
+      support-ticket flow (My Tickets) with video tutorials.
+- [x] **Login / onboarding depth (V22).** Staged sign-in loading states, a demo-mode persona picker,
+      an app-wide local PIN gate (set/check with biometric fallback), and a welcome disclaimer sheet
+      requesting real location/notification permissions before first use.
 
 **Exploring**
 
