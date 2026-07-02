@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      P2.10: advertises this phone as reachable for watch->phone tracking commands, so
+      `wear/src/gms`'s WearTrackingCommandSender can resolve this device's node id via
+      CapabilityClient.getCapability(...) instead of hard-coding a node id. Declared under
+      wearable_app_capabilities per the Wear OS Data Layer CapabilityClient convention.
+    -->
+    <string-array name="android_wear_capabilities">
+        <item>mileway_phone_track</item>
+    </string-array>
+</resources>

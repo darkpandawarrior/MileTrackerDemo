@@ -23,5 +23,24 @@
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"
             android:value="false" />
+
+        <!-- P2.10: watch->phone start/stop-tracking command (Wear OS Data Layer MessageClient). -->
+        <service
+            android:name="com.mileway.platform.gms.WearTrackingCommandService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/mileway/track-command" />
+            </intent-filter>
+        </service>
+
+        <!-- P2.10: declares the `mileway_phone_track` capability (see res/values/wear.xml) so
+             wear/src/gms's WearTrackingCommandSender can resolve this phone's node id. -->
+        <meta-data
+            android:name="com.google.android.wearable.capability"
+            android:resource="@array/android_wear_capabilities" />
     </application>
 </manifest>
