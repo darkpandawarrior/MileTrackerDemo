@@ -1,5 +1,5 @@
 plugins {
-    id("mileway.kmp.library")
+    id("mileway.kmp.library.watchos")
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.kotlinSerialization)
@@ -32,7 +32,10 @@ kotlin {
             implementation(libs.datastore.preferences)
             implementation(libs.koin.android)
         }
-        iosMain.dependencies {
+        // appleMain is the applyDefaultHierarchyTemplate() intermediate source set shared by
+        // iosMain + watchosMain — actuals needed on both platforms (e.g. epochMillis(),
+        // buildMilewayDatabase()) live here so watchos targets resolve them too (P3.2).
+        appleMain.dependencies {
             implementation(libs.sqlite.bundled)
         }
         commonTest.dependencies {
@@ -47,4 +50,7 @@ dependencies {
     add("kspAndroid", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
+    add("kspWatchosArm64", libs.room.compiler)
+    add("kspWatchosSimulatorArm64", libs.room.compiler)
+    add("kspWatchosDeviceArm64", libs.room.compiler)
 }

@@ -30,6 +30,7 @@ rootProject.name = "Mileway"
 
 include(":app")
 include(":shared")
+include(":sharedWatch")
 include(":core:ui")
 include(":core:maps")
 include(":core:maps-krossmap")
