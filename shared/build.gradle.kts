@@ -15,6 +15,7 @@ plugins {
  *  - core:ui          → MainViewController, ReferralBridge, PushBridge, DeepLinkBridge
  *  - feature:tracking → MilwayViewController (IosTrackingEntry), IosBgTaskDispatcher
  *  - feature:agent    → iosAgentModule (IosAgentEntry)
+ *  - feature:logging  → IosIntentEntry (P7.1: iOS App Intents start/stop/log-expense bridge)
  */
 kotlin {
     listOf(
@@ -26,6 +27,7 @@ kotlin {
             export(project(":core:ui"))
             export(project(":feature:tracking"))
             export(project(":feature:agent"))
+            export(project(":feature:logging"))
         }
     }
 
@@ -35,6 +37,7 @@ kotlin {
             api(project(":core:ui"))
             api(project(":feature:tracking"))
             api(project(":feature:agent"))
+            api(project(":feature:logging"))
         }
         iosMain.dependencies {
             // No extra deps — MilwayAppViewController() uses api deps already imported above.

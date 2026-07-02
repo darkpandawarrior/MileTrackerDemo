@@ -9,10 +9,14 @@
 /* Begin PBXBuildFile section */
 		0472B2384ADF0626A2962D34 /* MilewaySyncModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D5F14FEDB21C9BE211272AC /* MilewaySyncModels.swift */; };
 		155AA8BCA2F1FF1FF3FA589C /* MilewayWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3408BF1238111660C52B82AD /* MilewayWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1E8DD99289E98D16AD40AF9F /* MilewayShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F2BE2FA2205E347BC2C5F3 /* MilewayShortcuts.swift */; };
 		307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668CECA83ACC03A83C85A623 /* iOSApp.swift */; };
 		38683ACAC990751F0AA92EFC /* Mileway.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09A024EED53672A3583D2772 /* Mileway.framework */; };
 		3D73BE78ED4B7A82D1BB1306 /* MilewayWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5B4EB34FE5C8CCFD2210AB /* MilewayWidgetsBundle.swift */; };
+		42CA4FF6C19CA27427355A8D /* StopTrackingIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E494963B3BE554483C3E044 /* StopTrackingIntent.swift */; };
+		446F89E6441D7EC63F54E99E /* LogExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74F0ADB590F561EC57910CE /* LogExpenseIntent.swift */; };
 		449589A19DEF21181D487380 /* MilewayWatchGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C1D61413F7E3E63A3502BC0 /* MilewayWatchGraph.swift */; };
+		47C77B1ADBD1291DB19F650F /* StartTrackingIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58EF40EAC5197765F088D2B8 /* StartTrackingIntent.swift */; };
 		4A478EC07931B8F604A3D089 /* MilewaySyncModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D5F14FEDB21C9BE211272AC /* MilewaySyncModels.swift */; };
 		50C24907291FBA199B04B12B /* TrackingLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725FADE80ADD26488304CA75 /* TrackingLiveActivityController.swift */; };
 		55ECA006251AB9DA9904133E /* MilewayActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342B5DD88093B5E69642D26E /* MilewayActivityAttributes.swift */; };
@@ -108,8 +112,10 @@
 		342B5DD88093B5E69642D26E /* MilewayActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilewayActivityAttributes.swift; sourceTree = "<group>"; };
 		452F9BFCAD19BEA4E64088D3 /* PhoneWatchSyncBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneWatchSyncBridge.swift; sourceTree = "<group>"; };
 		4C5B4EB34FE5C8CCFD2210AB /* MilewayWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilewayWidgetsBundle.swift; sourceTree = "<group>"; };
+		4E494963B3BE554483C3E044 /* StopTrackingIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopTrackingIntent.swift; sourceTree = "<group>"; };
 		4ED225531C5A6AE1EE053CA3 /* MilewayWatchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MilewayWatchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		58AEBA1AB6F890243A9E36D3 /* WatchSyncBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncBridge.swift; sourceTree = "<group>"; };
+		58EF40EAC5197765F088D2B8 /* StartTrackingIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartTrackingIntent.swift; sourceTree = "<group>"; };
 		668CECA83ACC03A83C85A623 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
 		6D5F14FEDB21C9BE211272AC /* MilewaySyncModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilewaySyncModels.swift; sourceTree = "<group>"; };
 		725FADE80ADD26488304CA75 /* TrackingLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingLiveActivityController.swift; sourceTree = "<group>"; };
@@ -120,11 +126,13 @@
 		927CAB2C06ADE37DB9C92138 /* MilewayWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = MilewayWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		934539E1038EDCE32F85CC15 /* ToggleTrackingIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleTrackingIntent.swift; sourceTree = "<group>"; };
 		A55143988C4C8F291BE72E9A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		A5F2BE2FA2205E347BC2C5F3 /* MilewayShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilewayShortcuts.swift; sourceTree = "<group>"; };
 		B1EA19A896C975FD3795D223 /* WatchTripListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchTripListView.swift; sourceTree = "<group>"; };
 		B793F8131E4F61634C2845A1 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
 		C5D997782651414A5BD00A79 /* WatchDashboardModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardModelTests.swift; sourceTree = "<group>"; };
 		CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		D10DC23AA5359B7EEFBCE845 /* MileageWidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MileageWidgetViews.swift; sourceTree = "<group>"; };
+		D74F0ADB590F561EC57910CE /* LogExpenseIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExpenseIntent.swift; sourceTree = "<group>"; };
 		D82548D16AAFAF0F82B19746 /* TrackingLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingLiveActivity.swift; sourceTree = "<group>"; };
 		E0065C13010A83BA04483080 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
 		EEDECC3427398E59EBDAC2E3 /* MilewaySyncModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilewaySyncModelsTests.swift; sourceTree = "<group>"; };
@@ -160,6 +168,7 @@
 				668CECA83ACC03A83C85A623 /* iOSApp.swift */,
 				452F9BFCAD19BEA4E64088D3 /* PhoneWatchSyncBridge.swift */,
 				725FADE80ADD26488304CA75 /* TrackingLiveActivityController.swift */,
+				AA2DB2B9640079E9C5BB0DF6 /* intents */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -221,6 +230,17 @@
 				B1EA19A896C975FD3795D223 /* WatchTripListView.swift */,
 			);
 			path = MilewayWatch;
+			sourceTree = "<group>";
+		};
+		AA2DB2B9640079E9C5BB0DF6 /* intents */ = {
+			isa = PBXGroup;
+			children = (
+				D74F0ADB590F561EC57910CE /* LogExpenseIntent.swift */,
+				A5F2BE2FA2205E347BC2C5F3 /* MilewayShortcuts.swift */,
+				58EF40EAC5197765F088D2B8 /* StartTrackingIntent.swift */,
+				4E494963B3BE554483C3E044 /* StopTrackingIntent.swift */,
+			);
+			path = intents;
 			sourceTree = "<group>";
 		};
 		D729CB25B4FA03B3484F4F1E /* Shared */ = {
@@ -426,9 +446,13 @@
 			files = (
 				FDE52B8D57A097A60A4CF366 /* AppDelegate.swift in Sources */,
 				56B0305B5D3847FC6B326502 /* ContentView.swift in Sources */,
+				446F89E6441D7EC63F54E99E /* LogExpenseIntent.swift in Sources */,
 				55ECA006251AB9DA9904133E /* MilewayActivityAttributes.swift in Sources */,
+				1E8DD99289E98D16AD40AF9F /* MilewayShortcuts.swift in Sources */,
 				783360A3B62015A27CFDE018 /* MilewaySyncModels.swift in Sources */,
 				C1C08258C182196238B1F2A3 /* PhoneWatchSyncBridge.swift in Sources */,
+				47C77B1ADBD1291DB19F650F /* StartTrackingIntent.swift in Sources */,
+				42CA4FF6C19CA27427355A8D /* StopTrackingIntent.swift in Sources */,
 				50C24907291FBA199B04B12B /* TrackingLiveActivityController.swift in Sources */,
 				307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */,
 			);
