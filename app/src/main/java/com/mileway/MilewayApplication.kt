@@ -24,6 +24,7 @@ import com.mileway.feature.tracking.checkin.CheckInValidator.CheckInLocation
 import com.mileway.feature.tracking.di.trackingModule
 import com.mileway.feature.tracking.viewmodel.CheckInViewModel
 import com.mileway.seeder.DatabaseSeeder
+import com.mileway.ui.auth.authModule
 import com.mileway.ui.home.firstLoginBannerModule
 import com.mileway.ui.home.homeModule
 import com.mileway.debug.WormaCeptorHelper
@@ -152,6 +153,7 @@ class MilewayApplication : Application(), SingletonImageLoader.Factory {
                 eventsModule,
                 homeModule,
                 firstLoginBannerModule,
+                authModule,
                 appModule
             ),
             appDeclaration = {

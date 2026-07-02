@@ -1,5 +1,8 @@
 package com.mileway.ui.auth
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LocationOn
@@ -48,6 +52,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -56,9 +61,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mileway.core.ui.components.DotsIndicator
 import com.mileway.core.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
+import org.koin.compose.viewmodel.koinViewModel
 
 /** Prefilled demo identity so the fake login works without typing anything. */
 private const val DEMO_EMAIL = "demo@mileway.app"
@@ -69,8 +76,8 @@ private const val APP_NAME = "Mileway"
 /** How long each onboarding slide is shown before auto-advancing. */
 private const val ONBOARDING_AUTO_ADVANCE_MS = 2_600L
 
-/** Fake "signing in" delay so the loading affordance is visible before completing. */
-private const val FAKE_SIGN_IN_DELAY_MS = 900L
+/** Brief pause after [MilewayAuthState.Success] so the completed checklist is visible. */
+private const val POST_SUCCESS_PAUSE_MS = 250L
 
 /**
  * A single onboarding slide: a simple drawn illustration (Material icon on a tinted disc),
@@ -130,6 +137,7 @@ fun LoginScreen(
     onSignInWithCredentials: (email: String) -> Unit,
     onContinueAsGuest: () -> Unit,
     modifier: Modifier = Modifier,
+    authViewModel: AuthViewModel = koinViewModel(),
 ) {
     val currentOnCredentials by rememberUpdatedState(onSignInWithCredentials)
     val currentOnGuest by rememberUpdatedState(onContinueAsGuest)
@@ -137,20 +145,24 @@ fun LoginScreen(
     var email by remember { mutableStateOf(DEMO_EMAIL) }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var isSigningIn by remember { mutableStateOf(false) }
     var isGuestPath by remember { mutableStateOf(false) }
     var attemptedSubmit by remember { mutableStateOf(false) }
+
+    val authState by authViewModel.state.collectAsStateWithLifecycle()
+    val isSigningIn = authState !is MilewayAuthState.Idle
 
     val emailValid = email.isNotBlank()
     val passwordValid = password.isNotBlank()
     val canSubmit = emailValid && passwordValid && !isSigningIn
 
-    // Fake sign-in: show the loading affordance briefly, then report completion down the path the
-    // user actually took (guest vs credentials) so the session is persisted with the right kind.
-    LaunchedEffect(isSigningIn) {
-        if (isSigningIn) {
-            delay(FAKE_SIGN_IN_DELAY_MS)
+    // P7.2: staged sign-in. AuthViewModel steps MilewayAuthState through named Loading stages;
+    // once it reports Success, report completion down the path the user actually took (guest vs
+    // credentials) so the session is persisted with the right kind, then reset back to Idle.
+    LaunchedEffect(authState) {
+        if (authState is MilewayAuthState.Success) {
+            delay(POST_SUCCESS_PAUSE_MS)
             if (isGuestPath) currentOnGuest() else currentOnCredentials(email)
+            authViewModel.reset()
         }
     }
 
@@ -191,7 +203,7 @@ fun LoginScreen(
                 enabled = !isSigningIn,
                 onImeDone = {
                     attemptedSubmit = true
-                    if (emailValid && passwordValid) isSigningIn = true
+                    if (emailValid && passwordValid) authViewModel.beginSignIn()
                 },
             )
 
@@ -200,7 +212,7 @@ fun LoginScreen(
             Button(
                 onClick = {
                     attemptedSubmit = true
-                    if (emailValid && passwordValid) isSigningIn = true
+                    if (emailValid && passwordValid) authViewModel.beginSignIn()
                 },
                 enabled = canSubmit,
                 modifier = Modifier
@@ -221,13 +233,20 @@ fun LoginScreen(
                 }
             }
 
+            AnimatedVisibility(visible = isSigningIn) {
+                Column {
+                    Spacer(Modifier.height(DesignTokens.Spacing.l))
+                    SignInProgressOverlay(state = authState)
+                }
+            }
+
             Spacer(Modifier.height(DesignTokens.Spacing.s))
 
             TextButton(
                 onClick = {
                     if (!isSigningIn) {
                         isGuestPath = true
-                        isSigningIn = true
+                        authViewModel.beginSignIn()
                     }
                 },
                 enabled = !isSigningIn,
@@ -238,6 +257,94 @@ fun LoginScreen(
 
             Spacer(Modifier.height(DesignTokens.Spacing.l))
         }
+    }
+}
+
+/**
+ * Mileway's own stepped-progress affordance for the staged sign-in sequence: a vertical
+ * checklist of [SIGN_IN_STEPS], each row showing a filled dot for pending, a spinner for the
+ * currently active step, and an animated checkmark once that step completes. Models the
+ * reference app's staged-overlay *pattern* (a driven multi-step sequence rather than one flat
+ * spinner) with Mileway's own card-and-checklist visual language, not a copy of its UI.
+ */
+@Composable
+private fun SignInProgressOverlay(state: MilewayAuthState) {
+    val activeStep = (state as? MilewayAuthState.Loading)?.step ?: 0
+    val isComplete = state is MilewayAuthState.Success
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = DesignTokens.Shape.roundedMd,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(modifier = Modifier.padding(DesignTokens.Spacing.l)) {
+            SIGN_IN_STEPS.forEachIndexed { index, step ->
+                val stepNumber = index + 1
+                val completed = isComplete || stepNumber < activeStep
+                val active = !isComplete && stepNumber == activeStep
+                SignInStepRow(label = step.label, completed = completed, active = active)
+                if (stepNumber != SIGN_IN_STEPS.size) {
+                    Spacer(Modifier.height(DesignTokens.Spacing.s))
+                }
+            }
+        }
+    }
+}
+
+/** One row of [SignInProgressOverlay]'s checklist: a leading status glyph plus the step label. */
+@Composable
+private fun SignInStepRow(
+    label: String,
+    completed: Boolean,
+    active: Boolean,
+) {
+    val checkAlpha by animateFloatAsState(
+        targetValue = if (completed) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "signInStepCheck",
+    )
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier.size(DesignTokens.IconSize.badge),
+            contentAlignment = Alignment.Center,
+        ) {
+            when {
+                completed ->
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(DesignTokens.IconSize.badge)
+                            .alpha(checkAlpha),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                active ->
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(DesignTokens.IconSize.inline),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                else ->
+                    Surface(
+                        modifier = Modifier.size(8.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    ) {}
+            }
+        }
+
+        Spacer(Modifier.width(DesignTokens.Spacing.m))
+
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (active || completed) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        )
     }
 }
 

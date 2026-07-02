@@ -149,6 +149,7 @@ import com.mileway.ui.AssistantHomeSheet
 import com.mileway.ui.ShellPlaceholderScreen
 import com.mileway.ui.auth.LoginScreen
 import com.mileway.ui.auth.SplashScreen
+import com.mileway.ui.auth.authModule
 import com.mileway.ui.home.HomeScreenContent
 import com.mileway.ui.home.HomeUiState
 import com.mileway.ui.home.homeModule
@@ -377,6 +378,7 @@ class ScreenshotGalleryTest {
                     paymentsModule,
                     eventsModule,
                     homeModule,
+                    authModule,
                     appModule,
                     fakeOverrides,
                 )
