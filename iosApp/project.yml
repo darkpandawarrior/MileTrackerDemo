@@ -39,6 +39,16 @@ settings:
       SWIFT_OPTIMIZATION_LEVEL: "-O"
       VALIDATE_PRODUCT: YES
 
+schemes:
+  iosApp:
+    build:
+      targets:
+        iosApp: all
+  MilewayWatch:
+    build:
+      targets:
+        MilewayWatch: all
+
 targets:
   iosApp:
     type: application
@@ -122,3 +132,32 @@ targets:
         WKApplication: YES
         WKCompanionAppBundleIdentifier: com.mileway.ios
         WKRunsIndependentlyOfCompanionApp: YES
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/../sharedWatch/build/bin/watchosCurrent/$(CONFIGURATION)Framework"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-framework"
+          - "MilewayWatch"
+    preBuildScripts:
+      - name: "Build KMP watch framework (lipo)"
+        script: |
+          set -e
+          cd "${SRCROOT}/.."
+          FLAVOR="${CONFIGURATION}Framework"
+          DEST="sharedWatch/build/bin/watchosCurrent/${FLAVOR}"
+          mkdir -p "$DEST"
+          if [ "${PLATFORM_NAME}" = "watchsimulator" ]; then
+            ./gradlew ":sharedWatch:link${CONFIGURATION}FrameworkWatchosSimulatorArm64"
+            rm -rf "$DEST/MilewayWatch.framework"
+            cp -R "sharedWatch/build/bin/watchosSimulatorArm64/${FLAVOR}/MilewayWatch.framework" "$DEST/MilewayWatch.framework"
+          else
+            ./gradlew ":sharedWatch:link${CONFIGURATION}FrameworkWatchosArm64" ":sharedWatch:link${CONFIGURATION}FrameworkWatchosDeviceArm64"
+            rm -rf "$DEST/MilewayWatch.framework"
+            cp -R "sharedWatch/build/bin/watchosArm64/${FLAVOR}/MilewayWatch.framework" "$DEST/MilewayWatch.framework"
+            lipo -create \
+              "sharedWatch/build/bin/watchosArm64/${FLAVOR}/MilewayWatch.framework/MilewayWatch" \
+              "sharedWatch/build/bin/watchosDeviceArm64/${FLAVOR}/MilewayWatch.framework/MilewayWatch" \
+              -output "$DEST/MilewayWatch.framework/MilewayWatch"
+          fi
+        basedOnDependencyAnalysis: false

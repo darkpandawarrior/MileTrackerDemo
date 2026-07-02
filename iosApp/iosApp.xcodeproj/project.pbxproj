@@ -134,6 +134,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E71EBCBF67B11FE918CEC366 /* Build configuration list for PBXNativeTarget "MilewayWatch" */;
 			buildPhases = (
+				0F730B19B0F4F2A3265B7D5D /* Build KMP watch framework (lipo) */,
 				76EA65584433E5EA3D45BB2C /* Sources */,
 			);
 			buildRules = (
@@ -219,6 +220,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		0F730B19B0F4F2A3265B7D5D /* Build KMP watch framework (lipo) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build KMP watch framework (lipo)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\ncd \"${SRCROOT}/..\"\nFLAVOR=\"${CONFIGURATION}Framework\"\nDEST=\"sharedWatch/build/bin/watchosCurrent/${FLAVOR}\"\nmkdir -p \"$DEST\"\nif [ \"${PLATFORM_NAME}\" = \"watchsimulator\" ]; then\n  ./gradlew \":sharedWatch:link${CONFIGURATION}FrameworkWatchosSimulatorArm64\"\n  rm -rf \"$DEST/MilewayWatch.framework\"\n  cp -R \"sharedWatch/build/bin/watchosSimulatorArm64/${FLAVOR}/MilewayWatch.framework\" \"$DEST/MilewayWatch.framework\"\nelse\n  ./gradlew \":sharedWatch:link${CONFIGURATION}FrameworkWatchosArm64\" \":sharedWatch:link${CONFIGURATION}FrameworkWatchosDeviceArm64\"\n  rm -rf \"$DEST/MilewayWatch.framework\"\n  cp -R \"sharedWatch/build/bin/watchosArm64/${FLAVOR}/MilewayWatch.framework\" \"$DEST/MilewayWatch.framework\"\n  lipo -create \\\n    \"sharedWatch/build/bin/watchosArm64/${FLAVOR}/MilewayWatch.framework/MilewayWatch\" \\\n    \"sharedWatch/build/bin/watchosDeviceArm64/${FLAVOR}/MilewayWatch.framework/MilewayWatch\" \\\n    -output \"$DEST/MilewayWatch.framework/MilewayWatch\"\nfi\n";
+		};
 		B80CB09103FF423E9A215DEE /* Build Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -279,9 +299,18 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../sharedWatch/build/bin/watchosCurrent/$(CONFIGURATION)Framework",
+				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MilewayWatch/Info.plist;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					MilewayWatch,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.mileway.ios.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchsimulator;
@@ -481,9 +510,18 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../sharedWatch/build/bin/watchosCurrent/$(CONFIGURATION)Framework",
+				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MilewayWatch/Info.plist;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					MilewayWatch,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.mileway.ios.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchsimulator;
