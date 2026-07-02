@@ -8,7 +8,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-private class FakeMockAccountDao : MockAccountDao {
+private class PostLoginFakeMockAccountDao : MockAccountDao {
     val accounts = mutableMapOf<String, MockAccountEntity>()
 
     override fun observeAll(): Flow<List<MockAccountEntity>> = flowOf(accounts.values.toList())
@@ -51,7 +51,7 @@ class MockPostLoginInitializerTest {
             val email = "demo@mileway.app"
             val employeeCode = deriveEmployeeCode(email)
             val dao =
-                FakeMockAccountDao().apply {
+                PostLoginFakeMockAccountDao().apply {
                     accounts["ACC-001"] =
                         MockAccountEntity(
                             accountId = "ACC-001",
@@ -76,7 +76,7 @@ class MockPostLoginInitializerTest {
     @Test
     fun `synthesizeProfile falls back to a deterministic identity when no seeded account matches`() =
         runTest {
-            val initializer = MockPostLoginInitializer(FakeMockAccountDao())
+            val initializer = MockPostLoginInitializer(PostLoginFakeMockAccountDao())
 
             val profile = initializer.synthesizeProfile("stranger@mileway.app")
 
@@ -88,7 +88,7 @@ class MockPostLoginInitializerTest {
     @Test
     fun `synthesizeProfile is deterministic for the same email across calls`() =
         runTest {
-            val initializer = MockPostLoginInitializer(FakeMockAccountDao())
+            val initializer = MockPostLoginInitializer(PostLoginFakeMockAccountDao())
 
             val first = initializer.synthesizeProfile("demo@mileway.app")
             val second = initializer.synthesizeProfile("demo@mileway.app")
@@ -99,7 +99,7 @@ class MockPostLoginInitializerTest {
     @Test
     fun `synthesizeProfile always populates a non-blank theme color and currency symbol`() =
         runTest {
-            val initializer = MockPostLoginInitializer(FakeMockAccountDao())
+            val initializer = MockPostLoginInitializer(PostLoginFakeMockAccountDao())
 
             val profile = initializer.synthesizeProfile("demo@mileway.app")
 

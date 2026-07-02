@@ -1,6 +1,8 @@
 package com.mileway.core.data.watch
 
 import com.mileway.core.data.model.display.SurfaceSnapshot
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,15 +16,16 @@ import kotlinx.serialization.Serializable
  * both native runtimes decode, so renaming a field here is a breaking wire change.
  */
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class WatchSyncPayload(
-    val todayKm: Double = 0.0,
-    val weekKm: Double = 0.0,
-    val tripCount: Int = 0,
-    val isTracking: Boolean = false,
-    val isPaused: Boolean = false,
-    val weekGoalProgress: Float = 0f,
-    val lastTripLabel: String? = null,
-    val updatedAtMs: Long = 0L,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val todayKm: Double = 0.0,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val weekKm: Double = 0.0,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val tripCount: Int = 0,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val isTracking: Boolean = false,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val isPaused: Boolean = false,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val weekGoalProgress: Float = 0f,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val lastTripLabel: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val updatedAtMs: Long = 0L,
 )
 
 /** Projects the full [SurfaceSnapshot] down to the watch-relevant subset for wire transport. */
