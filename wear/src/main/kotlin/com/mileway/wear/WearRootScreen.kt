@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -37,11 +39,26 @@ import org.koin.compose.viewmodel.koinViewModel
  * (crown/gesture) is wired to [WearViewModel.onBack] via [BackHandler] so "back returns" per P2.5's
  * acceptance works the same way a real nav stack would, without pulling in `wear-compose-navigation`
  * for a two-level stack this shallow.
+ *
+ * P2.8: also collects [WearViewModel.ongoingActivityState] and drives [TrackingOngoingActivity]
+ * from it in a [LaunchedEffect] keyed on [OngoingActivityUi.isLive] — posting a fresh notification
+ * on every live update while tracking is active, cancelling it the moment tracking stops (per
+ * P2.8's acceptance: "starting tracking shows the ongoing notification with live distance; stop
+ * clears it").
  */
 @Composable
 fun WearRootScreen(viewModel: WearViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val ongoingActivityState by viewModel.ongoingActivityState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     BackHandler(enabled = uiState.screen != WearScreen.Dashboard) { viewModel.onBack() }
+    LaunchedEffect(ongoingActivityState) {
+        if (ongoingActivityState.isLive) {
+            TrackingOngoingActivity.post(context, ongoingActivityState.distanceKm)
+        } else {
+            TrackingOngoingActivity.cancel(context)
+        }
+    }
     WearMilewayTheme {
         AppScaffold {
             val listState = rememberScalingLazyListState()

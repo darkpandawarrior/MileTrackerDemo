@@ -2,6 +2,7 @@ package com.mileway.wear
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mileway.feature.tracking.service.TrackingServiceApi
 import com.mileway.feature.tracking.watch.WatchFacade
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,9 +21,15 @@ import kotlinx.coroutines.flow.stateIn
  * P2.5 combines the snapshot stream with [WatchFacade.recentTrips] and layers [WearScreen]/
  * trip-selection navigation state ([openTripList], [openTripDetail], [onBack]) on top — still one
  * `StateFlow`, still the single-activity `when` pattern from P2.4's doc comment.
+ *
+ * P2.8 adds [ongoingActivityState]: a second, independent `StateFlow` mapped from
+ * [TrackingServiceApi.trackingState] via [WearPresentation.toOngoingActivityState] — kept separate
+ * from [uiState] (rather than folded into the same `combine`) since it drives a side effect
+ * ([WearActivity] posting/cancelling [TrackingOngoingActivity]), not composable rendering.
  */
 class WearViewModel(
     watchFacade: WatchFacade,
+    trackingServiceApi: TrackingServiceApi,
 ) : ViewModel() {
     private val navigation = MutableStateFlow(NavigationState())
 
@@ -42,6 +49,16 @@ class WearViewModel(
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
             initialValue = WearRootUiState(),
         )
+
+    /** P2.8: drives [TrackingOngoingActivity] start/stop — see the class doc for why it's separate. */
+    val ongoingActivityState: StateFlow<OngoingActivityUi> =
+        trackingServiceApi.trackingState
+            .map(WearPresentation::toOngoingActivityState)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+                initialValue = OngoingActivityUi(),
+            )
 
     /** Dashboard → trip list. */
     fun openTripList() {

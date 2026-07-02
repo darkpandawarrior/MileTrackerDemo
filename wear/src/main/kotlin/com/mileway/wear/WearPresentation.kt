@@ -1,6 +1,8 @@
 package com.mileway.wear
 
 import com.mileway.core.data.model.display.SurfaceSnapshot
+import com.mileway.core.data.model.display.TrackingState
+import com.mileway.feature.tracking.service.TrackingSnapshot
 import com.mileway.feature.tracking.watch.TripSummary
 import kotlin.math.round
 
@@ -41,6 +43,19 @@ object WearPresentation {
      */
     fun toWeekGoalValueLabel(snapshot: SurfaceSnapshot): String = formatOneDecimal(snapshot.weekDistanceKm)
 
+    /**
+     * P2.8: pure mapper from the live [TrackingSnapshot] ([TrackingServiceApi.trackingState][com.mileway.feature.tracking.service.TrackingServiceApi.trackingState])
+     * to the ongoing-activity's rendering-ready state — [WearActivity][com.mileway.wear.WearActivity]
+     * drives [TrackingOngoingActivity.post]/[TrackingOngoingActivity.cancel] off this, never off the
+     * raw [TrackingSnapshot] directly, so the "which states count as live" decision is unit-tested
+     * here rather than duplicated at the call site.
+     */
+    fun toOngoingActivityState(snapshot: TrackingSnapshot): OngoingActivityUi =
+        OngoingActivityUi(
+            isLive = snapshot.state == TrackingState.LIVE_TRACKING || snapshot.state == TrackingState.PAUSED,
+            distanceKm = snapshot.distanceMeters / METERS_PER_KM,
+        )
+
     private fun formatOneDecimal(value: Double): String {
         val scaled = round(value * ONE_DECIMAL_SCALE) / ONE_DECIMAL_SCALE
         return scaled.toString()
@@ -56,6 +71,7 @@ object WearPresentation {
 
     private const val UNNAMED_TRIP_LABEL = "Trip"
     private const val ONE_DECIMAL_SCALE = 10.0
+    private const val METERS_PER_KM = 1_000.0
 }
 
 /**
@@ -97,4 +113,14 @@ data class TripListItemUi(
     val label: String,
     val km: Double,
     val endMs: Long,
+)
+
+/**
+ * P2.8: rendering-ready state for the ongoing-activity notification — [isLive] drives whether
+ * [WearActivity][com.mileway.wear.WearActivity] should have [TrackingOngoingActivity] posted right
+ * now, [distanceKm] is what it should show while live.
+ */
+data class OngoingActivityUi(
+    val isLive: Boolean = false,
+    val distanceKm: Double = 0.0,
 )

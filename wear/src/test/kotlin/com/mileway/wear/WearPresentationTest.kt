@@ -1,8 +1,11 @@
 package com.mileway.wear
 
 import com.mileway.core.data.model.display.SurfaceSnapshot
+import com.mileway.core.data.model.display.TrackingState
+import com.mileway.feature.tracking.service.TrackingSnapshot
 import com.mileway.feature.tracking.watch.TripSummary
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -124,5 +127,43 @@ class WearPresentationTest {
         val label = WearPresentation.toWeekGoalValueLabel(SurfaceSnapshot())
 
         assertEquals("0.0", label)
+    }
+
+    // ─── P2.8: toOngoingActivityState (ongoing-activity live/idle + distance) ──────────────────────
+
+    @Test
+    fun `live tracking maps to an isLive ongoing state with km-converted distance`() {
+        val snapshot = TrackingSnapshot(state = TrackingState.LIVE_TRACKING, distanceMeters = 12_400.0)
+
+        val ongoing = WearPresentation.toOngoingActivityState(snapshot)
+
+        assertTrue(ongoing.isLive)
+        assertEquals(12.4, ongoing.distanceKm, 0.0001)
+    }
+
+    @Test
+    fun `paused tracking still counts as live for the ongoing activity`() {
+        val snapshot = TrackingSnapshot(state = TrackingState.PAUSED, distanceMeters = 5_000.0)
+
+        val ongoing = WearPresentation.toOngoingActivityState(snapshot)
+
+        assertTrue(ongoing.isLive)
+        assertEquals(5.0, ongoing.distanceKm, 0.0001)
+    }
+
+    @Test
+    fun `ready state maps to a non-live ongoing state`() {
+        val ongoing = WearPresentation.toOngoingActivityState(TrackingSnapshot(state = TrackingState.READY))
+
+        assertFalse(ongoing.isLive)
+    }
+
+    @Test
+    fun `completed state maps to a non-live ongoing state, clearing the notification`() {
+        val snapshot = TrackingSnapshot(state = TrackingState.COMPLETED, distanceMeters = 8_000.0)
+
+        val ongoing = WearPresentation.toOngoingActivityState(snapshot)
+
+        assertFalse(ongoing.isLive)
     }
 }
