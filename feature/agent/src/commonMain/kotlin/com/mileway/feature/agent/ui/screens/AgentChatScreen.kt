@@ -94,11 +94,11 @@ import com.mileway.feature.agent.viewmodel.AgentViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
-private val AI_GRADIENT = Brush.verticalGradient(listOf(Color(0xFF010701), Color(0xFF030D05)))
-private val CHIP_BG = Color(0x1400FF41)
-private val PHOSPHOR_GREEN = Color(0xFF00FF41)
-private val PHOSPHOR_DIM = Color(0xFF3A6645)
-private val TERMINAL_BORDER = Color(0xFF1C3522)
+private val AI_GRADIENT = Brush.verticalGradient(listOf(Color(0xFF0B0806), Color(0xFF1C140D)))
+private val CHIP_BG = Color(0x14F5A623)
+private val EMBER_ACCENT = Color(0xFFF5A623)
+private val EMBER_DIM = Color(0xFFB87A1C)
+private val TERMINAL_BORDER = Color(0xFF3D2E1C)
 private val QUICK_PROMPTS =
     listOf(
         "Summarise my week",
@@ -184,7 +184,7 @@ fun AgentChatScreen(
                 PrimaryTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color(0xFF040C06),
-                    contentColor = PHOSPHOR_GREEN,
+                    contentColor = EMBER_ACCENT,
                     divider = {
                         androidx.compose.foundation.layout.Spacer(
                             Modifier.height(1.dp).fillMaxWidth().background(TERMINAL_BORDER),
@@ -199,11 +199,11 @@ fun AgentChatScreen(
                                 Text(
                                     title,
                                     style = TerminalType.sectionLabel,
-                                    color = if (selectedTab == index) PHOSPHOR_GREEN else PHOSPHOR_DIM,
+                                    color = if (selectedTab == index) EMBER_ACCENT else EMBER_DIM,
                                 )
                             },
-                            selectedContentColor = PHOSPHOR_GREEN,
-                            unselectedContentColor = PHOSPHOR_DIM,
+                            selectedContentColor = EMBER_ACCENT,
+                            unselectedContentColor = EMBER_DIM,
                         )
                     }
                 }
@@ -306,7 +306,7 @@ private fun AgentHeader(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF010701)),
+                .background(Color(0xFF0B0806)),
     ) {
         Column {
             Row(
@@ -318,47 +318,47 @@ private fun AgentHeader(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PHOSPHOR_DIM)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = EMBER_DIM)
                 }
                 // Terminal avatar: thin phosphor-green border ring, monogram inside
                 Box(
                     modifier =
                         Modifier
                             .size(36.dp)
-                            .border(width = 1.dp, color = PHOSPHOR_GREEN, shape = RoundedCornerShape(4.dp))
+                            .border(width = 1.dp, color = EMBER_ACCENT, shape = RoundedCornerShape(4.dp))
                             .background(Color(0xFF00280E), RoundedCornerShape(4.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         ">_",
                         style = TerminalType.prompt,
-                        color = PHOSPHOR_GREEN,
+                        color = EMBER_ACCENT,
                     )
                 }
                 Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
                     Text(
                         "MILEWAY_AI",
                         style = TerminalType.display,
-                        color = PHOSPHOR_GREEN,
+                        color = EMBER_ACCENT,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             "●",
                             style = TerminalType.statusLine,
-                            color = PHOSPHOR_GREEN,
+                            color = EMBER_ACCENT,
                         )
                         Text(
                             "SYSTEM ONLINE",
                             style = TerminalType.statusLine,
-                            color = PHOSPHOR_DIM,
+                            color = EMBER_DIM,
                         )
                     }
                 }
                 IconButton(onClick = onHistory) {
-                    Icon(Icons.Filled.Schedule, contentDescription = "History", tint = PHOSPHOR_DIM)
+                    Icon(Icons.Filled.Schedule, contentDescription = "History", tint = EMBER_DIM)
                 }
                 IconButton(onClick = onDownload) {
-                    Icon(Icons.Filled.Download, contentDescription = "Export", tint = PHOSPHOR_DIM)
+                    Icon(Icons.Filled.Download, contentDescription = "Export", tint = EMBER_DIM)
                 }
             }
             // Phosphor separator line
@@ -415,7 +415,7 @@ private fun ChatTab(
                         Text(
                             "SYSTEM READY. ASK ANYTHING.",
                             style = TerminalType.sectionLabel,
-                            color = PHOSPHOR_DIM,
+                            color = EMBER_DIM,
                         )
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -431,7 +431,7 @@ private fun ChatTab(
                                     Text(
                                         "> $prompt",
                                         style = TerminalType.prompt,
-                                        color = PHOSPHOR_GREEN,
+                                        color = EMBER_ACCENT,
                                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                                     )
                                 }
@@ -476,7 +476,7 @@ private fun ChatTab(
                                 Text(
                                     "> $prompt",
                                     style = TerminalType.statusLine,
-                                    color = PHOSPHOR_DIM,
+                                    color = EMBER_DIM,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 )
                             }
@@ -511,7 +511,7 @@ private fun ChatTab(
                     Text(
                         ">",
                         style = TerminalType.prompt,
-                        color = PHOSPHOR_GREEN,
+                        color = EMBER_ACCENT,
                         modifier = Modifier.padding(start = 4.dp),
                     )
                 },
@@ -519,22 +519,22 @@ private fun ChatTab(
                     Text(
                         "type query_",
                         style = TerminalType.prompt,
-                        color = PHOSPHOR_DIM,
+                        color = EMBER_DIM,
                     )
                 },
-                textStyle = TerminalType.prompt.copy(color = PHOSPHOR_GREEN),
+                textStyle = TerminalType.prompt.copy(color = EMBER_ACCENT),
                 singleLine = true,
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(4.dp),
                 colors =
                     OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PHOSPHOR_GREEN,
+                        focusedBorderColor = EMBER_ACCENT,
                         unfocusedBorderColor = TERMINAL_BORDER,
-                        focusedTextColor = PHOSPHOR_GREEN,
-                        unfocusedTextColor = PHOSPHOR_GREEN,
-                        cursorColor = PHOSPHOR_GREEN,
+                        focusedTextColor = EMBER_ACCENT,
+                        unfocusedTextColor = EMBER_ACCENT,
+                        cursorColor = EMBER_ACCENT,
                         focusedContainerColor = Color(0xFF040C06),
-                        unfocusedContainerColor = Color(0xFF010701),
+                        unfocusedContainerColor = Color(0xFF0B0806),
                     ),
             )
             IconButton(
@@ -544,14 +544,14 @@ private fun ChatTab(
                 Icon(
                     Icons.Filled.Mic,
                     contentDescription = if (isListening) "Stop voice" else "Start voice",
-                    tint = if (isListening) PHOSPHOR_GREEN else PHOSPHOR_DIM,
+                    tint = if (isListening) EMBER_ACCENT else EMBER_DIM,
                 )
             }
             IconButton(onClick = onToggleVoiceConversation) {
                 Icon(
                     if (isVoiceConversationMode) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
                     contentDescription = "Toggle hands-free mode",
-                    tint = if (isVoiceConversationMode) PHOSPHOR_GREEN else PHOSPHOR_DIM,
+                    tint = if (isVoiceConversationMode) EMBER_ACCENT else EMBER_DIM,
                 )
             }
             IconButton(
@@ -561,7 +561,7 @@ private fun ChatTab(
                 Icon(
                     Icons.AutoMirrored.Filled.Send,
                     contentDescription = "Send",
-                    tint = if (inputText.isNotBlank()) PHOSPHOR_GREEN else PHOSPHOR_DIM,
+                    tint = if (inputText.isNotBlank()) EMBER_ACCENT else EMBER_DIM,
                 )
             }
         }

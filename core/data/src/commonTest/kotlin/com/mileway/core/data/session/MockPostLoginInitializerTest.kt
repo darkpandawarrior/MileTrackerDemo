@@ -103,7 +103,7 @@ class MockPostLoginInitializerTest {
 
             val profile = initializer.synthesizeProfile("demo@mileway.app")
 
-            assertEquals("#39FF14", profile.themeColorHex)
+            assertEquals("#F5A623", profile.themeColorHex)
             assertEquals("₹", profile.currencySymbol)
         }
 }

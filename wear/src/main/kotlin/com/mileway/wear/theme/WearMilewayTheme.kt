@@ -19,7 +19,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.Typography
 
 /**
- * P2.3: Wear Compose theme wrapper, mapping Mileway's Matrix palette onto
+ * P2.3: Wear Compose theme wrapper, mapping Mileway's Ember palette onto
  * [androidx.wear.compose.material3.ColorScheme] + [Typography].
  *
  * [WearAppGraph][com.mileway.wear.WearAppGraph]'s doc comment is the reason this file hand-copies
@@ -28,66 +28,66 @@ import androidx.wear.compose.material3.Typography
  * `androidx.wear.compose.material3.ColorScheme]`) — Wear renders with `androidx.wear.compose`, its
  * own design system, and must never pull the phone/iOS CMP theming module onto its classpath.
  *
- * The literal hex values below are copied 1:1 from the Matrix scheme (`MilewayThemeVariant.MATRIX`,
- * the app default) so the watch stays visually on-brand with the phone:
- *  - Accent ramp + canvas/surface ramp: `core/ui/.../theme/MilewayThemes.kt` (`MatrixSpec`).
+ * The literal hex values below are copied 1:1 from the Ember scheme (`MilewayThemeVariant.EMBER`,
+ * the app default, T.1) so the watch stays visually on-brand with the phone:
+ *  - Accent ramp + canvas/surface ramp: `core/ui/.../theme/MilewayThemes.kt` (`EmberSpec`).
  *  - Semantic status colours: `core/ui/.../theme/DesignTokens.kt` (`DesignTokens.StatusColors`),
- *    which itself documents being "kept in lock-step" with the Matrix scheme — the same discipline
- *    applies here. If the Matrix palette changes, update both places.
- * Only the phone's curated Matrix theme is mirrored — Wear OS doesn't expose the phone's in-app
- * theme picker (Amoled/Ion/Daybreak), so there's exactly one Wear scheme for now.
+ *    which itself documents being "kept in lock-step" with the curated default scheme — the same
+ *    discipline applies here. If the Ember palette changes, update both places.
+ * Only the phone's curated default theme is mirrored — Wear OS doesn't expose the phone's in-app
+ * theme picker (Matrix/Amoled/Ion/Daybreak), so there's exactly one Wear scheme for now.
  */
-private object WearMatrixPalette {
-    val canvas = Color(0xFF010701)
-    val surface = Color(0xFF040C06)
-    val surfaceCard = Color(0xFF080F0A)
-    val surfaceRaised = Color(0xFF0C1510)
-    val surfaceHighest = Color(0xFF111C14)
-    val border = Color(0xFF1C3522)
-    val text = Color(0xFFB8FFCC)
-    val textMuted = Color(0xFF3A6645)
-    val accent = Color(0xFF00FF41)
-    val accentDim = Color(0xFF00CC34)
-    val onAccent = Color(0xFF000000)
-    val accentContainer = Color(0xFF00280E)
-    val onAccentContainer = Color(0xFF7FFFAA)
-    val warning = Color(0xFFFFCC00)
-    val danger = Color(0xFFFF4455)
-    val info = Color(0xFF33AAFF)
+private object WearEmberPalette {
+    val canvas = Color(0xFF0B0806)
+    val surface = Color(0xFF17110B)
+    val surfaceCard = Color(0xFF1C140D)
+    val surfaceRaised = Color(0xFF241A10)
+    val surfaceHighest = Color(0xFF2E2113)
+    val border = Color(0xFF3D2E1C)
+    val text = Color(0xFFF7EFE3)
+    val textMuted = Color(0xFFC9B9A3)
+    val accent = Color(0xFFF5A623)
+    val accentDim = Color(0xFFB87A1C)
+    val onAccent = Color(0xFF0B0806)
+    val accentContainer = Color(0xFF3A2A12)
+    val onAccentContainer = Color(0xFFFFD79A)
+    val warning = Color(0xFFFF8C1A)
+    val danger = Color(0xFFFF453A)
+    val info = Color(0xFF5BA8F5)
 }
 
-/** The Matrix palette mapped onto Wear Compose Material3's colour roles. */
-private val wearMatrixColorScheme: ColorScheme by lazy {
+/** The Ember palette mapped onto Wear Compose Material3's colour roles. */
+private val wearEmberColorScheme: ColorScheme by lazy {
     ColorScheme(
-        primary = WearMatrixPalette.accent,
-        primaryDim = WearMatrixPalette.accentDim,
-        primaryContainer = WearMatrixPalette.accentContainer,
-        onPrimary = WearMatrixPalette.onAccent,
-        onPrimaryContainer = WearMatrixPalette.onAccentContainer,
-        secondary = WearMatrixPalette.accentDim,
-        secondaryDim = WearMatrixPalette.accentDim,
-        secondaryContainer = WearMatrixPalette.surfaceRaised,
-        onSecondary = WearMatrixPalette.onAccent,
-        onSecondaryContainer = WearMatrixPalette.text,
-        tertiary = WearMatrixPalette.info,
-        tertiaryDim = WearMatrixPalette.info,
-        tertiaryContainer = WearMatrixPalette.surfaceRaised,
-        onTertiary = WearMatrixPalette.canvas,
-        onTertiaryContainer = WearMatrixPalette.text,
-        surfaceContainerLow = WearMatrixPalette.surface,
-        surfaceContainer = WearMatrixPalette.surfaceCard,
-        surfaceContainerHigh = WearMatrixPalette.surfaceRaised,
-        onSurface = WearMatrixPalette.text,
-        onSurfaceVariant = WearMatrixPalette.textMuted,
-        outline = WearMatrixPalette.border,
-        outlineVariant = WearMatrixPalette.border.copy(alpha = 0.7f),
-        background = WearMatrixPalette.canvas,
-        onBackground = WearMatrixPalette.text,
-        error = WearMatrixPalette.danger,
-        errorDim = WearMatrixPalette.danger,
-        errorContainer = WearMatrixPalette.danger.copy(alpha = 0.22f),
-        onError = WearMatrixPalette.canvas,
-        onErrorContainer = WearMatrixPalette.danger,
+        primary = WearEmberPalette.accent,
+        primaryDim = WearEmberPalette.accentDim,
+        primaryContainer = WearEmberPalette.accentContainer,
+        onPrimary = WearEmberPalette.onAccent,
+        onPrimaryContainer = WearEmberPalette.onAccentContainer,
+        secondary = WearEmberPalette.accentDim,
+        secondaryDim = WearEmberPalette.accentDim,
+        secondaryContainer = WearEmberPalette.surfaceRaised,
+        onSecondary = WearEmberPalette.onAccent,
+        onSecondaryContainer = WearEmberPalette.text,
+        tertiary = WearEmberPalette.info,
+        tertiaryDim = WearEmberPalette.info,
+        tertiaryContainer = WearEmberPalette.surfaceRaised,
+        onTertiary = WearEmberPalette.canvas,
+        onTertiaryContainer = WearEmberPalette.text,
+        surfaceContainerLow = WearEmberPalette.surface,
+        surfaceContainer = WearEmberPalette.surfaceCard,
+        surfaceContainerHigh = WearEmberPalette.surfaceRaised,
+        onSurface = WearEmberPalette.text,
+        onSurfaceVariant = WearEmberPalette.textMuted,
+        outline = WearEmberPalette.border,
+        outlineVariant = WearEmberPalette.border.copy(alpha = 0.7f),
+        background = WearEmberPalette.canvas,
+        onBackground = WearEmberPalette.text,
+        error = WearEmberPalette.danger,
+        errorDim = WearEmberPalette.danger,
+        errorContainer = WearEmberPalette.danger.copy(alpha = 0.22f),
+        onError = WearEmberPalette.canvas,
+        onErrorContainer = WearEmberPalette.danger,
     )
 }
 
@@ -115,21 +115,21 @@ private val wearMilewayTypography: Typography by lazy {
 }
 
 /**
- * Wraps [content] in Wear Compose Material3's [MaterialTheme] using the Matrix palette above.
+ * Wraps [content] in Wear Compose Material3's [MaterialTheme] using the Ember palette above.
  * Every Wear screen/tile-preview/complication-preview roots itself here instead of the bare
- * [MaterialTheme] default, so the watch surfaces match the phone's signature phosphor-green look.
+ * [MaterialTheme] default, so the watch surfaces match the phone's signature amber+red look.
  */
 @Composable
 fun WearMilewayTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = wearMatrixColorScheme,
+        colorScheme = wearEmberColorScheme,
         typography = wearMilewayTypography,
         content = content,
     )
 }
 
 /**
- * Acceptance for P2.3: a preview renders the Matrix palette on a round-watch preview. Visual-only —
+ * Acceptance for P2.3: a preview renders the Ember palette on a round-watch preview. Visual-only —
  * this task is explicitly unit-free (see PLAN_V23 P2.3 acceptance).
  */
 // Devices.WEAR_OS_SMALL_ROUND is deprecated in favour of androidx.wear:wear-tooling-preview's
@@ -140,7 +140,7 @@ fun WearMilewayTheme(content: @Composable () -> Unit) {
 // reflection on the @Preview annotation, never from Kotlin call sites — a known detekt false
 // positive for private @Preview composables (no detekt-compose ruleset in this repo to exempt it).
 @Suppress("DEPRECATION", "UnusedPrivateMember")
-@Preview(name = "Wear Matrix theme", device = Devices.WEAR_OS_SMALL_ROUND, showBackground = true)
+@Preview(name = "Wear Ember theme", device = Devices.WEAR_OS_SMALL_ROUND, showBackground = true)
 @Composable
 private fun WearMilewayThemePreview() {
     WearMilewayTheme {

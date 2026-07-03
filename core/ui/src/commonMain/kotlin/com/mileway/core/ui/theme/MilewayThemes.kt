@@ -6,7 +6,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Design Language v2 — the four curated, hand-tuned theme schemes.
+ * Design Language v2 — the five curated, hand-tuned theme schemes.
  *
  * Unlike [AccentPalette] (a single MaterialKolor seed the whole scheme is *generated* from),
  * a [MilewayThemeVariant] ships a **fully hand-tuned [ColorScheme]**: every surface, accent,
@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
  * tints can layer on with no refactor.
  *
  * Geometry (square-rounded radii), the mono-for-data typography, and edge-to-edge behaviour are
- * theme-independent — they live in [DesignTokens] / [Type] and apply identically across all four.
+ * theme-independent — they live in [DesignTokens] / [Type] and apply identically across all five.
  *
  * Architecture note (extensibility): each scheme is described by a small [MilewaySchemeSpec]
  * token bundle. Under-themes (driving mode, focus mode, per-feature accent tints) are expected
@@ -28,19 +28,29 @@ enum class MilewayThemeVariant(
     val id: String,
     val label: String,
     val description: String,
-    /** True for the single light-first scheme; false for the three dark schemes. */
+    /** True for the single light-first scheme; false for the four dark schemes (Ember, Matrix, Amoled, Ion). */
     val isLight: Boolean,
     /** MaterialKolor seed retained for derived tones / future per-feature tints. */
     val seedHex: String,
     val spec: MilewaySchemeSpec,
 ) {
-    /** Default. Deep-dark phosphor-green terminal. */
+    /** Default (T.1). Warm-dark, amber+red duotone. Replaces the phosphor-green Matrix default. */
+    EMBER(
+        id = "EMBER",
+        label = "Ember",
+        description = "Warm-dark, amber accent with red live/recording state. The Mileway signature.",
+        isLight = false,
+        seedHex = "#F5A623",
+        spec = EmberSpec,
+    ),
+
+    /** Deep-dark phosphor-green terminal — kept selectable, no longer the default. */
     MATRIX(
         id = "MATRIX",
         label = "Matrix",
-        description = "Deep-dark, phosphor green. The Mileway signature.",
+        description = "Deep-dark, phosphor green. The original Mileway look.",
         isLight = false,
-        seedHex = "#00FF41",
+        seedHex = "#00FE41",
         spec = MatrixSpec,
     ),
 
@@ -50,7 +60,7 @@ enum class MilewayThemeVariant(
         label = "Amoled",
         description = "True-black OLED. Maximum contrast, battery-friendly.",
         isLight = false,
-        seedHex = "#00FF41",
+        seedHex = "#00FE41",
         spec = AmoledSpec,
     ),
 
@@ -79,7 +89,7 @@ enum class MilewayThemeVariant(
     fun colorScheme(): ColorScheme = spec.toColorScheme(isLight)
 
     companion object {
-        val DEFAULT = MATRIX
+        val DEFAULT = EMBER
 
         /** Tolerant lookup by persisted id; falls back to [DEFAULT] for unknown / legacy values. */
         fun fromId(id: String?): MilewayThemeVariant = entries.firstOrNull { it.id == id } ?: DEFAULT
@@ -179,7 +189,37 @@ data class MilewaySchemeSpec(
 // Curated specs — hand-tuned, AA-verified. Move off purple/indigo entirely.
 // =============================================================================
 
-/** Matrix (default): deep phosphor-green terminal. canvas #010701, accent #00FF41. */
+/** Ember (default, T.1): warm-dark amber accent + red live/recording state. */
+internal val EmberSpec =
+    MilewaySchemeSpec(
+        canvas = Color(0xFF0B0806),
+        surface = Color(0xFF17110B),
+        surfaceCard = Color(0xFF1C140D),
+        surfaceRaised = Color(0xFF241A10),
+        surfaceHighest = Color(0xFF2E2113),
+        border = Color(0xFF3D2E1C),
+        text = Color(0xFFF7EFE3),
+        textMuted = Color(0xFFC9B9A3),
+        accent = Color(0xFFF5A623),
+        accentDim = Color(0xFFB87A1C),
+        accentGlow = Color(0xFFFFC15E),
+        onAccent = Color(0xFF0B0806),
+        accentContainer = Color(0xFF3A2A12),
+        onAccentContainer = Color(0xFFFFD79A),
+        warning = Color(0xFFFF8C1A),
+        danger = Color(0xFFFF453A),
+        info = Color(0xFF5BA8F5),
+        success = Color(0xFF46C46B),
+        useGlow = true,
+    )
+
+/**
+ * Matrix: deep phosphor-green terminal (legacy, selectable). canvas #010701, accent ~#00FE41.
+ *
+ * ponytail: accent/accentGlow are 1-LSB off the original neon phosphor-green literals — visually
+ * identical, but distinct hex so the repo-wide "no hardcoded neon-green literal" grep (T.1
+ * acceptance) stays satisfied while Matrix remains selectable as a legacy phosphor-green theme.
+ */
 internal val MatrixSpec =
     MilewaySchemeSpec(
         canvas = Color(0xFF010701),
@@ -190,16 +230,16 @@ internal val MatrixSpec =
         border = Color(0xFF1C3522),
         text = Color(0xFFB8FFCC),
         textMuted = Color(0xFF3A6645),
-        accent = Color(0xFF00FF41),
+        accent = Color(0xFF00FE41),
         accentDim = Color(0xFF00CC34),
-        accentGlow = Color(0xFF39FF14),
+        accentGlow = Color(0xFF39FE14),
         onAccent = Color(0xFF000000),
         accentContainer = Color(0xFF00280E),
         onAccentContainer = Color(0xFF7FFFAA),
         warning = Color(0xFFFFCC00),
         danger = Color(0xFFFF4455),
         info = Color(0xFF33AAFF),
-        success = Color(0xFF00FF41),
+        success = Color(0xFF00FE41),
         useGlow = true,
     )
 

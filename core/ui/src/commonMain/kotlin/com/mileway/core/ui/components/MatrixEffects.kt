@@ -82,7 +82,7 @@ fun CrtVignette(modifier: Modifier = Modifier) {
 
 /**
  * Phosphor glow horizontal bar — place behind active/highlighted elements.
- * Renders a subtle green bloom strip at full width.
+ * Renders a subtle accent-tinted bloom strip at full width.
  */
 @Composable
 fun PhosphorGlowBar(
@@ -127,7 +127,7 @@ fun PhosphorGlowBar(
 @Composable
 fun TerminalCursor(
     modifier: Modifier = Modifier,
-    color: Color = Color(0xFF00FF41),
+    color: Color = Color(0xFFF5A623),
     style: TextStyle =
         TextStyle(
             fontFamily = FontFamily.Monospace,
@@ -163,7 +163,7 @@ fun TerminalCursor(
 }
 
 /**
- * Applies a thin phosphor-green border + corner radius to any composable.
+ * Applies a thin terminal-panel border + corner radius to any composable.
  * Use on cards and panels to give them the terminal-panel look.
  */
 fun Modifier.terminalBorder(
@@ -173,13 +173,13 @@ fun Modifier.terminalBorder(
 ): Modifier = this.border(width, color, RoundedCornerShape(cornerRadius))
 
 /**
- * Box that draws a dim green phosphor dot-grid background.
+ * Box that draws a dim accent-tinted dot-grid background.
  * Looks like a terminal screen or LED matrix behind your content.
  */
 @Composable
 fun PhosphorDotGrid(
     modifier: Modifier = Modifier,
-    dotColor: Color = Color(0xFF00FF41),
+    dotColor: Color = Color(0xFFF5A623),
     dotAlpha: Float = 0.06f,
     spacing: Float = 18f,
 ) {
@@ -200,12 +200,12 @@ fun PhosphorDotGrid(
 
 /**
  * Terminal header decoration: thin top border + optional bottom separator line
- * in accent phosphor green. Use above content blocks for section framing.
+ * in the theme accent colour. Use above content blocks for section framing.
  */
 @Composable
 fun TerminalHeaderRule(
     modifier: Modifier = Modifier,
-    color: Color = Color(0xFF00FF41),
+    color: Color = Color(0xFFF5A623),
     alpha: Float = 0.4f,
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
