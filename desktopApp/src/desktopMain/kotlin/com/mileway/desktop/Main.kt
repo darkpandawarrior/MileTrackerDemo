@@ -45,6 +45,13 @@ fun main() {
     }
 }
 
+// internal (not private): shared with DesktopDashboardScreenshotTest (showcase/T.1).
+@Composable
+internal fun DashboardScreenForScreenshot(
+    snapshot: SurfaceSnapshot,
+    trips: List<TrackDisplayData>,
+) = DashboardScreen(snapshot, trips)
+
 @Composable
 private fun DashboardScreen(
     snapshot: SurfaceSnapshot,

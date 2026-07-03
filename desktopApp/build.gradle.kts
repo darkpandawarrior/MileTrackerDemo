@@ -39,6 +39,9 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
+                // showcase/T.1: renders the desktop dashboard to a PNG via Compose Multiplatform's
+                // ImageComposeScene — pure-JVM, no Robolectric/emulator needed.
+                implementation(compose.desktop.uiTestJUnit4)
             }
         }
     }
