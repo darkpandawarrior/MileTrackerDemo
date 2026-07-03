@@ -84,7 +84,10 @@ class MockAccountRepositoryTest {
             val accounts = repository.accounts()
 
             assertEquals(4, accounts.size)
-            val added = accounts.last()
+            // Locate by employeeCode, not position: add() stamps createdAtMs from the wall clock, which
+            // on a fast machine lands in the same millisecond as the last seeded persona (nowMs+2), so
+            // the createdAtMs-ordered list has no stable "last" — asserting on accounts.last() flaked.
+            val added = accounts.first { it.employeeCode == "EMP999" }
             assertEquals("New Persona", added.displayName)
             assertEquals("EMP999", added.employeeCode)
             assertEquals(false, added.isActive)
