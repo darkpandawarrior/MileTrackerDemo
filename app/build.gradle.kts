@@ -189,24 +189,25 @@ android {
 }
 
 // --------------------------------------------------------------------------
-// Z.5b: fix for the `testNoGmsDebugUnitTest` forked-JVM teardown crash.
+// Z.5b: `testNoGmsDebugUnitTest` forked-JVM teardown crash.
 //
-// Robolectric 4.16.1 on JDK21/aarch64 segfaults the forked test JVM on *exit* ("exit value 2"
-// after all ~119 tests pass, XML all green). Two contributing factors, both handled here:
-//  1. Volume: a single fork accumulates unreleasable native/Robolectric state; a ~42-class fork
-//     exits cleanly but the full ~119-class suite reliably crashes. `forkEvery` restarts the fork
-//     periodically so no JVM ever accumulates past the safe threshold.
-//  2. Native Skia: the two @GraphicsMode(NATIVE) Roborazzi tests load the native graphics runtime,
-//     which crashes if a fork carrying it is torn down at a `forkEvery` restart boundary. So they
-//     are excluded from the main task and run in their own dedicated single-fork task instead
-//     (in isolation they exit 0), then wired back into the gate via `fullCheck`.
+// Robolectric 4.16.1 on JDK 21 segfaults the forked test JVM on *exit* ("exit value 2" AFTER all
+// tests have run and passed, XML all green) because its native Skia runtime crashes on teardown.
+// This is upstream and unavoidable from build config. It is absorbed in CI by
+// `scripts/run-jvm-tests.sh`, which trusts the per-test JUnit XML (real <failure>/<error> still
+// fails the build; only the teardown exit code is tolerated).
+//
+// We deliberately do NOT use `forkEvery` to try to dodge it: fork restarts make MockK's inline
+// mock-maker intermittently throw "class redefinition failed" on random MockK-heavy tests, which
+// are *real* XML failures. One fork + `EnableDynamicAgentLoading` (above) keeps MockK stable; the
+// teardown exit is left to the CI wrapper. The @GraphicsMode(NATIVE) Roborazzi screenshot tests are
+// still split into their own task (below) so they can be recorded/verified in isolation.
 val screenshotTestFilter = "com.mileway.Screenshot*Test"
 
 // AGP registers the per-variant unit-test task late (variant API), so wire this after evaluation.
 afterEvaluate {
     tasks.named<Test>("testNoGmsDebugUnitTest") {
         filter { excludeTestsMatching(screenshotTestFilter) }
-        setForkEvery(25L)
     }
 
     tasks.register<Test>("screenshotTestNoGmsDebug") {

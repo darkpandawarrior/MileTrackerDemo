@@ -61,7 +61,7 @@ jobs:
       # maps, whose native libs SIGSEGV a shared Robolectric fork (exit 2). noGms
       # (MapLibre) has no Play Services native deps; map surfaces are faked in tests.
       - name: Run unit tests
-        run: ./gradlew testNoGmsDebugUnitTest
+        run: ./scripts/run-jvm-tests.sh testNoGmsDebugUnitTest
 
       # KMP modules name their JVM unit-test task `testAndroidHostTest` (not the variant-specific
       # name above), so run the commonMain engine/policy/mapper suites explicitly.
