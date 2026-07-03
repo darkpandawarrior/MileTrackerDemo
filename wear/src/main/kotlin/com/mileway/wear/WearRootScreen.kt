@@ -87,7 +87,7 @@ fun WearRootScreen(viewModel: WearViewModel = koinViewModel()) {
 }
 
 @Composable
-private fun WearDashboard(
+internal fun WearDashboard(
     uiState: WearRootUiState,
     listState: ScalingLazyListState,
     onTripsClick: () -> Unit,
