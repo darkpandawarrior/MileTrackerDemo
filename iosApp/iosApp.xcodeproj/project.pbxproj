@@ -31,6 +31,7 @@
 		982547CD67E6EC5B3853445E /* MilewayWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 927CAB2C06ADE37DB9C92138 /* MilewayWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A6AF7E1739D67A1FD72D4230 /* WatchSyncBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58AEBA1AB6F890243A9E36D3 /* WatchSyncBridge.swift */; };
 		AA86FB5A54A6C0E55CA41F5B /* WatchDashboardModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10514A614A98E936225446FF /* WatchDashboardModel.swift */; };
+		AFFD8539385EE5FFD217E414 /* WatchScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20226E5F540295E956E8E1E4 /* WatchScreenshotTests.swift */; };
 		B1F13F12608D8F58D80BB382 /* MilewaySyncModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEDECC3427398E59EBDAC2E3 /* MilewaySyncModelsTests.swift */; };
 		B6D5ABE43D725AFB8AD163DE /* WatchTrackingCommandSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C9CF7CDBA68159CCA3F6452 /* WatchTrackingCommandSender.swift */; };
 		B841A2F272BC195F4D163B3C /* MilewayActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342B5DD88093B5E69642D26E /* MilewayActivityAttributes.swift */; };
@@ -113,6 +114,7 @@
 		09A024EED53672A3583D2772 /* Mileway.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Mileway.framework; path = ../shared/build/bin/iosSimulatorArm64/debugFramework/Mileway.framework; sourceTree = "<group>"; };
 		0DB9BE89BCB5056E43C4F34B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		10514A614A98E936225446FF /* WatchDashboardModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardModel.swift; sourceTree = "<group>"; };
+		20226E5F540295E956E8E1E4 /* WatchScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchScreenshotTests.swift; sourceTree = "<group>"; };
 		2C9CF7CDBA68159CCA3F6452 /* WatchTrackingCommandSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchTrackingCommandSender.swift; sourceTree = "<group>"; };
 		3408BF1238111660C52B82AD /* MilewayWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MilewayWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		342B5DD88093B5E69642D26E /* MilewayActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilewayActivityAttributes.swift; sourceTree = "<group>"; };
@@ -164,6 +166,7 @@
 				EEDECC3427398E59EBDAC2E3 /* MilewaySyncModelsTests.swift */,
 				5799AB75B7FF6FB8CCFB1188 /* TrackingCommandTests.swift */,
 				C5D997782651414A5BD00A79 /* WatchDashboardModelTests.swift */,
+				20226E5F540295E956E8E1E4 /* WatchScreenshotTests.swift */,
 			);
 			path = MilewayWatchTests;
 			sourceTree = "<group>";
@@ -509,6 +512,7 @@
 				B1F13F12608D8F58D80BB382 /* MilewaySyncModelsTests.swift in Sources */,
 				E82D6DC17587EE84C1C4BA23 /* TrackingCommandTests.swift in Sources */,
 				94929968F9F24A759F9DEE60 /* WatchDashboardModelTests.swift in Sources */,
+				AFFD8539385EE5FFD217E414 /* WatchScreenshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

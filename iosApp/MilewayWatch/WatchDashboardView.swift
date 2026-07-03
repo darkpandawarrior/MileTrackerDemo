@@ -33,7 +33,16 @@ struct WatchDashboardView: View {
     @ObservedObject var model: WatchDashboardModel
 
     var body: some View {
-        ScrollView {
+        ScrollView { dashboardContent }
+            .background(WatchMatrixPalette.canvas)
+            .navigationTitle("Mileway")
+            .task { await model.refresh() }
+    }
+
+    /// The scroll-independent body content, factored out so a screenshot test can host-render it
+    /// with `ImageRenderer` (which does not render `ScrollView`-virtualized content).
+    @ViewBuilder var dashboardContent: some View {
+        VStack(spacing: 14) {
             VStack(spacing: 6) {
                 Text(String(format: "%.1f km", model.snapshot.todayDistanceKm))
                     .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -69,9 +78,6 @@ struct WatchDashboardView: View {
             }
             .padding()
         }
-        .background(WatchMatrixPalette.canvas)
-        .navigationTitle("Mileway")
-        .task { await model.refresh() }
     }
 
     private var trackingPill: some View {
