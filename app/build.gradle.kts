@@ -189,25 +189,30 @@ android {
 }
 
 // --------------------------------------------------------------------------
-// Z.5b: `testNoGmsDebugUnitTest` forked-JVM teardown crash.
+// Z.5b: `testNoGmsDebugUnitTest` forked-JVM teardown crash — fixed by `forkEvery(1)`.
 //
-// Robolectric 4.16.1 on JDK 21 segfaults the forked test JVM on *exit* ("exit value 2" AFTER all
-// tests have run and passed, XML all green) because its native Skia runtime crashes on teardown.
-// This is upstream and unavoidable from build config. It is absorbed in CI by
-// `scripts/run-jvm-tests.sh`, which trusts the per-test JUnit XML (real <failure>/<error> still
-// fails the build; only the teardown exit code is tolerated).
+// Robolectric 4.16.1 on JDK 21 crashed the forked test JVM on *exit* ("exit value 2" AFTER all
+// tests ran and passed, XML all green): a Robolectric-context test that does real cacheDir I/O
+// (StorageRepositoryTest) sharing one JVM with a Compose-rendering test that loads the native Skia
+// runtime (the a11y/sheet tests) corrupts native teardown. It was bisected to specific
+// cross-class pairs, never a real test failure.
 //
-// We deliberately do NOT use `forkEvery` to try to dodge it: fork restarts make MockK's inline
-// mock-maker intermittently throw "class redefinition failed" on random MockK-heavy tests, which
-// are *real* XML failures. One fork + `EnableDynamicAgentLoading` (above) keeps MockK stable; the
-// teardown exit is left to the CI wrapper. The @GraphicsMode(NATIVE) Roborazzi screenshot tests are
-// still split into their own task (below) so they can be recorded/verified in isolation.
+// `forkEvery(1)` gives each test class its own JVM, so no two classes accumulate native state in
+// one fork — the crash cannot form. This was previously avoided because fork restarts made MockK's
+// inline mock-maker throw "class redefinition failed"; `-XX:+EnableDynamicAgentLoading` (above) now
+// lets ByteBuddy re-attach cleanly on every fork, so MockK-heavy tests stay stable. Kover
+// aggregates coverage across forks, so the floor sees the complete `.ic` (a truncated dump from the
+// old crash under-counted coverage). `scripts/run-jvm-tests.sh` stays in CI as a defensive net.
+// The @GraphicsMode(NATIVE) Roborazzi screenshot tests are still split into their own task (below).
 val screenshotTestFilter = "com.mileway.Screenshot*Test"
 
 // AGP registers the per-variant unit-test task late (variant API), so wire this after evaluation.
 afterEvaluate {
     tasks.named<Test>("testNoGmsDebugUnitTest") {
         filter { excludeTestsMatching(screenshotTestFilter) }
+        // Z.5b: one JVM per class — see the block comment above. Do not raise without re-checking
+        // the StorageRepositoryTest × Compose-native-render teardown crash stays fixed.
+        setForkEvery(1L)
     }
 
     tasks.register<Test>("screenshotTestNoGmsDebug") {
