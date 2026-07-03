@@ -68,7 +68,7 @@ Play Store and F-Droid.
   (BGTask dispatcher + AppDelegate); platform services sit behind `expect`/`actual`.
 - 🔀 **One codebase, two distributions.** A `gms` Play build and a FOSS `noGms` / F-Droid build, with
   a dependency-prefix guard that fails the build the moment a proprietary library leaks into FOSS.
-- 🧪 **Quality gates in CI.** 125 Roborazzi/host-rendered screenshot tests on the JVM (no emulator,
+- 🧪 **Quality gates in CI.** 131 Roborazzi/host-rendered screenshot tests on the JVM (no emulator,
   no network), Napier structured logging, detekt, ktlint and Kover, plus reproducible F-Droid
   release workflows.
 - 🔥 **Ember theme, four platforms from one KMP core.** A warm amber/red dark theme (replacing an
@@ -86,7 +86,7 @@ Play Store and F-Droid.
 | ![Track Miles ready-to-start screen with vehicle selector and distance card](docs/screenshots/track_miles_idle_screen.png) | ![Track detail with route stats, journey overview and GPS-point breakdown](docs/screenshots/track_detail_screen.png) | ![Tracking success summary with distance, reimbursement amount and voucher](docs/screenshots/tracking_success_screen.png) |
 
 <details>
-<summary><b>Full screen gallery</b>: every screen across the feature modules, grouped by area (125 images)</summary>
+<summary><b>Full screen gallery</b>: every screen across the feature modules, grouped by area (131 images)</summary>
 
 <br/>
 
@@ -268,15 +268,32 @@ no launcher or emulator needed.
 |:---:|
 | ![Android Glance home-screen widget with today/week distance and a red live-tracking indicator](docs/screenshots/widget_glance.png) |
 
-- **iOS WidgetKit.** 📸 pending on-device capture (SwiftUI, not host-renderable).
+**iOS WidgetKit.** Home-screen + Lock Screen widgets over the same shared snapshot (App-Group
+store), with an interactive App-Intent Start/Stop button — SwiftUI `ImageRenderer`, no home-screen
+placement needed.
+
+| Home widget | Lock Screen |
+|:---:|:---:|
+| ![iOS home-screen widget with today/week distance and a Stop button](docs/screenshots/widget_ios_home.png) | ![iOS Lock Screen accessory widget with today's distance](docs/screenshots/widget_ios_lockscreen.png) |
 
 #### watchOS app
 
-📸 pending on-device capture (SwiftUI, not host-renderable).
+Native SwiftUI over the `:sharedWatch` KMP framework — today/week distance, a red live-tracking
+pill, and a trips drill-down. Host-rendered on the watchOS simulator via SwiftUI `ImageRenderer`.
+
+| &nbsp; |
+|:---:|
+| ![watchOS dashboard with amber distance, red Tracking pill and a Trips button](docs/screenshots/watchos_app.png) |
 
 #### Live Activity & Dynamic Island
 
-📸 pending on-device capture (SwiftUI, not host-renderable).
+ActivityKit Live Activity (Lock Screen banner) + a Dynamic Island expanded presentation for an
+in-progress trip, driven by the phone's `TrackingLiveActivityController`. Presentation content is
+factored out of the `ActivityConfiguration` so `ImageRenderer` can host-render it.
+
+| Lock Screen banner | Dynamic Island (expanded) |
+|:---:|:---:|
+| ![Live Activity banner: Tracking, 12.4 km, elapsed 12:34](docs/screenshots/live_activity.png) | ![Dynamic Island expanded: distance, elapsed time and tracking status](docs/screenshots/live_activity_dynamic_island.png) |
 
 <sub>Plus component matrices (status cards, booking cards, PO cards, success-state variants) in
 <a href="docs/screenshots"><code>docs/screenshots/</code></a>, rendered from <code>@Preview</code> composables by
@@ -499,6 +516,12 @@ hoisting, iOS parity, the AI assistant rebuild, etc.). Progress is tracked per i
 - **Static analysis.** detekt and ktlint across every module, with Kover for coverage.
 - **CI.** `.github/workflows/ci.yml` runs `assembleGmsDebug` and `testNoGmsDebugUnitTest` on every push
   and PR. Separate `quality`, `release` and `publish-fdroid` workflows handle the gates and distribution.
+- **Distribution.** Beyond Play/F-Droid/Indus (`release.yml`, `publish-fdroid.yml`, `indus-deploy.yml`):
+  `amazon-appstore-deploy.yml`, `huawei-appgallery-deploy.yml`, `samsung-galaxy-store-deploy.yml`, and
+  `aptoide-deploy.yml` cover the other major Android storefronts, all gated on repo secrets and inert
+  until configured (see each workflow's header comment). GitHub Releases (already published by
+  `release.yml`) also make the app trackable via [Obtainium](https://github.com/ImranR98/Obtainium)
+  with no extra config. **Uptodown** has no public submission API — manual web-form upload only.
 
 ## Roadmap
 
@@ -514,7 +537,7 @@ roadmap reflects direction rather than commitments.
 - [x] Room (KMP) + DataStore persistence
 - [x] Location engine (jitter / spike / four-bucket / IMU fusion) with a simulated drive source
 - [x] Master search: a registry across feature modules with an aggregator, results screen and navigation
-- [x] Roborazzi/host-rendered screenshot suite (125 images, JVM-only), detekt / ktlint / Kover, CI + release workflows
+- [x] Roborazzi/host-rendered screenshot suite (131 images, JVM-only), detekt / ktlint / Kover, CI + release workflows
 - [x] Wear OS companion tile
 - [x] **iOS UI parity (V19).** All feature screens in `commonMain`; background scheduling via
       kmpworkmanager; AppDelegate + BGTask dispatcher; iOS builds and passes all CI gates.
@@ -581,11 +604,11 @@ roadmap reflects direction rather than commitments.
 |---|---|---|---|
 | Wear OS app (dashboard, trips, tile, complication, ongoing activity) | ✅ `assembleNoGmsDebug`/`assembleGmsDebug` | ✅ `testNoGmsDebugUnitTest` (incl. host-rendered Roborazzi screenshots) | ⏸ on-watch GPS verification only |
 | Phone→watch DataLayer sync (gms) | ✅ compiles, FOSS-purity guard passes | ✅ unit-tested | ⏸ needs a paired physical/emulated Wear device |
-| watchOS app (SwiftUI + `:sharedWatch`) | ✅ `xcodebuild … -scheme MilewayWatch build` | — (no watch XCTest target yet) | ⏸ needs a watchOS simulator/device run, not just a build |
+| watchOS app (SwiftUI + `:sharedWatch`) | ✅ `xcodebuild … -scheme MilewayWatch build` | ✅ host-rendered screenshot (WatchScreenshotTests) | ✅ dashboard captured |
 | WatchConnectivity sync (iOS ↔ watchOS) | ✅ compiles both schemes | — | ⏸ needs a live paired simulator/device session |
 | Android Glance widget + quick start/stop | ✅ `assembleNoGmsDebug` | ✅ `MileageSummaryWidgetTest` | — (in-process Glance render, no home-screen manual check done here) |
 | Android App Shortcuts / Quick Settings tile / AppFunctions | ✅ compiles | ✅ unit-tested | ⏸ AppFunctions invocation needs `adb shell` on an API-36 emulator (device-gated) |
-| iOS WidgetKit + Live Activity/Dynamic Island | ✅ `xcodebuild -scheme MilewayWidgets build` | — | ⏸ Lock Screen/Dynamic Island rendering needs a real device or simulator run |
+| iOS WidgetKit + Live Activity/Dynamic Island | ✅ `xcodebuild -scheme MilewayWidgets build` | ✅ host-rendered screenshots (WidgetScreenshotTests) | ✅ widgets + Live Activity captured |
 | iOS App Intents / Siri Shortcuts | ✅ compiles, `AppShortcutsProvider` registered | — | ⏸ Siri phrase invocation needs a device/simulator with Siri running |
 | Compose Desktop dashboard | ✅ `:desktopApp:desktopMain` compiles | ✅ `desktopTest` (host-rendered screenshot) | — (pure-JVM, no separate device verification needed) |
 | Accessibility sweep (Android + iOS/watchOS surfaces) | ✅ compiles | — | ⏸ manual VoiceOver/TalkBack walkthrough documented inline; no automated a11y audit target yet |
