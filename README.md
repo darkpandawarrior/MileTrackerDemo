@@ -260,10 +260,14 @@ system required.
 
 #### Widgets
 
-- **Android home-screen widget (Glance).** 📸 pending: host-rendering the `GlanceAppWidget`'s
-  `RemoteViews` hit a resource-linking conflict against `:feature:tracking`'s manifest (a
-  `style/Theme.Mileway` resource not visible from `:widget`'s library test classpath) — not
-  resolved within this pass, left for a follow-up rather than a hacky manifest workaround.
+**Android home-screen widget (Glance).** Renders the shared `SurfaceSnapshot` — today/week distance
+plus a red "Tracking now" live indicator — host-rendered with Roborazzi over the `GlanceAppWidget`,
+no launcher or emulator needed.
+
+| &nbsp; |
+|:---:|
+| ![Android Glance home-screen widget with today/week distance and a red live-tracking indicator](docs/screenshots/widget_glance.png) |
+
 - **iOS WidgetKit.** 📸 pending on-device capture (SwiftUI, not host-renderable).
 
 #### watchOS app
