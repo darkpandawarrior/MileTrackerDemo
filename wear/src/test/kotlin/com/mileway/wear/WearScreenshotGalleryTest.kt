@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.AppScaffold
@@ -19,16 +17,17 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.mileway.core.data.model.display.SurfaceSnapshot
 import com.mileway.wear.theme.WearMilewayTheme
 import java.io.File
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * showcase/Wear.1: Roborazzi host-render of the Ember Wear dashboard + trip list over a
- * deterministic mock [WearRootUiState] — mirrors `app/src/test/.../ScreenshotGalleryTest.kt`'s
- * pattern (Robolectric + Roborazzi, no device/emulator). Output: docs/screenshots/wear_*.png.
+ * showcase/Wear.1: Roborazzi host-render of the Ember Wear dashboard + trip list + tile over
+ * deterministic mock data — Robolectric + Roborazzi, no device/emulator. Uses the
+ * `captureRoboImage { content }` composable-content form (NO ComposeRule/Activity) so the Wear
+ * manifest's watch-only launcher doesn't break Robolectric activity resolution.
+ * Output: docs/screenshots/wear_*.png.
  */
 @RunWith(androidx.test.ext.junit.runners.AndroidJUnit4::class)
 @Config(sdk = [33], application = Application::class, qualifiers = "w227dp-h227dp-mdpi")
@@ -42,8 +41,6 @@ class WearScreenshotGalleryTest {
             File(repoRoot, "docs/screenshots").also { it.mkdirs() }
         }
 
-        // Record-only documentation screenshots written to docs/ (the README gallery), matching
-        // ScreenshotGalleryTest's app-module convention.
         @org.junit.BeforeClass
         @JvmStatic
         fun setup() {
@@ -51,12 +48,9 @@ class WearScreenshotGalleryTest {
         }
     }
 
-    @get:Rule
-    val composeRule = createComposeRule()
-
     @Test
     fun wearDashboard() {
-        composeRule.setContent {
+        captureRoboImage(File(screenshotsDir, "wear_dashboard.png").absolutePath) {
             WearMilewayTheme {
                 AppScaffold {
                     val listState = rememberScalingLazyListState()
@@ -78,12 +72,11 @@ class WearScreenshotGalleryTest {
                 }
             }
         }
-        composeRule.onRoot().captureRoboImage(File(screenshotsDir, "wear_dashboard.png").absolutePath)
     }
 
     @Test
     fun wearTripList() {
-        composeRule.setContent {
+        captureRoboImage(File(screenshotsDir, "wear_trip_list.png").absolutePath) {
             WearMilewayTheme {
                 AppScaffold {
                     val listState = rememberScalingLazyListState()
@@ -97,16 +90,14 @@ class WearScreenshotGalleryTest {
                 }
             }
         }
-        composeRule.onRoot().captureRoboImage(File(screenshotsDir, "wear_trip_list.png").absolutePath)
     }
 
     // MileageTileService renders a ProtoLayout tile, not a Composable — this approximates its
-    // actual content (today's distance label via WearPresentation.toTodayDistanceLabel + the
-    // "Mileway" app label) as a Compose render so the Ember visual is documented without a
-    // ProtoLayout renderer on the JVM.
+    // content (today's distance label + the "Mileway" app label) as a Compose render so the Ember
+    // tile visual is documented without a ProtoLayout renderer on the JVM.
     @Test
     fun wearTile() {
-        composeRule.setContent {
+        captureRoboImage(File(screenshotsDir, "wear_tile.png").absolutePath) {
             WearMilewayTheme {
                 Box(
                     modifier = Modifier
@@ -125,7 +116,6 @@ class WearScreenshotGalleryTest {
                 }
             }
         }
-        composeRule.onRoot().captureRoboImage(File(screenshotsDir, "wear_tile.png").absolutePath)
     }
 
     private fun mockTrips() =
