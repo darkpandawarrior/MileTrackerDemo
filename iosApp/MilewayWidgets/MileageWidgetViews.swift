@@ -1,16 +1,16 @@
 // P6.3: widget view family — home screen (systemSmall/systemMedium) + Lock Screen accessories
-// (accessoryRectangular/accessoryCircular). Palette hand-mirrored from core:ui's Matrix token spec,
-// same approach WatchDashboardView.swift already takes for the watch target (Compose tokens don't
-// cross the KMP/SwiftUI boundary).
+// (accessoryRectangular/accessoryCircular). Palette hand-mirrored from core:ui's Ember token spec
+// (T.2), same approach WatchDashboardView.swift already takes for the watch target (Compose
+// tokens don't cross the KMP/SwiftUI boundary).
 
 import SwiftUI
 import WidgetKit
 
 enum WidgetMatrixPalette {
-    static let canvas = Color(red: 0x01 / 255, green: 0x07 / 255, blue: 0x01 / 255)
-    static let accent = Color(red: 0x00 / 255, green: 0xFF / 255, blue: 0x41 / 255)
-    static let text = Color(red: 0xB8 / 255, green: 0xFF / 255, blue: 0xCC / 255)
-    static let textMuted = Color(red: 0x3A / 255, green: 0x66 / 255, blue: 0x45 / 255)
+    static let canvas = Color(red: 0x0B / 255, green: 0x08 / 255, blue: 0x06 / 255)
+    static let accent = Color(red: 0xF5 / 255, green: 0xA6 / 255, blue: 0x23 / 255)
+    static let text = Color(red: 0xF7 / 255, green: 0xEF / 255, blue: 0xE3 / 255)
+    static let textMuted = Color(red: 0xC9 / 255, green: 0xB9 / 255, blue: 0xA3 / 255)
 }
 
 private func formattedKm(_ value: Double) -> String {

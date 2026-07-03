@@ -1,0 +1,98 @@
+name: Deploy to Samsung Galaxy Store
+
+# Uploads the Gms-flavor release APK via Samsung's Content Publish API (no maintained community
+# action exists, so this is hand-rolled curl). Gated on SAMSUNG_ACCESS_TOKEN: no Seller Portal API
+# credentials exist yet, so this job no-ops until configured.
+#
+# NOTE: the access-token endpoint/grant isn't in the public docs excerpt this was written against —
+# see "Create an Access Token" at developer.samsung.com/galaxy-store/galaxy-store-developer-api
+# before wiring SAMSUNG_ACCESS_TOKEN generation into this workflow (today it expects the token as a
+# pre-generated secret, refreshed manually/out-of-band).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ !!secrets.SAMSUNG_ACCESS_TOKEN }}
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - run: chmod +x ./gradlew
+
+      - name: Materialize signing secrets
+        run: |
+          set -euo pipefail
+          mkdir -p secrets
+          if [ -n "${KEYSTORE_B64:-}" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > secrets/upload.keystore
+            {
+              echo "RELEASE_STORE_FILE=$PWD/secrets/upload.keystore"
+              echo "RELEASE_STORE_PASSWORD=${KEYSTORE_PASSWORD:-}"
+              echo "RELEASE_KEY_ALIAS=${KEY_ALIAS:-}"
+              echo "RELEASE_KEY_PASSWORD=${KEY_PASSWORD:-}"
+            } >> "$GITHUB_ENV"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Build release APK (Gms)
+        run: ./gradlew :app:assembleGmsRelease
+
+      - name: Create upload session
+        id: session
+        run: |
+          set -euo pipefail
+          SESSION_ID=$(curl -sf -X POST "https://devapi.samsungapps.com/seller/createUploadSessionId" \
+            -H "Authorization: Bearer ${SAMSUNG_ACCESS_TOKEN}" \
+            -H "service-account-id: ${SAMSUNG_SERVICE_ACCOUNT_ID}" \
+            -H "Content-Type: application/json" | jq -r '.sessionId')
+          echo "session_id=$SESSION_ID" >> "$GITHUB_OUTPUT"
+        env:
+          SAMSUNG_ACCESS_TOKEN: ${{ secrets.SAMSUNG_ACCESS_TOKEN }}
+          SAMSUNG_SERVICE_ACCOUNT_ID: ${{ secrets.SAMSUNG_SERVICE_ACCOUNT_ID }}
+
+      - name: Upload binary
+        run: |
+          set -euo pipefail
+          curl -sf -X POST "https://devapi.samsungapps.com/galaxyapi/fileUpload" \
+            -H "Authorization: Bearer ${SAMSUNG_ACCESS_TOKEN}" \
+            -H "service-account-id: ${SAMSUNG_SERVICE_ACCOUNT_ID}" \
+            -F "file=@app/build/outputs/apk/gms/release/app-gms-release.apk" \
+            -F "sessionId=${{ steps.session.outputs.session_id }}"
+        env:
+          SAMSUNG_ACCESS_TOKEN: ${{ secrets.SAMSUNG_ACCESS_TOKEN }}
+          SAMSUNG_SERVICE_ACCOUNT_ID: ${{ secrets.SAMSUNG_SERVICE_ACCOUNT_ID }}
+
+      - name: Submit for review
+        run: |
+          set -euo pipefail
+          curl -sf -X POST "https://devapi.samsungapps.com/seller/contentSubmit" \
+            -H "Authorization: Bearer ${SAMSUNG_ACCESS_TOKEN}" \
+            -H "service-account-id: ${SAMSUNG_SERVICE_ACCOUNT_ID}" \
+            -H "Content-Type: application/json" \
+            -d "{\"contentId\": \"${SAMSUNG_CONTENT_ID}\"}"
+        env:
+          SAMSUNG_ACCESS_TOKEN: ${{ secrets.SAMSUNG_ACCESS_TOKEN }}
+          SAMSUNG_SERVICE_ACCOUNT_ID: ${{ secrets.SAMSUNG_SERVICE_ACCOUNT_ID }}
+          SAMSUNG_CONTENT_ID: ${{ secrets.SAMSUNG_CONTENT_ID }}

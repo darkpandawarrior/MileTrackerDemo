@@ -1,0 +1,68 @@
+name: Deploy to Indus Appstore
+
+# Publishes the Gms-flavor release AAB to Indus Appstore via PhonePe's Indus-Flows action, matching
+# the pattern used by PaymentsLab/Kursi. Gated on INDUS_API_KEY: this repo ships no keystore or
+# store credentials (see fastlane/Fastfile and release.yml), so this job no-ops until configured.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build & deploy AAB
+    runs-on: ubuntu-latest
+    if: ${{ !!secrets.INDUS_API_KEY }}
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - run: chmod +x ./gradlew
+
+      # Materialize signing secrets from base64 repo secrets (placeholders until configured).
+      - name: Materialize signing secrets
+        run: |
+          set -euo pipefail
+          mkdir -p secrets
+          if [ -n "${KEYSTORE_B64:-}" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > secrets/upload.keystore
+            {
+              echo "RELEASE_STORE_FILE=$PWD/secrets/upload.keystore"
+              echo "RELEASE_STORE_PASSWORD=${KEYSTORE_PASSWORD:-}"
+              echo "RELEASE_KEY_ALIAS=${KEY_ALIAS:-}"
+              echo "RELEASE_KEY_PASSWORD=${KEY_PASSWORD:-}"
+            } >> "$GITHUB_ENV"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      # Indus targets the Play-equivalent Gms flavor (Maps/Firebase intact) — the noGms flavor is
+      # F-Droid-only (see publish-fdroid.yml).
+      - name: Build release AAB (Gms)
+        run: ./gradlew :app:bundleGmsRelease
+
+      - name: Deploy to Indus Appstore
+        uses: PhonePe/Indus-Flows@v1
+        with:
+          app_bundle_path: 'app/build/outputs/bundle/gmsRelease/app-gms-release.aab'
+          api_key: ${{ secrets.INDUS_API_KEY }}
+          app_id: ${{ secrets.INDUS_APP_ID }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

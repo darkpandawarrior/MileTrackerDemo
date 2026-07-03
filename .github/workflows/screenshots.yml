@@ -55,7 +55,7 @@ jobs:
 
       # noGms variant: gms Play Services maps crash the Robolectric fork.
       - name: Record screenshots (regenerate baselines in the CI environment)
-        run: ./gradlew recordRoborazziNoGmsDebug
+        run: ./scripts/run-jvm-tests.sh recordRoborazziNoGmsDebug
 
       # main: commit any new/changed baselines straight back. The [skip ci] tag stops the push from
       # re-triggering this (or any) workflow, so there is no loop.

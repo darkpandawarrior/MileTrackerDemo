@@ -19,6 +19,16 @@ private actor FakeWatchGraph: WatchGraphProviding {
     func recentTrips(limit: Int32) async -> [WatchTrip] { Array(tripsToReturn.prefix(Int(limit))) }
 }
 
+/// Z.5d: records which command `WatchDashboardModel.toggleTracking()` sent, without touching
+/// `WCSession`.
+private final class FakeTrackingCommandSender: TrackingCommandSending {
+    private(set) var startCount = 0
+    private(set) var stopCount = 0
+
+    func sendStart() { startCount += 1 }
+    func sendStop() { stopCount += 1 }
+}
+
 final class WatchDashboardModelTests: XCTestCase {
     @MainActor
     func testRefreshPopulatesSnapshotFromGraph() async {
@@ -58,5 +68,37 @@ final class WatchDashboardModelTests: XCTestCase {
         let model = WatchDashboardModel(graph: FakeWatchGraph(snapshot: .empty, trips: []), cachedSnapshot: cached)
 
         XCTAssertEqual(model.snapshot, cached)
+    }
+
+    @MainActor
+    func testToggleTrackingSendsStartWhenIdle() {
+        let sender = FakeTrackingCommandSender()
+        let idle = WatchSnapshot(todayDistanceKm: 0, weekDistanceKm: 0, weekGoalProgress: 0, isTracking: false, isPaused: false)
+        let model = WatchDashboardModel(
+            graph: FakeWatchGraph(snapshot: .empty, trips: []),
+            commandSender: sender,
+            cachedSnapshot: idle
+        )
+
+        model.toggleTracking()
+
+        XCTAssertEqual(sender.startCount, 1)
+        XCTAssertEqual(sender.stopCount, 0)
+    }
+
+    @MainActor
+    func testToggleTrackingSendsStopWhenTracking() {
+        let sender = FakeTrackingCommandSender()
+        let tracking = WatchSnapshot(todayDistanceKm: 5, weekDistanceKm: 5, weekGoalProgress: 0.1, isTracking: true, isPaused: false)
+        let model = WatchDashboardModel(
+            graph: FakeWatchGraph(snapshot: .empty, trips: []),
+            commandSender: sender,
+            cachedSnapshot: tracking
+        )
+
+        model.toggleTracking()
+
+        XCTAssertEqual(sender.stopCount, 1)
+        XCTAssertEqual(sender.startCount, 0)
     }
 }

@@ -26,10 +26,13 @@ class StorageRepository(private val context: Context) {
     /** Total on-device footprint this screen reports: database + cache. */
     fun totalBytes(): Long = databaseBytes() + cacheBytes()
 
-    /** Deletes everything under [Context.cacheDir] and recreates the (now-empty) directory. */
+    /**
+     * Empties [Context.cacheDir] by deleting its contents, leaving the directory itself in place.
+     * (Deleting and recreating the directory briefly leaves `cacheDir` missing, and under Robolectric
+     * removing the managed cache directory corrupts its temp-dir bookkeeping — emptying avoids both.)
+     */
     fun clearCache() {
-        context.cacheDir?.deleteRecursively()
-        context.cacheDir?.mkdirs()
+        context.cacheDir?.listFiles()?.forEach { it.deleteRecursively() }
     }
 
     private fun directorySizeBytes(dir: File?): Long {

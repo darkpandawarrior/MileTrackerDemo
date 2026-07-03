@@ -1,5 +1,6 @@
 plugins {
     id("mileway.kmp.library.watchos")
+    id("mileway.kmp.desktop")
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.kotlinSerialization)
@@ -38,6 +39,11 @@ kotlin {
         appleMain.dependencies {
             implementation(libs.sqlite.bundled)
         }
+        val desktopMain by getting {
+            dependencies {
+                implementation(libs.sqlite.bundled)
+            }
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
@@ -53,4 +59,5 @@ dependencies {
     add("kspWatchosArm64", libs.room.compiler)
     add("kspWatchosSimulatorArm64", libs.room.compiler)
     add("kspWatchosDeviceArm64", libs.room.compiler)
+    add("kspDesktop", libs.room.compiler)
 }

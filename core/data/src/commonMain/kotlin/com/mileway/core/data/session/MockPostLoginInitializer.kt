@@ -61,9 +61,9 @@ class MockPostLoginInitializer(
 
     private companion object {
         /** Static demo default — no per-tenant theming backend exists to fetch a real one from. */
-        const val DEFAULT_THEME_COLOR_HEX = "#39FF14"
+        const val DEFAULT_THEME_COLOR_HEX = "#F5A623"
 
-        /** Matrix-green default; matches `DesignTokens`' primary accent so an unmatched sign-in isn't jarring. */
+        /** Ember-amber default; matches `DesignTokens`' primary accent so an unmatched sign-in isn't jarring. */
         const val DEFAULT_CURRENCY_SYMBOL = "₹"
 
         const val DEFAULT_OFFICE_NAME = "Demo HQ"

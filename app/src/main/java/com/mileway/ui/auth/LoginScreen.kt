@@ -3,6 +3,8 @@ package com.mileway.ui.auth
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,12 +56,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -72,6 +77,7 @@ import com.mileway.core.network.model.DemoAccount
 import com.mileway.core.ui.components.DotsIndicator
 import com.mileway.core.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 /** Prefilled demo identity so the fake login works without typing anything. */
@@ -568,6 +574,7 @@ private fun PersonaPickerRow(
 @Composable
 private fun OnboardingPager() {
     val pagerState = rememberPagerState(pageCount = { ONBOARDING_SLIDES.size })
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(pagerState.currentPage) {
         delay(ONBOARDING_AUTO_ADVANCE_MS)
@@ -581,7 +588,13 @@ private fun OnboardingPager() {
             contentPadding = PaddingValues(horizontal = DesignTokens.Spacing.xs),
             modifier = Modifier.fillMaxWidth(),
         ) { page ->
-            OnboardingSlideContent(slide = ONBOARDING_SLIDES[page])
+            OnboardingSlideContent(
+                slide = ONBOARDING_SLIDES[page],
+                onTap = {
+                    val next = (page + 1) % ONBOARDING_SLIDES.size
+                    coroutineScope.launch { pagerState.animateScrollToPage(next) }
+                },
+            )
         }
 
         Spacer(Modifier.height(DesignTokens.Spacing.l))
@@ -589,17 +602,26 @@ private fun OnboardingPager() {
         DotsIndicator(
             pageCount = ONBOARDING_SLIDES.size,
             selectedIndex = pagerState.currentPage,
+            onDotClick = { index ->
+                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+            },
         )
     }
 }
 
-/** A single onboarding slide: tinted icon disc, title, and caption. */
+/** A single onboarding slide: tinted icon disc, title, and caption. Tapping advances the pager. */
 @Composable
-private fun OnboardingSlideContent(slide: OnboardingSlide) {
+private fun OnboardingSlideContent(slide: OnboardingSlide, onTap: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = DesignTokens.Spacing.s),
+            .padding(horizontal = DesignTokens.Spacing.s)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onTap,
+            )
+            .semantics { contentDescription = "${slide.title}. ${slide.caption}" },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Surface(

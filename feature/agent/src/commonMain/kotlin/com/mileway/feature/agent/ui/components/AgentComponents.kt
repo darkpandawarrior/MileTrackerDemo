@@ -31,10 +31,10 @@ import com.mikepenz.markdown.m3.markdownTypography
 import com.mileway.core.ui.theme.TerminalType
 import com.mileway.feature.agent.model.AgentMessage
 
-private val PHOSPHOR_GREEN = Color(0xFF00FF41)
-private val PHOSPHOR_DIM = Color(0xFF3A6645)
-private val TERMINAL_BORDER = Color(0xFF1C3522)
-private val TERMINAL_SURFACE = Color(0xFF040C06)
+private val EMBER_ACCENT = Color(0xFFF5A623)
+private val EMBER_DIM = Color(0xFFB87A1C)
+private val TERMINAL_BORDER = Color(0xFF3D2E1C)
+private val TERMINAL_SURFACE = Color(0xFF17110B)
 
 @Composable
 fun AgentMessageBubble(
@@ -47,13 +47,13 @@ fun AgentMessageBubble(
         horizontalAlignment = if (message.isUser) Alignment.End else Alignment.Start,
     ) {
         if (message.isUser) {
-            // User: right-aligned with `>` terminal prompt prefix, dark bg, green text
+            // User: right-aligned with `>` terminal prompt prefix, dark bg, amber text
             Box(
                 modifier =
                     Modifier
                         .widthIn(max = 300.dp)
                         .background(
-                            Color(0xFF00280E),
+                            Color(0xFF3A2A12),
                             RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp, bottomStart = 8.dp, bottomEnd = 2.dp),
                         )
                         .border(
@@ -67,12 +67,12 @@ fun AgentMessageBubble(
                     Text(
                         ">",
                         style = TerminalType.prompt,
-                        color = PHOSPHOR_GREEN,
+                        color = EMBER_ACCENT,
                     )
                     Text(
                         message.text,
                         style = TerminalType.prompt,
-                        color = PHOSPHOR_GREEN,
+                        color = EMBER_ACCENT,
                     )
                 }
             }
@@ -83,7 +83,7 @@ fun AgentMessageBubble(
                     Modifier
                         .widthIn(max = 340.dp)
                         .background(
-                            Color(0xFF010701),
+                            Color(0xFF0B0806),
                             RoundedCornerShape(2.dp),
                         )
                         .border(
@@ -97,17 +97,17 @@ fun AgentMessageBubble(
                 Text(
                     "$ mileway_ai",
                     style = TerminalType.statusLine,
-                    color = PHOSPHOR_DIM,
+                    color = EMBER_DIM,
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
                 Markdown(
                     content = message.text,
-                    colors = markdownColor(text = PHOSPHOR_GREEN),
+                    colors = markdownColor(text = EMBER_ACCENT),
                     typography =
                         markdownTypography(
                             text = TerminalType.output,
                             paragraph = TerminalType.output,
-                            code = TerminalType.output.copy(color = PHOSPHOR_GREEN),
+                            code = TerminalType.output.copy(color = EMBER_ACCENT),
                         ),
                 )
             }
@@ -116,7 +116,7 @@ fun AgentMessageBubble(
                     Icon(
                         Icons.Filled.ThumbUp,
                         contentDescription = "Helpful",
-                        tint = if (feedbackRating == 1) PHOSPHOR_GREEN else PHOSPHOR_DIM,
+                        tint = if (feedbackRating == 1) EMBER_ACCENT else EMBER_DIM,
                         modifier = Modifier.size(16.dp),
                     )
                 }
@@ -124,7 +124,7 @@ fun AgentMessageBubble(
                     Icon(
                         Icons.Filled.ThumbDown,
                         contentDescription = "Not helpful",
-                        tint = if (feedbackRating == -1) MaterialTheme.colorScheme.error else PHOSPHOR_DIM,
+                        tint = if (feedbackRating == -1) MaterialTheme.colorScheme.error else EMBER_DIM,
                         modifier = Modifier.size(16.dp),
                     )
                 }
@@ -143,21 +143,21 @@ fun AgentStreamingBubble(
             modifier =
                 Modifier
                     .widthIn(max = 340.dp)
-                    .background(Color(0xFF010701), RoundedCornerShape(2.dp))
+                    .background(Color(0xFF0B0806), RoundedCornerShape(2.dp))
                     .border(1.dp, TERMINAL_BORDER, RoundedCornerShape(2.dp))
                     .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(
                 "$ mileway_ai",
                 style = TerminalType.statusLine,
-                color = PHOSPHOR_DIM,
+                color = EMBER_DIM,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
             // Block cursor `█` instead of pipe — classic terminal feel
             Text(
                 text = "$text${if (cursorAlpha > 0.5f) "█" else ""}",
                 style = TerminalType.output,
-                color = PHOSPHOR_GREEN,
+                color = EMBER_ACCENT,
             )
         }
     }
@@ -173,20 +173,20 @@ fun AgentThinkingIndicator(phrase: String) {
         Column(
             modifier =
                 Modifier
-                    .background(Color(0xFF010701), RoundedCornerShape(2.dp))
+                    .background(Color(0xFF0B0806), RoundedCornerShape(2.dp))
                     .border(1.dp, TERMINAL_BORDER, RoundedCornerShape(2.dp))
                     .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(
                 "$ mileway_ai",
                 style = TerminalType.statusLine,
-                color = PHOSPHOR_DIM,
+                color = EMBER_DIM,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
             Text(
                 text = "$phrase...",
                 style = TerminalType.output,
-                color = PHOSPHOR_DIM,
+                color = EMBER_DIM,
             )
         }
     }

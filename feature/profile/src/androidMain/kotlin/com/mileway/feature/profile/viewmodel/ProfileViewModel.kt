@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.mileway.core.data.session.ActiveAccountSource
 import com.mileway.core.data.session.MockAccountSessionCoordinator
 import com.mileway.core.data.session.SessionRepository
+import com.mileway.core.data.session.isSessionFresh
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.mvi.BaseViewModel
 import com.mileway.core.ui.theme.AccentPalette
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 sealed interface ProfileAction {
     /**
@@ -88,6 +90,14 @@ sealed interface ProfileAction {
      * persona's running trip.
      */
     data object DismissPausedTripNotice : ProfileAction
+
+    /**
+     * P3.2: dismisses [ProfileUiState.showReconfirmIdentity]'s soft "Re-confirm it's you" sheet.
+     * Just hides it for this composition — since Mileway has no real secret to protect, dismissal
+     * isn't gated on a credential; the sheet won't reappear until the ViewModel's next freshness
+     * check (see [ProfileViewModel]'s init) finds the session stale again.
+     */
+    data object DismissReconfirmIdentity : ProfileAction
 }
 
 sealed interface ProfileEffect {
@@ -172,6 +182,17 @@ class ProfileViewModel(
             .map { NotificationChannels(it.pushChannelEnabled, it.whatsappChannelEnabled, it.slackChannelEnabled) }
             .onEach { channels -> setState { copy(notificationChannels = channels) } }
             .launchIn(viewModelScope)
+
+        // P3.2: one-shot staleness check against the 25-minute soft window — checked once per
+        // ViewModel lifetime (this screen is a top-level tab, recreated rarely) rather than on a
+        // recurring timer, so the sheet surfaces once per staleness window instead of replaying on
+        // every recomposition.
+        viewModelScope.launch {
+            val session = sessionRepository.sessionState.first()
+            if (!isSessionFresh(Clock.System.now().toEpochMilliseconds(), session.signedInAtMillis)) {
+                setState { copy(showReconfirmIdentity = true) }
+            }
+        }
     }
 
     override fun onAction(action: ProfileAction) {
@@ -195,6 +216,7 @@ class ProfileViewModel(
             ProfileAction.DismissAccountDetails -> setState { copy(accountDetailsSheet = null) }
             is ProfileAction.SignOut -> signOut(action.accountId)
             ProfileAction.DismissPausedTripNotice -> setState { copy(pausedTripNotice = null) }
+            ProfileAction.DismissReconfirmIdentity -> setState { copy(showReconfirmIdentity = false) }
         }
     }
 

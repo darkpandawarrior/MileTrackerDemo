@@ -1,6 +1,7 @@
 package com.mileway
 
 import com.mileway.core.data.session.SessionRepository
+import com.mileway.core.data.session.SessionState
 import com.mileway.core.data.settings.DemoSettings
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
@@ -34,9 +35,14 @@ class SignOutTest {
     private fun fakeDemoSettingsRepository() =
         mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) }
 
+    // P3.2: ProfileViewModel now collects `sessionState.first()` in init(); a relaxed mockk's
+    // auto-generated Flow<SessionState> never emits (null-collector trap), so it's stubbed here.
+    private fun fakeSessionRepository() =
+        mockk<SessionRepository>(relaxed = true) { every { sessionState } returns MutableStateFlow(SessionState()) }
+
     private fun viewModel(
         mockAccountRepository: MockAccountRepository = MockAccountRepository(FakeMockAccountDao()),
-        sessionRepository: SessionRepository = mockk(relaxed = true),
+        sessionRepository: SessionRepository = fakeSessionRepository(),
     ): ProfileViewModel =
         ProfileViewModel(
             FakeProfileRepository(mockAccountRepository),
@@ -49,7 +55,7 @@ class SignOutTest {
     @Test
     fun `signing out a non-last persona removes it and switches to another remaining one`() =
         runTest {
-            val sessionRepository = mockk<SessionRepository>(relaxed = true)
+            val sessionRepository = fakeSessionRepository()
             val vm = viewModel(sessionRepository = sessionRepository)
             advanceUntilIdle()
             assertEquals("ACC-001", vm.uiState.value.selectedAccountId)
@@ -72,7 +78,7 @@ class SignOutTest {
         runTest {
             val accountDao = FakeMockAccountDao()
             val mockAccountRepository = MockAccountRepository(accountDao)
-            val sessionRepository = mockk<SessionRepository>(relaxed = true)
+            val sessionRepository = fakeSessionRepository()
             val vm = viewModel(mockAccountRepository = mockAccountRepository, sessionRepository = sessionRepository)
             advanceUntilIdle()
 

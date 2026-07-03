@@ -44,6 +44,14 @@ schemes:
     build:
       targets:
         iosApp: all
+  MilewayWidgetsTests:
+    build:
+      targets:
+        MilewayWidgetsTests: [test]
+    test:
+      config: Debug
+      targets:
+        - MilewayWidgetsTests
   MilewayWatch:
     build:
       targets:
@@ -143,6 +151,7 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_TESTABILITY: YES
 
   MilewayWatch:
     type: application
@@ -235,3 +244,28 @@ targets:
           - "$(SRCROOT)/../sharedWatch/build/bin/watchosCurrent/$(CONFIGURATION)Framework"
     dependencies:
       - target: MilewayWatch
+
+  MilewayWidgetsTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "16.0"
+    # Compile the widget view sources directly (app-extension targets can't be linked into a test
+    # bundle). Exclude the @main widget bundle, the Live Activity, and the App Intent.
+    sources:
+      - path: MilewayWidgetsTests
+      - path: MilewayWidgets
+        excludes:
+          - Info.plist
+          - "*.entitlements"
+          - MilewayWidgetsBundle.swift
+          - TrackingLiveActivity.swift
+      - path: Shared
+    settings:
+      base:
+        SDKROOT: iphonesimulator
+        CODE_SIGN_STYLE: Automatic
+        PRODUCT_BUNDLE_IDENTIFIER: com.mileway.ios.widgets.tests
+        PRODUCT_NAME: "$(TARGET_NAME)"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"

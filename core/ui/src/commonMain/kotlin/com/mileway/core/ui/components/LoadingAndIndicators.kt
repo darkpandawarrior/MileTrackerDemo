@@ -12,6 +12,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -389,6 +393,7 @@ fun DotsIndicator(
     unselectedSize: Dp = 8.dp,
     spacing: Dp = 8.dp,
     showPageNumber: Boolean = false,
+    onDotClick: ((Int) -> Unit)? = null,
 ) {
     if (pageCount <= 1) return
 
@@ -403,7 +408,7 @@ fun DotsIndicator(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (pageCount <= MAX_VISIBLE_DOTS) {
-            SimpleDotsRow(pageCount, selectedIndex, selectedSize, unselectedSize, spacing)
+            SimpleDotsRow(pageCount, selectedIndex, selectedSize, unselectedSize, spacing, onDotClick)
         } else {
             CyclingDotsRow(pageCount, selectedIndex, selectedSize, unselectedSize, spacing)
         }
@@ -422,6 +427,7 @@ private fun SimpleDotsRow(
     selectedSize: Dp,
     unselectedSize: Dp,
     spacing: Dp,
+    onDotClick: ((Int) -> Unit)? = null,
 ) {
     repeat(pageCount) { index ->
         val isSelected = selectedIndex == index
@@ -442,11 +448,24 @@ private fun SimpleDotsRow(
             label = "dotColor",
         )
 
+        val dotDescription = if (isSelected) "Current page ${index + 1}" else "Page ${index + 1}"
         Box(
             modifier =
                 Modifier
                     .size(animatedSize)
-                    .background(color = animatedColor, shape = CircleShape),
+                    .background(color = animatedColor, shape = CircleShape)
+                    .semantics { contentDescription = dotDescription }
+                    .let { dotModifier ->
+                        if (onDotClick != null) {
+                            dotModifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { onDotClick(index) },
+                            )
+                        } else {
+                            dotModifier
+                        }
+                    },
         )
         if (index != pageCount - 1) Spacer(modifier = Modifier.width(spacing))
     }

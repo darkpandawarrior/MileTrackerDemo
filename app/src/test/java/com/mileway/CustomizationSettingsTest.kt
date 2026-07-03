@@ -1,6 +1,7 @@
 package com.mileway
 
 import com.mileway.core.data.session.SessionRepository
+import com.mileway.core.data.session.SessionState
 import com.mileway.core.data.settings.DemoSettings
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.AccentPalette
@@ -37,7 +38,7 @@ class CustomizationSettingsTest {
             tc,
             FakeActiveAccountSource(),
             mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) },
-            mockk<SessionRepository>(relaxed = true),
+            mockk<SessionRepository>(relaxed = true) { every { sessionState } returns MutableStateFlow(SessionState()) },
         )
 
     // =========================================================================
@@ -356,10 +357,10 @@ class CustomizationSettingsTest {
     // =========================================================================
 
     @Test
-    fun `default curated theme is Matrix`() {
+    fun `default curated theme is Ember`() {
         val tc = controller()
-        assertEquals(MilewayThemeVariant.MATRIX, tc.milewayTheme.value)
-        assertEquals(MilewayThemeVariant.MATRIX, MilewayThemeVariant.DEFAULT)
+        assertEquals(MilewayThemeVariant.EMBER, tc.milewayTheme.value)
+        assertEquals(MilewayThemeVariant.EMBER, MilewayThemeVariant.DEFAULT)
     }
 
     @Test
@@ -389,18 +390,18 @@ class CustomizationSettingsTest {
     }
 
     @Test
-    fun `fromId tolerates unknown and null ids by falling back to Matrix`() {
-        assertEquals(MilewayThemeVariant.MATRIX, MilewayThemeVariant.fromId(null))
-        assertEquals(MilewayThemeVariant.MATRIX, MilewayThemeVariant.fromId("LEGACY_UNKNOWN"))
+    fun `fromId tolerates unknown and null ids by falling back to Ember`() {
+        assertEquals(MilewayThemeVariant.EMBER, MilewayThemeVariant.fromId(null))
+        assertEquals(MilewayThemeVariant.EMBER, MilewayThemeVariant.fromId("LEGACY_UNKNOWN"))
         assertEquals(MilewayThemeVariant.ION, MilewayThemeVariant.fromId("ION"))
     }
 
     @Test
-    fun `resetCustomization restores the curated theme to Matrix`() {
+    fun `resetCustomization restores the curated theme to Ember`() {
         val tc = controller()
         tc.setMilewayTheme(MilewayThemeVariant.DAYBREAK)
         tc.resetCustomization()
-        assertEquals(MilewayThemeVariant.MATRIX, tc.milewayTheme.value)
+        assertEquals(MilewayThemeVariant.EMBER, tc.milewayTheme.value)
     }
 
     @Test
@@ -423,6 +424,7 @@ class CustomizationSettingsTest {
     @Test
     fun `only Daybreak is the light scheme`() {
         assertTrue(MilewayThemeVariant.DAYBREAK.isLight)
+        assertFalse(MilewayThemeVariant.EMBER.isLight)
         assertFalse(MilewayThemeVariant.MATRIX.isLight)
         assertFalse(MilewayThemeVariant.AMOLED.isLight)
         assertFalse(MilewayThemeVariant.ION.isLight)
@@ -430,6 +432,7 @@ class CustomizationSettingsTest {
 
     @Test
     fun `dark schemes use glow and the light scheme does not`() {
+        assertTrue(MilewayThemeVariant.EMBER.spec.useGlow)
         assertTrue(MilewayThemeVariant.MATRIX.spec.useGlow)
         assertTrue(MilewayThemeVariant.AMOLED.spec.useGlow)
         assertTrue(MilewayThemeVariant.ION.spec.useGlow)

@@ -90,6 +90,7 @@ import com.mileway.core.ui.platform.LocalShareSheet
 import com.mileway.core.ui.theme.DesignTokens
 import com.mileway.core.ui.theme.dataStyle
 import com.mileway.feature.profile.model.AccountAnalyticsSnapshot
+import com.mileway.feature.profile.model.AccountBadge
 import com.mileway.feature.profile.model.ProfileHeader
 import com.mileway.feature.profile.viewmodel.ProfileAction
 import com.mileway.feature.profile.viewmodel.ProfileEffect
@@ -177,75 +178,84 @@ fun ProfileScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            // Top-level tab: own the background so the body renders on the theme surface
-            // (deep-dark under the Matrix default) rather than falling through to the
-            // window/canvas colour when no host Scaffold paints behind it.
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-            // Clearance for the floating bubble bar (content draws behind it).
-            contentPadding = PaddingValues(bottom = 140.dp),
-            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.l),
-        ) {
-            item {
-                ProfileHeaderSection(
-                    header = state.header,
-                    role = state.profile.role,
-                    gender = state.profile.gender,
-                )
-            }
+        Column(modifier = Modifier.fillMaxSize()) {
+            // P1.4: persistent active-account badge, scoped to this tab's own shell row (this
+            // screen has no hosting Scaffold/TopAppBar — it IS the tab content) — sits outside the
+            // LazyColumn so it never scrolls away, unlike the PersonaSwitcherRow chip below.
+            ActiveAccountBadgeRow(
+                activeAccount = state.accounts.find { it.id == state.selectedAccountId },
+            )
 
-            item {
-                PersonaSwitcherRow(
-                    personas = state.accounts,
-                    selectedId = state.selectedAccountId,
-                    onSelect = { viewModel.onAction(ProfileAction.SwitchAccount(it)) },
-                    onViewDetails = { viewModel.onAction(ProfileAction.ViewAccountDetails(it)) },
-                    onRemove = { viewModel.onAction(ProfileAction.RemoveDemoAccount(it)) },
-                    onSignOut = { viewModel.onAction(ProfileAction.SignOut(it)) },
-                    onAdd = { name, code, org -> viewModel.onAction(ProfileAction.AddDemoAccount(name, code, org)) },
-                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-                )
-            }
+            LazyColumn(
+                // Top-level tab: own the background so the body renders on the theme surface
+                // (deep-dark under the Matrix default) rather than falling through to the
+                // window/canvas colour when no host Scaffold paints behind it.
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                // Clearance for the floating bubble bar (content draws behind it).
+                contentPadding = PaddingValues(bottom = 140.dp),
+                verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.l),
+            ) {
+                item {
+                    ProfileHeaderSection(
+                        header = state.header,
+                        role = state.profile.role,
+                        gender = state.profile.gender,
+                    )
+                }
 
-            item {
-                DeepLinkDemoCard(
-                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-                )
-            }
+                item {
+                    PersonaSwitcherRow(
+                        personas = state.accounts,
+                        selectedId = state.selectedAccountId,
+                        onSelect = { viewModel.onAction(ProfileAction.SwitchAccount(it)) },
+                        onViewDetails = { viewModel.onAction(ProfileAction.ViewAccountDetails(it)) },
+                        onRemove = { viewModel.onAction(ProfileAction.RemoveDemoAccount(it)) },
+                        onSignOut = { viewModel.onAction(ProfileAction.SignOut(it)) },
+                        onAdd = { name, code, org -> viewModel.onAction(ProfileAction.AddDemoAccount(name, code, org)) },
+                        modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                    )
+                }
 
-            item {
-                ReferralCardHost(
-                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-                )
-            }
+                item {
+                    DeepLinkDemoCard(
+                        modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                    )
+                }
 
-            item {
-                AccountTileGrid(
-                    notificationBadge = NOTIFICATION_BADGE,
-                    onOpenDetails = onOpenDetails,
-                    onOpenNotifications = onOpenNotifications,
-                    onOpenSettings = onOpenSettings,
-                    onOpenPreferences = onOpenPreferences,
-                    onOpenSessions = onOpenSessions,
-                    onOpenAboutSupport = onOpenAboutSupport,
-                    onOpenAdvance = onOpenAdvance,
-                    onOpenCards = onOpenCards,
-                    onOpenDelegation = onOpenDelegation,
-                    onOpenDemoSettings = onOpenDemoSettings,
-                    onOpenQr = onOpenQr,
-                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-                )
-            }
+                item {
+                    ReferralCardHost(
+                        modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                    )
+                }
 
-            item {
-                AnalyticsCard(
-                    analytics = state.analytics,
-                    onClick = onOpenInsights,
-                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
-                )
+                item {
+                    AccountTileGrid(
+                        notificationBadge = NOTIFICATION_BADGE,
+                        onOpenDetails = onOpenDetails,
+                        onOpenNotifications = onOpenNotifications,
+                        onOpenSettings = onOpenSettings,
+                        onOpenPreferences = onOpenPreferences,
+                        onOpenSessions = onOpenSessions,
+                        onOpenAboutSupport = onOpenAboutSupport,
+                        onOpenAdvance = onOpenAdvance,
+                        onOpenCards = onOpenCards,
+                        onOpenDelegation = onOpenDelegation,
+                        onOpenDemoSettings = onOpenDemoSettings,
+                        onOpenQr = onOpenQr,
+                        modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                    )
+                }
+
+                item {
+                    AnalyticsCard(
+                        analytics = state.analytics,
+                        onClick = onOpenInsights,
+                        modifier = Modifier.padding(horizontal = DesignTokens.Spacing.screenHorizontal),
+                    )
+                }
             }
         }
 
@@ -281,12 +291,62 @@ fun ProfileScreen(
     if (state.pausedTripNotice != null) {
         PausedTripNoticeSheet(onDismiss = { viewModel.onAction(ProfileAction.DismissPausedTripNotice) })
     }
+
+    if (state.showReconfirmIdentity) {
+        ReconfirmIdentitySheet(onDismiss = { viewModel.onAction(ProfileAction.DismissReconfirmIdentity) })
+    }
 }
 
 /** Badge count shown on the Notifications tile (matches the reference "174"). */
 private const val NOTIFICATION_BADGE = 174
 
 private val AvatarSize = 96.dp
+
+/**
+ * P1.4: persistent active-account indicator for this tab — a small initials-in-a-ring badge plus
+ * the active persona's display name, updating live off [ProfileUiState.selectedAccountId]. Sits
+ * above the scrolling content (this screen has no host Scaffold/TopAppBar of its own), so it never
+ * needs a scroll to be visible, unlike the [PersonaSwitcherRow] chip row further down.
+ */
+@Composable
+private fun ActiveAccountBadgeRow(activeAccount: DemoAccount?) {
+    if (activeAccount == null) return
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.s),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(
+                    horizontal = DesignTokens.Spacing.screenHorizontal,
+                    vertical = DesignTokens.Spacing.s,
+                ),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = AccountBadge.initialsFor(activeAccount.displayName),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+        Text(
+            text = activeAccount.displayName,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
 
 @Composable
 private fun ProfileHeaderSection(

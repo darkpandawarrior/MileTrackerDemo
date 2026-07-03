@@ -1,5 +1,6 @@
 plugins {
     id("mileway.kmp.compose")
+    id("mileway.kmp.desktop")
 }
 
 kotlin {
@@ -36,12 +37,14 @@ kotlin {
             implementation(project(":core:data"))
             // V15 PF.3: LocalManagerProvider Compose layer over the core:platform service interfaces.
             implementation(project(":core:platform"))
+            // BaseViewModel (MVI base class) uses androidx.lifecycle.ViewModel/viewModelScope directly
+            // in commonMain; the artifact publishes common/android/ios/desktop targets.
+            implementation(libs.lifecycle.viewmodel)
         }
         androidMain.dependencies {
             implementation(libs.core.ktx)
             implementation(libs.activity.compose)
             implementation(libs.jb.navigation.compose)
-            implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.koin.android)
             implementation(libs.koin.compose)

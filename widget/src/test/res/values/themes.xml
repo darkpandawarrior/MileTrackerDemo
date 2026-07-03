@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- showcase/Widget.1: :widget transitively depends on :feature:tracking, whose manifest
+         references @style/Theme.Mileway (TrackMilesActivity) — a real theme this module never
+         defines. Robolectric's isIncludeAndroidResources merge needs SOME resolvable value here
+         to link resources for the unit-test APK; only its existence matters for this screenshot
+         test, not its content, since MileageSummaryContent never reads it. -->
+    <style name="Theme.Mileway" parent="android:Theme.DeviceDefault" />
+</resources>

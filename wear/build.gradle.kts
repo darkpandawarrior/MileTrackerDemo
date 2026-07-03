@@ -4,6 +4,7 @@ plugins {
     id("mileway.android.application")
     id("mileway.test")
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -27,6 +28,15 @@ android {
             dimension = "tier"
         }
     }
+
+    // showcase/Wear.1: mirrors :app's testOptions — without isIncludeAndroidResources, Robolectric
+    // can't resolve the merged manifest's package at unit-test time (falls back to
+    // "org.robolectric.default", breaking createComposeRule()'s ActivityScenario launch).
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -34,6 +44,9 @@ dependencies {
     implementation(project(":core:platform"))
     implementation(project(":feature:tracking"))
     implementation(project(":stub"))
+    // Napier: KMP logging used by the gms-flavor DataLayer bridges (the core modules expose it via
+    // api, but that's hidden through their implementation() edges, so declare it directly).
+    implementation(libs.napier)
 
     // Compose for Wear OS.
     implementation(platform(libs.compose.bom))
@@ -67,6 +80,18 @@ dependencies {
     // FOSS-purity guard above enforces this never leaks onto noGmsReleaseRuntimeClasspath.
     "gmsImplementation"(libs.play.services.wearable)
     "gmsImplementation"(libs.kotlinx.coroutines.play.services)
+
+    // showcase/Wear.1: Roborazzi host-render screenshots for docs/screenshots (mirrors :app's wiring).
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi.core)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
+    // createComposeRule()'s ActivityScenarioRule needs a resolvable androidx.activity.ComponentActivity
+    // in the merged test manifest — this artifact provides it (mirrors :app's debugImplementation).
+    debugImplementation(libs.compose.ui.test.manifest)
 }
 
 // ─── P2.2, FOSS-purity dependency guard for the wear noGms flavor ───────────────────────────────────

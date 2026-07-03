@@ -3,9 +3,17 @@
 // `updateApplicationContext` (coalesced latest-state, same semantics as the Android
 // `WearDataLayerWatchSyncBridge`/`WearDataLayerSyncBridge` pair, P2.9), so the watch always has
 // fresh data offline without the phone needing to be reachable at watch-render time.
+//
+// Z.5d: also the phone-side receiver for the reverse, watch->phone start/stop-tracking command
+// (`WatchTrackingCommandSender`, `iosApp/MilewayWatch/WatchTrackingCommandSender.swift`) — the
+// watchOS analogue of Android's `WearTrackingCommandService` (`app/src/gms/kotlin/com/mileway/
+// platform/gms/WearTrackingCommandService.kt`). Decodes the message and dispatches straight to
+// `IosIntentEntry`, the same shared KMP seam iOS's own App Intents (P7.1) already bind to — no new
+// domain logic, no network.
 
 import Foundation
 import WatchConnectivity
+import Mileway
 
 final class PhoneWatchSyncBridge: NSObject, WCSessionDelegate {
     static let shared = PhoneWatchSyncBridge()
@@ -15,6 +23,36 @@ final class PhoneWatchSyncBridge: NSObject, WCSessionDelegate {
         let session = WCSession.default
         session.delegate = self
         session.activate()
+    }
+
+    func session(
+        _ session: WCSession,
+        didReceiveMessage message: [String: Any],
+        replyHandler: @escaping ([String: Any]) -> Void
+    ) {
+        handleTrackCommand(message)
+        replyHandler([:])
+    }
+
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        handleTrackCommand(message)
+    }
+
+    private func handleTrackCommand(_ message: [String: Any]) {
+        guard
+            let raw = message[trackCommandMessageKey] as? [String: Any],
+            let command = TrackingCommandCodec.decode(raw)
+        else {
+            return
+        }
+        Task { @MainActor in
+            switch command.action {
+            case .start:
+                try? await IosIntentEntry.shared.startTracking()
+            case .stop:
+                try? await IosIntentEntry.shared.stopTracking()
+            }
+        }
     }
 
     /// Pushes the latest snapshot to the paired watch. A no-op if no watch is paired/reachable —

@@ -1,0 +1,64 @@
+name: Deploy to Amazon Appstore
+
+# Uploads the Gms-flavor release APK via the App Submission API (community action). Gated on
+# AMAZON_APPSTORE_CLIENT_ID: no security profile exists yet, so this job no-ops until one is
+# created in Amazon's Developer Console (Apps & Services → API Access) and the app is already live
+# on Amazon Appstore at least once (the API can only edit an existing listing, not create one).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ !!secrets.AMAZON_APPSTORE_CLIENT_ID }}
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - run: chmod +x ./gradlew
+
+      - name: Materialize signing secrets
+        run: |
+          set -euo pipefail
+          mkdir -p secrets
+          if [ -n "${KEYSTORE_B64:-}" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > secrets/upload.keystore
+            {
+              echo "RELEASE_STORE_FILE=$PWD/secrets/upload.keystore"
+              echo "RELEASE_STORE_PASSWORD=${KEYSTORE_PASSWORD:-}"
+              echo "RELEASE_KEY_ALIAS=${KEY_ALIAS:-}"
+              echo "RELEASE_KEY_PASSWORD=${KEY_PASSWORD:-}"
+            } >> "$GITHUB_ENV"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Build release APK (Gms)
+        run: ./gradlew :app:assembleGmsRelease
+
+      - name: Upload to Amazon Appstore
+        uses: galonga/upload-amazon-appstore@v1.0.2
+        with:
+          clientId: ${{ secrets.AMAZON_APPSTORE_CLIENT_ID }}
+          clientSecret: ${{ secrets.AMAZON_APPSTORE_CLIENT_SECRET }}
+          appId: ${{ secrets.AMAZON_APPSTORE_APP_ID }}
+          apkFile: app/build/outputs/apk/gms/release/app-gms-release.apk

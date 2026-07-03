@@ -14,7 +14,7 @@ Every screen draws from deterministic mock data, so there are zero backend calls
 [![Quality](https://github.com/darkpandawarrior/Mileway/actions/workflows/quality.yml/badge.svg)](https://github.com/darkpandawarrior/Mileway/actions/workflows/quality.yml)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.11.1-4285F4?logo=jetpackcompose&logoColor=white)
-![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20Wear%20OS-3DDC84)
+![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20watchOS%20%7C%20Wear%20OS%20%7C%20Desktop-3DDC84)
 ![Offline](https://img.shields.io/badge/network-zero%20backend-success)
 
 **[Highlights](#highlights)** · **[Screenshots](#screenshots)** · **[Features](#features)** · **[Architecture](#architecture)** · **[Getting started](#getting-started)** · **[Roadmap](#roadmap)**
@@ -68,8 +68,12 @@ Play Store and F-Droid.
   (BGTask dispatcher + AppDelegate); platform services sit behind `expect`/`actual`.
 - 🔀 **One codebase, two distributions.** A `gms` Play build and a FOSS `noGms` / F-Droid build, with
   a dependency-prefix guard that fails the build the moment a proprietary library leaks into FOSS.
-- 🧪 **Quality gates in CI.** 96 Roborazzi screenshot tests on the JVM (no emulator, no network),
-  Napier structured logging, detekt, ktlint and Kover, plus reproducible F-Droid release workflows.
+- 🧪 **Quality gates in CI.** 131 Roborazzi/host-rendered screenshot tests on the JVM (no emulator,
+  no network), Napier structured logging, detekt, ktlint and Kover, plus reproducible F-Droid
+  release workflows.
+- 🔥 **Ember theme, four platforms from one KMP core.** A warm amber/red dark theme (replacing an
+  earlier phosphor-green look) skins Android/iOS phone, Wear OS, watchOS and Compose Desktop — all
+  from the same `commonMain` architecture.
 
 ## Screenshots
 
@@ -82,7 +86,7 @@ Play Store and F-Droid.
 | ![Track Miles ready-to-start screen with vehicle selector and distance card](docs/screenshots/track_miles_idle_screen.png) | ![Track detail with route stats, journey overview and GPS-point breakdown](docs/screenshots/track_detail_screen.png) | ![Tracking success summary with distance, reimbursement amount and voucher](docs/screenshots/tracking_success_screen.png) |
 
 <details>
-<summary><b>Full screen gallery</b>: every screen across the feature modules, grouped by area (121 images)</summary>
+<summary><b>Full screen gallery</b>: every screen across the feature modules, grouped by area (131 images)</summary>
 
 <br/>
 
@@ -108,9 +112,9 @@ Play Store and F-Droid.
 |:---:|:---:|:---:|
 | ![Track customization with map style and overlay toggles](docs/screenshots/track_customization_screen.png) | ![Tracking setup guide walking through permissions](docs/screenshots/tracking_setup_guide_screen.png) | ![Tracking loading screen with progress sub-statuses](docs/screenshots/tracking_loading_screen.png) |
 
-| &nbsp; | &nbsp; |
-|:---:|:---:|
-| ![Create voucher screen selecting reimbursable expenses](docs/screenshots/create_voucher_select_expenses.png) | ![Developer debug menu for tracking internals](docs/screenshots/debug_menu_screen.png) |
+| &nbsp; | &nbsp; | &nbsp; |
+|:---:|:---:|:---:|
+| ![Create voucher screen selecting reimbursable expenses](docs/screenshots/create_voucher_select_expenses.png) | ![Developer debug menu for tracking internals](docs/screenshots/debug_menu_screen.png) | ![Track submission screen confirming distance, vehicle and time range before upload](docs/screenshots/track_submission_screen.png) |
 
 #### Logging & Expenses
 
@@ -206,9 +210,17 @@ Play Store and F-Droid.
 |:---:|:---:|:---:|
 | ![Camera capture screen with permission prompt](docs/screenshots/media_camera_permission_required.png) | ![AI assistant chat answering an expense query](docs/screenshots/agent_chat_screen.png) | ![Assistant conversation history](docs/screenshots/agent_history_screen.png) |
 
-| &nbsp; |
-|:---:|
-| ![Assistant home bottom sheet with suggested actions](docs/screenshots/assistant_home_sheet.png) |
+| &nbsp; | &nbsp; | &nbsp; |
+|:---:|:---:|:---:|
+| ![Assistant home bottom sheet with suggested actions](docs/screenshots/assistant_home_sheet.png) | ![Assistant chat analytics, popular-questions tab](docs/screenshots/agent_chat_analytics_popular.png) | ![Assistant chat analytics, unanswered-questions tab](docs/screenshots/agent_chat_analytics_unanswered.png) |
+
+| &nbsp; | &nbsp; | &nbsp; |
+|:---:|:---:|:---:|
+| ![Assistant floating action button](docs/screenshots/assistant_fab.png) | ![Chat agent indicator, full variant](docs/screenshots/chat_agent_indicator_full.png) | ![Chat agent indicator, compact variant](docs/screenshots/chat_agent_indicator_compact.png) |
+
+| &nbsp; | &nbsp; | &nbsp; |
+|:---:|:---:|:---:|
+| ![Voice waveform, idle state](docs/screenshots/voice_waveform_idle.png) | ![Voice waveform, listening state](docs/screenshots/voice_waveform_listening.png) | ![Voice waveform, speaking state](docs/screenshots/voice_waveform_speaking.png) |
 
 #### App shell & Security
 
@@ -224,9 +236,69 @@ Play Store and F-Droid.
 |:---:|:---:|
 | ![Set-PIN screen with a numeric keypad and step dots](docs/screenshots/set_pin_screen.png) | ![Check-PIN screen unlocking the app with biometric fallback](docs/screenshots/check_pin_screen.png) |
 
+#### Wear OS
+
+The watch app shares `commonMain`'s `SurfaceSnapshot`/`WearPresentation` mapping with the phone,
+skinned with the same Ember accent via `WearMilewayTheme` (`androidx.wear.compose.material3`, its
+own design system — never the phone/iOS CMP theming module). Host-rendered with Roborazzi, no
+watch emulator needed.
+
+| &nbsp; | &nbsp; |
+|:---:|:---:|
+| ![Wear OS dashboard with today/week distance cards and week-goal ring](docs/screenshots/wear_dashboard.png) | ![Wear OS recent-trips list](docs/screenshots/wear_trip_list.png) |
+
+#### Compose Desktop
+
+A thin Compose Desktop window over the same shared `core:{data,ui}` dashboard model as the phone
+and watch — no `feature:tracking`/Room repository, fixed mock trips instead (see CLAUDE.md "The
+backend"). Rendered host-side with Compose Multiplatform's `runDesktopComposeUiTest`, no windowing
+system required.
+
+| &nbsp; |
+|:---:|
+| ![Compose Desktop dashboard window with today/week stats and a recent-trips list](docs/screenshots/desktop_dashboard.png) |
+
+#### Widgets
+
+**Android home-screen widget (Glance).** Renders the shared `SurfaceSnapshot` — today/week distance
+plus a red "Tracking now" live indicator — host-rendered with Roborazzi over the `GlanceAppWidget`,
+no launcher or emulator needed.
+
+| &nbsp; |
+|:---:|
+| ![Android Glance home-screen widget with today/week distance and a red live-tracking indicator](docs/screenshots/widget_glance.png) |
+
+**iOS WidgetKit.** Home-screen + Lock Screen widgets over the same shared snapshot (App-Group
+store), with an interactive App-Intent Start/Stop button — SwiftUI `ImageRenderer`, no home-screen
+placement needed.
+
+| Home widget | Lock Screen |
+|:---:|:---:|
+| ![iOS home-screen widget with today/week distance and a Stop button](docs/screenshots/widget_ios_home.png) | ![iOS Lock Screen accessory widget with today's distance](docs/screenshots/widget_ios_lockscreen.png) |
+
+#### watchOS app
+
+Native SwiftUI over the `:sharedWatch` KMP framework — today/week distance, a red live-tracking
+pill, and a trips drill-down. Host-rendered on the watchOS simulator via SwiftUI `ImageRenderer`.
+
+| &nbsp; |
+|:---:|
+| ![watchOS dashboard with amber distance, red Tracking pill and a Trips button](docs/screenshots/watchos_app.png) |
+
+#### Live Activity & Dynamic Island
+
+ActivityKit Live Activity (Lock Screen banner) + a Dynamic Island expanded presentation for an
+in-progress trip, driven by the phone's `TrackingLiveActivityController`. Presentation content is
+factored out of the `ActivityConfiguration` so `ImageRenderer` can host-render it.
+
+| Lock Screen banner | Dynamic Island (expanded) |
+|:---:|:---:|
+| ![Live Activity banner: Tracking, 12.4 km, elapsed 12:34](docs/screenshots/live_activity.png) | ![Dynamic Island expanded: distance, elapsed time and tracking status](docs/screenshots/live_activity_dynamic_island.png) |
+
 <sub>Plus component matrices (status cards, booking cards, PO cards, success-state variants) in
 <a href="docs/screenshots"><code>docs/screenshots/</code></a>, rendered from <code>@Preview</code> composables by
-<code>ScreenshotCatalogTest</code>. Every full screen above is recorded by <code>ScreenshotGalleryTest</code>.</sub>
+<code>ScreenshotCatalogTest</code>. Every full screen above is recorded by <code>ScreenshotGalleryTest</code>
+(phone) / <code>WearScreenshotGalleryTest</code> (watch) / a JVM `desktopTest` (desktop).</sub>
 
 </details>
 
@@ -444,6 +516,12 @@ hoisting, iOS parity, the AI assistant rebuild, etc.). Progress is tracked per i
 - **Static analysis.** detekt and ktlint across every module, with Kover for coverage.
 - **CI.** `.github/workflows/ci.yml` runs `assembleGmsDebug` and `testNoGmsDebugUnitTest` on every push
   and PR. Separate `quality`, `release` and `publish-fdroid` workflows handle the gates and distribution.
+- **Distribution.** Beyond Play/F-Droid/Indus (`release.yml`, `publish-fdroid.yml`, `indus-deploy.yml`):
+  `amazon-appstore-deploy.yml`, `huawei-appgallery-deploy.yml`, `samsung-galaxy-store-deploy.yml`, and
+  `aptoide-deploy.yml` cover the other major Android storefronts, all gated on repo secrets and inert
+  until configured (see each workflow's header comment). GitHub Releases (already published by
+  `release.yml`) also make the app trackable via [Obtainium](https://github.com/ImranR98/Obtainium)
+  with no extra config. **Uptodown** has no public submission API — manual web-form upload only.
 
 ## Roadmap
 
@@ -459,14 +537,16 @@ roadmap reflects direction rather than commitments.
 - [x] Room (KMP) + DataStore persistence
 - [x] Location engine (jitter / spike / four-bucket / IMU fusion) with a simulated drive source
 - [x] Master search: a registry across feature modules with an aggregator, results screen and navigation
-- [x] Roborazzi screenshot suite (121 screens, JVM-only), detekt / ktlint / Kover, CI + release workflows
+- [x] Roborazzi/host-rendered screenshot suite (131 images, JVM-only), detekt / ktlint / Kover, CI + release workflows
 - [x] Wear OS companion tile
 - [x] **iOS UI parity (V19).** All feature screens in `commonMain`; background scheduling via
       kmpworkmanager; AppDelegate + BGTask dispatcher; iOS builds and passes all CI gates.
 - [x] Napier structured logging across all modules
 - [x] **AI assistant / "agent" feature (V20).** Offline, retrieval-grounded chat over real local
       trip/expense/card data; Room-backed persistent history + 5-minute session resume; on-device
-      voice I/O (STT/TTS); feedback, export and local usage analytics; full `commonMain` + iOS parity.
+      voice I/O (STT/TTS); feedback, export and real-usage popular-question ranking; full
+      `commonMain` + iOS parity. (A dedicated Popular/Unanswered analytics screen and persisted
+      unanswered-question submission are still open — tracked as backlog.)
 - [x] Matrix / terminal design-language pass across the whole UI (theme tokens, topbar, screenshots)
 - [x] Renamed the project and package from MileTracker(Demo) to Mileway end-to-end
 - [x] **Multi-account depth (V22).** Room-backed multi-persona account store with a real
@@ -522,14 +602,15 @@ roadmap reflects direction rather than commitments.
 
 | Surface | Build/compile | Automated tests | Live/device verification |
 |---|---|---|---|
-| Wear OS app (dashboard, trips, tile, complication, ongoing activity) | ✅ `assembleNoGmsDebug`/`assembleGmsDebug` | ✅ `testNoGmsDebugUnitTest` | ⏸ on-watch GPS + Roborazzi screenshots opportunistically skipped (backlog) |
+| Wear OS app (dashboard, trips, tile, complication, ongoing activity) | ✅ `assembleNoGmsDebug`/`assembleGmsDebug` | ✅ `testNoGmsDebugUnitTest` (incl. host-rendered Roborazzi screenshots) | ⏸ on-watch GPS verification only |
 | Phone→watch DataLayer sync (gms) | ✅ compiles, FOSS-purity guard passes | ✅ unit-tested | ⏸ needs a paired physical/emulated Wear device |
-| watchOS app (SwiftUI + `:sharedWatch`) | ✅ `xcodebuild … -scheme MilewayWatch build` | — (no watch XCTest target yet) | ⏸ needs a watchOS simulator/device run, not just a build |
+| watchOS app (SwiftUI + `:sharedWatch`) | ✅ `xcodebuild … -scheme MilewayWatch build` | ✅ host-rendered screenshot (WatchScreenshotTests) | ✅ dashboard captured |
 | WatchConnectivity sync (iOS ↔ watchOS) | ✅ compiles both schemes | — | ⏸ needs a live paired simulator/device session |
 | Android Glance widget + quick start/stop | ✅ `assembleNoGmsDebug` | ✅ `MileageSummaryWidgetTest` | — (in-process Glance render, no home-screen manual check done here) |
 | Android App Shortcuts / Quick Settings tile / AppFunctions | ✅ compiles | ✅ unit-tested | ⏸ AppFunctions invocation needs `adb shell` on an API-36 emulator (device-gated) |
-| iOS WidgetKit + Live Activity/Dynamic Island | ✅ `xcodebuild -scheme MilewayWidgets build` | — | ⏸ Lock Screen/Dynamic Island rendering needs a real device or simulator run |
+| iOS WidgetKit + Live Activity/Dynamic Island | ✅ `xcodebuild -scheme MilewayWidgets build` | ✅ host-rendered screenshots (WidgetScreenshotTests) | ✅ widgets + Live Activity captured |
 | iOS App Intents / Siri Shortcuts | ✅ compiles, `AppShortcutsProvider` registered | — | ⏸ Siri phrase invocation needs a device/simulator with Siri running |
+| Compose Desktop dashboard | ✅ `:desktopApp:desktopMain` compiles | ✅ `desktopTest` (host-rendered screenshot) | — (pure-JVM, no separate device verification needed) |
 | Accessibility sweep (Android + iOS/watchOS surfaces) | ✅ compiles | — | ⏸ manual VoiceOver/TalkBack walkthrough documented inline; no automated a11y audit target yet |
 
 ## The location engine

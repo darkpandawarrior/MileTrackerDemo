@@ -18,36 +18,11 @@ private func formattedElapsed(_ seconds: Int) -> String {
 struct TrackingLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: MilewayTrackingAttributes.self) { context in
-            // Lock Screen / banner presentation.
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(context.state.isPaused ? "Paused" : "Tracking")
-                        .font(.caption2)
-                        .foregroundStyle(WidgetMatrixPalette.textMuted)
-                    Text(String(format: "%.1f km", context.state.distanceKm))
-                        .font(.title2.bold())
-                        .foregroundStyle(WidgetMatrixPalette.accent)
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Text(formattedElapsed(context.state.elapsedSeconds))
-                    .font(.title3.monospacedDigit())
-                    .foregroundStyle(WidgetMatrixPalette.text)
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
-                    .accessibilityLabel("Elapsed time")
-            }
-            .padding()
-            .activityBackgroundTint(WidgetMatrixPalette.canvas)
-            .activitySystemActionForegroundColor(WidgetMatrixPalette.text)
-            // P8.2: one VoiceOver stop for the whole banner — status, distance, elapsed time.
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(context.state.isPaused ? "Trip paused" : "Trip tracking")
-            .accessibilityValue(
-                "\(String(format: "%.1f kilometers", context.state.distanceKm)), "
-                    + "\(formattedElapsed(context.state.elapsedSeconds)) elapsed"
-            )
+            // Lock Screen / banner presentation (factored into TrackingLockScreenView so it's
+            // screenshot-testable off a plain ContentState).
+            TrackingLockScreenView(state: context.state)
+                .activityBackgroundTint(WidgetMatrixPalette.canvas)
+                .activitySystemActionForegroundColor(WidgetMatrixPalette.text)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {

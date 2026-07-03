@@ -15,6 +15,22 @@ data class ProfileHeader(
     val initials: String,
 )
 
+/**
+ * P1.4: initials derivation shared by the active-account badge ([DemoAccount.displayName]).
+ * commonMain (not androidMain) since it's pure string logic with no platform dependency — kept
+ * separate from `ProfileScreen.kt`'s androidMain-only `initialsOf`/`FakeProfileRepository`'s
+ * `initialsFrom` (both file-private, so not directly reusable here) rather than widening either.
+ */
+object AccountBadge {
+    fun initialsFor(name: String): String =
+        name.trim()
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+            .take(2)
+            .joinToString("") { it.first().uppercaseChar().toString() }
+            .ifEmpty { "?" }
+}
+
 /** A single tappable settings entry rendered as a card on the profile screen. */
 data class SettingsTile(
     val id: String,
@@ -101,6 +117,12 @@ data class ProfileUiState(
      * trip never sets this, so the notice is silent in the common case.
      */
     val pausedTripNotice: String? = null,
+    /**
+     * P3.2: true when [com.mileway.core.data.session.isSessionFresh] reports the session as stale
+     * and [com.mileway.feature.profile.ui.screens.ReconfirmIdentitySheet] should show. Dismissing
+     * it resets the staleness window rather than requiring a real credential (see `ProfileViewModel`).
+     */
+    val showReconfirmIdentity: Boolean = false,
 )
 
 data class SettingsUiState(

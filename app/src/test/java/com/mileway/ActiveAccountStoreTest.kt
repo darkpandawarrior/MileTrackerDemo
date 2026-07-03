@@ -1,6 +1,7 @@
 package com.mileway
 
 import com.mileway.core.data.session.SessionRepository
+import com.mileway.core.data.session.SessionState
 import com.mileway.core.data.settings.DemoSettings
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
@@ -31,6 +32,11 @@ class ActiveAccountStoreTest {
 
     private fun fakeDemoSettingsRepository() =
         mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) }
+
+    // P3.2: ProfileViewModel now collects `sessionState.first()` in init(); a relaxed mockk's
+    // auto-generated Flow<SessionState> never emits (null-collector trap), so it's stubbed here.
+    private fun fakeSessionRepository() =
+        mockk<SessionRepository>(relaxed = true) { every { sessionState } returns MutableStateFlow(SessionState()) }
 
     @Test
     fun `get-set round-trip is empty until a value is persisted`() =
@@ -65,7 +71,7 @@ class ActiveAccountStoreTest {
                     ThemeController(),
                     FakeActiveAccountSource(seed = "ACC-002"),
                     fakeDemoSettingsRepository(),
-                    mockk<SessionRepository>(relaxed = true),
+                    fakeSessionRepository(),
                 )
             advanceUntilIdle()
 
@@ -85,7 +91,7 @@ class ActiveAccountStoreTest {
                     ThemeController(),
                     FakeActiveAccountSource(seed = null),
                     fakeDemoSettingsRepository(),
-                    mockk<SessionRepository>(relaxed = true),
+                    fakeSessionRepository(),
                 )
             advanceUntilIdle()
 
@@ -101,7 +107,7 @@ class ActiveAccountStoreTest {
                     ThemeController(),
                     FakeActiveAccountSource(seed = "ACC-DELETED"),
                     fakeDemoSettingsRepository(),
-                    mockk<SessionRepository>(relaxed = true),
+                    fakeSessionRepository(),
                 )
             advanceUntilIdle()
 

@@ -7,6 +7,7 @@ import com.mileway.core.data.session.CurrentTrackDataSource
 import com.mileway.core.data.session.MockAccountSessionCoordinator
 import com.mileway.core.data.session.PERSONA_SWITCH_PAUSE_NAME
 import com.mileway.core.data.session.SessionRepository
+import com.mileway.core.data.session.SessionState
 import com.mileway.core.data.settings.DemoSettings
 import com.mileway.core.data.settings.DemoSettingsRepository
 import com.mileway.core.ui.theme.ThemeController
@@ -38,6 +39,11 @@ class PersonaSwitchPauseRestoreTest {
 
     private fun fakeDemoSettingsRepository() =
         mockk<DemoSettingsRepository> { every { settings } returns MutableStateFlow(DemoSettings()) }
+
+    // P3.2: ProfileViewModel now collects `sessionState.first()` in init(); a relaxed mockk's
+    // auto-generated Flow<SessionState> never emits (null-collector trap), so it's stubbed here.
+    private fun fakeSessionRepository() =
+        mockk<SessionRepository>(relaxed = true) { every { sessionState } returns MutableStateFlow(SessionState()) }
 
     private class FakeSessionTrackDao : SavedTrackDao by mockk(relaxed = true) {
         val tracks = mutableMapOf<String, SavedTrack>()
@@ -127,7 +133,7 @@ class PersonaSwitchPauseRestoreTest {
             ThemeController(),
             FakeActiveAccountSource(seed = "ACC-001"),
             fakeDemoSettingsRepository(),
-            mockk<SessionRepository>(relaxed = true),
+            fakeSessionRepository(),
             MockAccountSessionCoordinator(liveSession, trackDao, accountDao),
         )
     }

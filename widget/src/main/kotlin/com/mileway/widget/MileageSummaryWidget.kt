@@ -34,11 +34,13 @@ import com.mileway.feature.tracking.watch.WatchFacade
 import kotlin.math.round
 import org.koin.mp.KoinPlatform
 
-// Fixed palette (the app's matrix-dark surface + green accent) — plain Glance colors keep the widget free
-// of the Material-You/glance-material3 surface so it renders identically across hosts.
-private val SurfaceColor = Color(0xFF0E1116)
-private val AccentColor = Color(0xFF4ADE80)
-private val OnSurfaceColor = Color(0xFFE6E6E6)
+// Fixed palette (T.2: mirrors core:ui's Ember spec — warm-dark surface + amber accent) — plain
+// Glance colors keep the widget free of the Material-You/glance-material3 surface so it renders
+// identically across hosts.
+private val SurfaceColor = Color(0xFF17110B)
+private val AccentColor = Color(0xFFF5A623)
+private val LiveColor = Color(0xFFFF453A)
+private val OnSurfaceColor = Color(0xFFF7EFE3)
 
 /**
  * P6.2: state a widget renders — a pure projection of [WatchSyncPayload] (the same wire shape
@@ -130,7 +132,12 @@ fun MileageSummaryContent(model: WidgetUiModel) {
             Spacer(GlanceModifier.height(6.dp))
             Text(
                 text = model.statusLabel,
-                style = TextStyle(color = ColorProvider(AccentColor), fontWeight = FontWeight.Medium, fontSize = 13.sp),
+                style =
+                    TextStyle(
+                        color = ColorProvider(if (model.isTracking) LiveColor else AccentColor),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp,
+                    ),
             )
         }
         Spacer(GlanceModifier.height(8.dp))
