@@ -17,6 +17,7 @@ class ExpenseFormValidatorTest {
                 category = ExpenseCategory.TRAVEL,
                 amountText = "500",
                 merchantName = "Ola Cabs",
+                officeCode = "1345",
             )
         val errors = ExpenseFormValidator.validate(form, travelDef)
         assertTrue(errors.isEmpty())
@@ -29,6 +30,7 @@ class ExpenseFormValidatorTest {
                 category = ExpenseCategory.TRAVEL,
                 amountText = "500",
                 merchantName = "   ",
+                officeCode = "1345",
             )
         val errors = ExpenseFormValidator.validate(form, travelDef)
         assertEquals(setOf(ExpenseFormValidator.FIELD_MERCHANT_NAME), errors.keys)
@@ -41,6 +43,7 @@ class ExpenseFormValidatorTest {
                 category = ExpenseCategory.TRAVEL,
                 amountText = "0",
                 merchantName = "Ola Cabs",
+                officeCode = "1345",
             )
         val errors = ExpenseFormValidator.validate(form, travelDef)
         assertEquals(setOf(ExpenseFormValidator.FIELD_AMOUNT), errors.keys)
@@ -53,6 +56,7 @@ class ExpenseFormValidatorTest {
                 category = ExpenseCategory.TRAVEL,
                 amountText = "-50",
                 merchantName = "Ola Cabs",
+                officeCode = "1345",
             )
         val errors = ExpenseFormValidator.validate(form, travelDef)
         assertEquals(setOf(ExpenseFormValidator.FIELD_AMOUNT), errors.keys)
@@ -65,6 +69,7 @@ class ExpenseFormValidatorTest {
                 category = ExpenseCategory.TRAVEL,
                 amountText = "abc",
                 merchantName = "Ola Cabs",
+                officeCode = "1345",
             )
         val errors = ExpenseFormValidator.validate(form, travelDef)
         assertEquals(setOf(ExpenseFormValidator.FIELD_AMOUNT), errors.keys)
