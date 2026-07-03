@@ -162,10 +162,14 @@ android {
             isReturnDefaultValues = true
             all {
                 // JDK 21+ requires these opens for Robolectric + Compose rendering.
+                // EnableDynamicAgentLoading lets MockK's inline mock-maker attach its ByteBuddy
+                // agent cleanly across forkEvery(25) restarts (Z.5b) — without it, mockk-heavy
+                // tests (SwitchAccount*) intermittently fail with "class redefinition failed".
                 it.jvmArgs(
                     "--add-opens=java.base/java.lang=ALL-UNNAMED",
                     "--add-opens=java.base/java.util=ALL-UNNAMED",
                     "--add-opens=java.base/java.io=ALL-UNNAMED",
+                    "-XX:+EnableDynamicAgentLoading",
                 )
             }
         }
