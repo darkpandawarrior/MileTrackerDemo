@@ -44,6 +44,9 @@ dependencies {
     implementation(project(":core:platform"))
     implementation(project(":feature:tracking"))
     implementation(project(":stub"))
+    // Napier: KMP logging used by the gms-flavor DataLayer bridges (the core modules expose it via
+    // api, but that's hidden through their implementation() edges, so declare it directly).
+    implementation(libs.napier)
 
     // Compose for Wear OS.
     implementation(platform(libs.compose.bom))
