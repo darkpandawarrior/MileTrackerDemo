@@ -10,11 +10,8 @@
 import Foundation
 import WatchConnectivity
 
-/// Message path both this sender and the phone's `PhoneWatchSyncBridge` (`iosApp/iosApp/
-/// PhoneWatchSyncBridge.swift`) use — deliberately distinct from `MilewaySyncPayload`'s
-/// `applicationContext` channel (that one is coalesced latest-state; a command must not be
-/// coalesced away).
-let trackCommandMessageKey = "com.mileway.track-command"
+// `trackCommandMessageKey` now lives in Shared/TrackingCommand.swift (compiled into both the watch
+// and phone targets) so PhoneWatchSyncBridge resolves the same symbol.
 
 /// Sends a watch-initiated start/stop command to the paired phone via `WCSession.sendMessage`.
 /// A no-op (never throws) if no phone is reachable, mirroring `WearTrackingCommandSender`'s

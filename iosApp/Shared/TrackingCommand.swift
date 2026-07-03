@@ -9,6 +9,12 @@
 // `WatchSyncPayload` on the Android side.
 import Foundation
 
+/// WCSession message-dictionary key for a watch->phone track command. Lives here (Shared/, compiled
+/// into both the iosApp and MilewayWatch targets) so both the sender (WatchTrackingCommandSender)
+/// and receiver (PhoneWatchSyncBridge) resolve the same symbol. Deliberately distinct from
+/// `MilewaySyncPayload`'s coalesced `applicationContext` channel — a command must not be coalesced.
+let trackCommandMessageKey = "com.mileway.track-command"
+
 struct TrackingCommand: Codable, Equatable {
     enum Action: String, Codable {
         case start
