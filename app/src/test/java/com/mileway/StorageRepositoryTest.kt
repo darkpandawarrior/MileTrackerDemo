@@ -1,63 +1,73 @@
 package com.mileway
 
-import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import android.content.Context
 import com.mileway.core.data.settings.StorageRepository
+import io.mockk.every
+import io.mockk.mockk
+import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.rules.TemporaryFolder
+import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
  * P6.6: [StorageRepository]'s byte-count readout + clear-cache action, backing Preferences'
- * Storage tile/sheet — real [android.content.Context.cacheDir] I/O via Robolectric, not a mock.
+ * Storage tile/sheet.
  *
- * Assertions are delta-based (measure a baseline, then assert the change) rather than asserting
- * absolute cache totals: cacheDir is shared process-wide, so a sibling test in the full suite can
- * leave stray files there. The delta is what StorageRepository is actually responsible for.
+ * Runs on a plain JVM with a mocked [Context] over real [TemporaryFolder] directories rather than
+ * under Robolectric: [StorageRepository] only touches `cacheDir` + `getDatabasePath`, and doing
+ * real cacheDir I/O under Robolectric corrupted its managed temp-dir bookkeeping (Z.5b — a Linux-CI
+ * `NoSuchFileException` in the next test method's sandbox setup). A TemporaryFolder is exactly the
+ * isolated, disposable filesystem this needs.
  */
-@RunWith(AndroidJUnit4::class)
 class StorageRepositoryTest {
-    private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
-    private val repository = StorageRepository(context)
+    @get:Rule
+    val tmp = TemporaryFolder()
+
+    private lateinit var cacheDir: File
+    private lateinit var dbDir: File
+
+    private fun repository(): StorageRepository {
+        cacheDir = tmp.newFolder("cache")
+        dbDir = tmp.newFolder("databases")
+        val context =
+            mockk<Context> {
+                every { cacheDir } returns this@StorageRepositoryTest.cacheDir
+                every { getDatabasePath(any()) } answers { File(dbDir, firstArg()) }
+            }
+        return StorageRepository(context)
+    }
 
     @Test
     fun `cacheBytes reflects files written under cacheDir`() {
-        context.cacheDir.mkdirs()
-        val baseline = repository.cacheBytes()
+        val repository = repository()
+        assertEquals(0L, repository.cacheBytes())
 
-        val file = java.io.File(context.cacheDir, "cacheBytes-demo.tmp")
-        file.writeBytes(ByteArray(2_048))
-        try {
-            assertEquals(baseline + 2_048L, repository.cacheBytes())
-        } finally {
-            file.delete()
-        }
+        File(cacheDir, "demo.tmp").writeBytes(ByteArray(2_048))
+
+        assertEquals(2_048L, repository.cacheBytes())
     }
 
     @Test
     fun `clearCache empties cacheDir and totalBytes drops accordingly`() {
-        context.cacheDir.mkdirs()
-        java.io.File(context.cacheDir, "clearCache-demo.tmp").writeBytes(ByteArray(4_096))
-        assertTrue(repository.cacheBytes() >= 4_096L)
+        val repository = repository()
+        File(cacheDir, "demo.tmp").writeBytes(ByteArray(4_096))
+        assertTrue(repository.cacheBytes() > 0L)
 
         repository.clearCache()
 
         assertEquals(0L, repository.cacheBytes())
-        assertFalse(java.io.File(context.cacheDir, "clearCache-demo.tmp").exists())
-        assertTrue(context.cacheDir.exists())
+        assertFalse(File(cacheDir, "demo.tmp").exists())
+        assertTrue(cacheDir.exists())
     }
 
     @Test
     fun `totalBytes is database plus cache`() {
-        context.cacheDir.mkdirs()
-        val file = java.io.File(context.cacheDir, "totalBytes-demo.tmp")
-        file.writeBytes(ByteArray(1_024))
-        try {
-            assertEquals(repository.databaseBytes() + repository.cacheBytes(), repository.totalBytes())
-        } finally {
-            file.delete()
-        }
+        val repository = repository()
+        File(cacheDir, "demo.tmp").writeBytes(ByteArray(1_024))
+
+        assertEquals(repository.databaseBytes() + repository.cacheBytes(), repository.totalBytes())
     }
 }
