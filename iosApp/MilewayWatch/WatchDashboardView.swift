@@ -1,7 +1,7 @@
 // P4.4: the watch dashboard — today/week distance + tracking pill, rendered from
-// WatchDashboardModel's published WatchSnapshot. Colors mirror core:ui's Matrix token spec
-// (canvas #010701, phosphor accent #00FF41) natively in SwiftUI — Compose tokens don't cross
-// the KMP/SwiftUI boundary, so the palette is re-declared here, not imported.
+// WatchDashboardModel's published WatchSnapshot. Colors mirror core:ui's Ember token spec
+// (T.2: canvas #0B0806, amber accent #F5A623, red live #FF453A) natively in SwiftUI — Compose
+// tokens don't cross the KMP/SwiftUI boundary, so the palette is re-declared here, not imported.
 //
 // P8.2 VoiceOver checklist (manually walked on Apple Watch Simulator, VoiceOver on):
 //  - [x] "Distance today" reads as one stop with a spoken-out value ("12.5 kilometers"), not two
@@ -18,13 +18,15 @@
 
 import SwiftUI
 
-/// The Matrix palette's watch-relevant subset, hand-mirrored from
-/// `core/ui/.../theme/MilewayThemes.kt`'s `MatrixSpec` (accent `#00FF41`, canvas `#010701`).
+/// The Ember palette's watch-relevant subset, hand-mirrored from
+/// `core/ui/.../theme/MilewayThemes.kt`'s `EmberSpec` (T.2: amber accent `#F5A623`, red live
+/// `#FF453A`, canvas `#0B0806`).
 enum WatchMatrixPalette {
-    static let canvas = Color(red: 0x01 / 255, green: 0x07 / 255, blue: 0x01 / 255)
-    static let accent = Color(red: 0x00 / 255, green: 0xFF / 255, blue: 0x41 / 255)
-    static let text = Color(red: 0xB8 / 255, green: 0xFF / 255, blue: 0xCC / 255)
-    static let textMuted = Color(red: 0x3A / 255, green: 0x66 / 255, blue: 0x45 / 255)
+    static let canvas = Color(red: 0x0B / 255, green: 0x08 / 255, blue: 0x06 / 255)
+    static let accent = Color(red: 0xF5 / 255, green: 0xA6 / 255, blue: 0x23 / 255)
+    static let live = Color(red: 0xFF / 255, green: 0x45 / 255, blue: 0x3A / 255)
+    static let text = Color(red: 0xF7 / 255, green: 0xEF / 255, blue: 0xE3 / 255)
+    static let textMuted = Color(red: 0xC9 / 255, green: 0xB9 / 255, blue: 0xA3 / 255)
 }
 
 struct WatchDashboardView: View {
@@ -103,7 +105,7 @@ struct WatchDashboardView: View {
     }
 
     private var pillColor: Color {
-        model.snapshot.isTracking && !model.snapshot.isPaused ? WatchMatrixPalette.accent : WatchMatrixPalette.textMuted
+        model.snapshot.isTracking && !model.snapshot.isPaused ? WatchMatrixPalette.live : WatchMatrixPalette.textMuted
     }
 }
 
