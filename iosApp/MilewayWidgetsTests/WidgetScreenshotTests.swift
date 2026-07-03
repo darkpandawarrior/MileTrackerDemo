@@ -40,6 +40,24 @@ final class WidgetScreenshotTests: XCTestCase {
     }
 
     @MainActor
+    @available(iOS 16.2, *)
+    func testCaptureLiveActivity() throws {
+        let state = MilewayTrackingAttributes.ContentState(
+            distanceKm: 12.4, elapsedSeconds: 754, isPaused: false
+        )
+        let canvas = Color(red: 0x0B / 255, green: 0x08 / 255, blue: 0x06 / 255)
+        try render(
+            TrackingLockScreenView(state: state).frame(width: 360, height: 84).background(canvas),
+            to: "live_activity.png"
+        )
+        try render(
+            TrackingDynamicIslandExpandedView(state: state).frame(width: 360).padding(24)
+                .background(Color.black),
+            to: "live_activity_dynamic_island.png"
+        )
+    }
+
+    @MainActor
     private func render(_ view: some View, to name: String) throws {
         let renderer = ImageRenderer(content: view)
         renderer.scale = 3
