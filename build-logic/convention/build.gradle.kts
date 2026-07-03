@@ -36,6 +36,10 @@ gradlePlugin {
             id = "mileway.kmp.library.watchos"
             implementationClass = "MilewayKmpLibraryWatchosConventionPlugin"
         }
+        register("kmpDesktop") {
+            id = "mileway.kmp.desktop"
+            implementationClass = "MilewayKmpDesktopConventionPlugin"
+        }
         register("kmpCompose") {
             id = "mileway.kmp.compose"
             implementationClass = "MilewayKmpComposeConventionPlugin"

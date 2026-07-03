@@ -1,5 +1,6 @@
 plugins {
     id("mileway.kmp.library")
+    id("mileway.kmp.desktop")
 }
 
 kotlin {
